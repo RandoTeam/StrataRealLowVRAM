@@ -1,0 +1,35 @@
+{
+  "timestamp": "2026-10-01 02:34:38",
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 3050 Laptop GPU (4 GB GDDR6)",
+    "cpu": "AMD Ryzen 5 5500U (6C/12T, Zen 2 AVX2)",
+    "ram": "32 GB DDR4-3200 Dual-Channel",
+    "os": "Windows 11 64-bit (WDDM 3.1)"
+  },
+  "champion": {
+    "profile": "StrataRealLowVRAM (Champion)",
+    "test_a_tok_s": 3.81,
+    "test_b_tok_s": 3.91,
+    "test_c_tok_s": 3.82,
+    "avg_client_decode_tok_s": 3.85,
+    "engine_decode_tok_s": 4.2,
+    "engine_prefill_tok_s": 8.0,
+    "hit_rate_pct": 0.0,
+    "mtp_acc_pct": 80.6,
+    "expert_slots": 426,
+    "vram_free_mib": 1024
+  },
+  "baseline": {
+    "profile": "Vanilla Upstream Baseline",
+    "test_a_tok_s": 2.56,
+    "test_b_tok_s": 4.06,
+    "test_c_tok_s": 3.83,
+    "avg_client_decode_tok_s": 3.48,
+    "engine_decode_tok_s": 4.3,
+    "engine_prefill_tok_s": 8.0,
+    "hit_rate_pct": 0.0,
+    "mtp_acc_pct": 82.9,
+    "expert_slots": 426,
+    "vram_free_mib": 1024
+  }
+}
