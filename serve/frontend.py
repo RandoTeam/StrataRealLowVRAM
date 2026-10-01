@@ -174,8 +174,10 @@ def openai_to_messages(req: dict) -> tuple[list[dict], list[dict] | None, dict]:
     return _late_system_to_user(messages), tools, kwargs
 
 
-def anthropic_to_messages(req: dict) -> tuple[list[dict], list[dict] | None, dict]:
-    """Anthropic Messages -> (template messages, template tools, template kwargs)."""
+def anthropic_to_messages(req: dict, think_unasked: bool = True) -> tuple[list[dict], list[dict] | None, dict]:
+    """Anthropic Messages -> (template messages, template tools, template kwargs).  `think_unasked`: a request
+    without "thinking", an effort or a budget gets the template's default (it thinks), as through 0.1.31; False
+    renders it without thinking (#278, the config's "anthropic_thinking": "on_request")."""
     messages = []
     system = req.get("system")
     if system:
@@ -220,6 +222,14 @@ def anthropic_to_messages(req: dict) -> tuple[list[dict], list[dict] | None, dic
         kwargs.update(effort_kwargs(effort))
     elif isinstance(thinking, dict) and thinking.get("budget_tokens"):
         kwargs.update(budget_effort(thinking["budget_tokens"]))
+    elif thinking is None and not req.get("reasoning_budget_tokens") and not think_unasked:
+        # Opt-in (the config's "anthropic_thinking": "on_request"; the default thinks as 0.1.31 did, since a
+        # client that never asks would otherwise lose the thinking on every turn).  Anthropic's thinking is
+        # opt-in there. Claude Code's helper calls (a session title, a topic check) ask for none
+        # and allow a few dozen tokens, which the model otherwise spent thinking and answered with no text at all.
+        # A config's reasoning_effort still applies: Service.with_shared sets output_config before this runs.  A
+        # request that gives its own reasoning_budget_tokens (#123) asks for thinking, so it thinks as before.
+        kwargs["enable_thinking"] = False
     return _late_system_to_user(messages), tools, kwargs
 
 

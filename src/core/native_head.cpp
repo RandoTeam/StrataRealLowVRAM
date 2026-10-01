@@ -108,13 +108,15 @@ NativeEmbed::~NativeEmbed() {
 bool NativeEmbed::load(const std::vector<std::string>& shards, int64_t n_embd, int64_t n_vocab, std::string& err) {
     try {
         const strata::GgufModel model(shards);
-        err = strata::check_architecture(model.meta());
+        // --embd-gguf's one-tensor file (tools/embd_bf16_pack.py) says "strata-embd": only its tensor is checked
+        const strata::MetaValue* arch = model.meta().get("general.architecture");
+        err = arch != nullptr && arch->s == "strata-embd" ? std::string() : strata::check_architecture(model.meta());
         if (!err.empty()) { err = "native embedding: " + err; return false; }
         size_t at = 0;
         const strata::TensorInfo* t = model.find("token_embd.weight", &at);
         const strata::GgufFile& gguf = model.shard(at);
         if (!t || t->shape.size() != 2 || t->shape[0] != (uint64_t) n_embd || t->shape[1] != (uint64_t) n_vocab ||
-            !strata::kernels::iq_supported((int) t->type) || n_embd % 256) {
+            !strata::kernels::embed_type_supported((int) t->type) || n_embd % 256) {
             err = "native embedding: token_embd.weight is absent, of another shape, or of a type without a GPU "
                   "dequantizer";
             return false;

@@ -60,6 +60,15 @@ profiled expert plus the context's KV, the draft layer and the reserve, and says
 stays. On an R9700 32 GB + RX 9070 XT the R9700 holds all of the Coder's experts: with the flag 4K prompts read at
 1,776 tok/s instead of 1,244 (split) and decode runs at ~60 tok/s instead of ~51 (16K prompts ~5% slower than split).
 
+**Short prompts on a split (0.1.32, #340).** 0.1.30 gave each card's prompt path a loan from its own expert cache,
+refilled after every request; on cards that hold nearly all their experts that cost short prompts up to a third of
+their speed. 0.1.32 refills all cards at once, uses a smaller streaming ring on a split, and lets a card with free
+VRAM keep its own prompt buffers - the same output as 0.1.31, measured on an R9700 + RX 9070 XT: 2K prompts 993 ->
+1,265 tok/s, 16K 1,852 -> 1,950, decode unchanged. `STRATA_SPLIT_OWN=1` (opt-in) gives every card its own buffers:
+2K 1,450 and 16K 2,227 tok/s there, but a full card then keeps a different set of experts resident, so the output
+differs from the default's (stable and coherent); `STRATA_SPLIT_OWN=auto` does that only where the buffers are at
+most 12% of each card's VRAM.
+
 The engine flags behind it: `--layer-split K1[,K2..]|auto` and `--split-device D1[,D2..]` (the later stages'
 devices; default the next visible ones). `--layer-split K --split-device 0` runs both stages on one card sharing
 everything - the bit-exact check of the hand-off, not a speed mode.
