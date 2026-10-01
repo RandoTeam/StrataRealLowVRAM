@@ -2599,7 +2599,6 @@ int main(int argc, char** argv) {
                 if (GlobalMemoryStatusEx(&ms))
                     std::snprintf(commit, sizeof commit, " (Windows has %.1f GiB of commit left: RAM + page file)",
                                   (double) ms.ullAvailPageFile / 1073741824.0);
-#if defined(_WIN32)
                 // StrataRealLowVRAM: also allow retry-shrink for explicit cache if initial allocation fails under WDDM
                 if ((auto_cache || !sized_slots.empty()) && failed < 8 && shrink_to(cache_bytes() / 4 * 3)) {
 #else

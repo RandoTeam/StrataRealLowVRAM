@@ -150,9 +150,9 @@ def parse_last_log_stats():
                             if int(total) > 0:
                                 mtp_acc = round(int(acc) / int(total) * 100, 1)
 
-            if hit_rate is None and "hits (" in l and "%)" in l:
+            if hit_rate is None and "decode expert cache hit rate:" in l:
                 try:
-                    hit_str = l.split("hits (")[1].split("%")[0].strip()
+                    hit_str = l.split("decode expert cache hit rate:")[1].split("%")[0].strip()
                     hit_rate = float(hit_str)
                 except Exception:
                     pass
