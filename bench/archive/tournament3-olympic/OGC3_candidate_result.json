@@ -1,0 +1,40 @@
+{
+  "id": "OGC3",
+  "name": "Olympic-Grand-Champion-3.0",
+  "category": "Grand Synthesis of 4 Olympians",
+  "status": "PASSED (Full 3/3)",
+  "decode_tok_s": 4.9,
+  "prefill_tok_s": 7.9,
+  "hit_rate_pct": 22.6,
+  "mtp_acc_pct": 85.7,
+  "expert_slots": 385,
+  "vram_free_mib": 1024,
+  "kv_streaming_hit_pct": 99.69,
+  "ram_read_mib": 7.3,
+  "quality_bonus": 10.0,
+  "score": 96.51,
+  "test_a": {
+    "ok": true,
+    "elapsed_s": 51.61,
+    "completion_tokens": 207,
+    "decode_tok_s": 4.01,
+    "content_preview": "- **Mutex** is a binary lock (one owner at a time) that enforces mutual exclusion; **semaphore** is a counter allowing N simultaneous accesses.\n- A mu",
+    "has_content": true
+  },
+  "test_b": {
+    "ok": true,
+    "elapsed_s": 83.76,
+    "completion_tokens": 384,
+    "decode_tok_s": 4.58,
+    "content_preview": "```python\nclass _Node:\n    \"\"\"A node in the doubly linked list.\"\"\"\n\n    def __init__(self, key: int = None, value: int = None):\n        self.key = key",
+    "has_content": true
+  },
+  "test_c": {
+    "ok": true,
+    "elapsed_s": 115.88,
+    "completion_tokens": 512,
+    "decode_tok_s": 4.42,
+    "content_preview": "The user wants a comprehensive implementation of a thread-safe asynchronous Task Worker Pool in Python. Let me think through what this needs:\n\n1. **Co",
+    "has_content": true
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "id": "T4_GC",
+  "name": "Tournament-4-Grand-Champion",
+  "category": "Grand Synthesis of All 4 Tournament 4 Breakthroughs",
+  "status": "PASSED (Full 3/3)",
+  "decode_tok_s": 5.0,
+  "prefill_tok_s": 8.4,
+  "hit_rate_pct": 22.3,
+  "mtp_acc_pct": 81.0,
+  "expert_slots": 426,
+  "vram_free_mib": 1024,
+  "kv_streaming_hit_pct": 99.7,
+  "ram_read_mib": 7.3,
+  "quality_bonus": 10.0,
+  "score": 105.75,
+  "test_a": {
+    "ok": true,
+    "elapsed_s": 33.91,
+    "completion_tokens": 117,
+    "decode_tok_s": 3.45,
+    "content_preview": "- **Mutex** = binary lock (one thread at a time); **Semaphore** = generalized counter allowing *N* simultaneous accesses.\n- Mutex: `std::lock_guard<st",
+    "has_content": true
+  },
+  "test_b": {
+    "ok": true,
+    "elapsed_s": 77.79,
+    "completion_tokens": 384,
+    "decode_tok_s": 4.94,
+    "content_preview": "```python\nclass _Node:\n    \"\"\"A node in the doubly linked list backing the LRU cache.\"\"\"\n    def __init__(self, key: int = 0, value: int = 0):\n       ",
+    "has_content": true
+  },
+  "test_c": {
+    "ok": true,
+    "elapsed_s": 113.62,
+    "completion_tokens": 512,
+    "decode_tok_s": 4.51,
+    "content_preview": "The user wants a comprehensive, production-quality implementation of an asynchronous task worker pool in Python. Let me think through the design:\n\nKey",
+    "has_content": true
+  }
+}

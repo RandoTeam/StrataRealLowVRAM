@@ -1,0 +1,121 @@
+strata generate --pack DIR --tokens "1,2,3" [options]
+
+  --pack DIR           the pack directory (default pack/full)
+  --tokens LIST        the prompt as comma-separated token IDS (required)
+  --tokens-file PATH   pretokenized prompt, commas or whitespace (alternative to --tokens)
+  --ple-gguf PATH      required PLE table (original second GGUF shard)
+  --no-ple             explicit diagnostic ablation of the PLE layer
+  --ple-io direct|mmap  n-gram table reads (plan v0.3 P2). direct (default): unbuffered SSD
+                       reads, the table never enters RAM or the file cache; mmap: A/B arm
+  --ple-row-cache N    bounded cache of fetched rows, 90 B each (default 1048576; 0 = off)
+  --ple-inflight N     outstanding SSD reads (default 64)
+  --ple-delay-us U     fault injection: each row read completes no earlier than U us
+  --ple-sync-submit    A/B arm: submit table reads on the token thread (default: an I/O thread)
+  --kv fp16|int8       KV storage (plan v0.3 P7): int8 codes + fp16 scale per 64 values, half the
+                       VRAM; default fp16 until gate G-C accepts int8
+  --kv q4_0            4-bit K/V after a Hadamard rotation (PR #21): half of int8's memory,
+                       slightly lower precision (see bench/results/2026-09-27-kv-q4)
+  --kv-resident N      KV streaming: keep N cells of each QSA layer in VRAM (min 20480) and the
+                       whole K/V in pinned RAM; the freed VRAM goes to expert slots. 0 (default):
+                       all of it in VRAM. A context of N cells or fewer is not streamed
+  --stream-token       enqueue token work on the session stream (experimental)
+  --check-logits       copy and check all logits in the stream-token path
+  --gr-fp32-activations  experimental CUDA-oracle GR activation precision
+  --gr-native-mmvf      experimental pinned GR norm/projections; implies FP32 activations
+  --native-bf16         experimental CUDA-oracle SSM/router/indexer BF16 projections
+  --native-bf16-extra   experimental CUDA-oracle PLE/shared gate BF16 projections
+  --native-ple-key      experimental native PLE key; requires --native-dense-gguf
+  --native-moe-combine  experimental pinned CUDA routed/shared combination
+  --native-gdn          experimental pinned CUDA GDN norms/gates/recurrence
+  --native-flash-attn-short  diagnostic pinned vector attention; --max-context <=256
+  --native-qsa-indexer  experimental pinned indexer key cache and pooling
+  --native-qsa          experimental pinned QSA normalization and output gate
+  --native-rope         experimental pinned text-only CUDA rotary arithmetic
+  --native-ple-postops  experimental pinned PLE postprojection arithmetic
+  --native-router       experimental pinned CUDA 512-expert top-10 routing
+  --cpu-oracle-q8-0     experimental pinned CPU expert quantization and dot reduction
+  --native SHARD1      every full-context native path at once (plan v0.3 P1): stream-token,
+                       GR MMVF, BF16, head, dense + PLE key, MoE combine, GDN, router, QSA,
+                       indexer, RoPE, PLE postops, and the CPU q8_0 contract unless the
+                       expert cache is on. Individual --native-* flags stay for A/B.
+  --native-head-gguf PATH  native Q5_K head from model shard 1; requires --stream-token
+  --native-dense-gguf PATH native GDN/QSA/shared projections; repeat for each source model shard
+  --expert-cache-cpu-order  experimental GPU expert reduction matching CPU order
+  --max-new N          tokens to generate (default 16)
+  --max-context N      KV/state capacity (default 4096)
+  --greedy             argmax (the default)
+  --seed S             enable sampling with this Philox seed
+  --top-k N --top-p F --temperature F
+  --dump-logits PATH   write one line of raw logits per position
+  --logits-stride N    store every Nth row plus final input (default 1); N>1 requires --max-new 1
+  --dump-residual PATH write the final R (hc x n_embd, f32) for head bisection
+  --dump-layers PATH   write R after EVERY layer, per position: the C1 bisection ladder
+  --dump-halves PATH   write both halves' block_out and inject per layer: the half bisection
+  --dump-routing PATH  write the routed expert ids and weights per layer per position (P0.S8)
+  --no-capture         run the layers directly instead of replaying graphs
+  --shared-late        A/B: shared expert after the CPU pool (default: overlapped with it)
+  --keep-canonical     A/B: also load canonical copies of natively served tensors (more VRAM)
+  --vision             --serve takes images too (GENI requests; embeddings from strata-vision)
+  --prompt-cache N     --serve: keep N conversation checkpoints between requests (default 6, ~118 MB
+                       of RAM each; 0 = read every prompt from the start)
+  --prompt-cache-every N  --serve: also checkpoint every N fresh prompt tokens (default 16384, 0 = off)
+  --turn-token ID      --serve: the token that opens a chat turn (default 248045, <|im_start|>)
+  --short-read N       --serve: read at most N fresh text tokens through the decode windows instead
+                       of the batched prompt path (default 64, 0 = off)
+  --suffix-draft N     prompt lookup: draft from an earlier repeat of the last N+ tokens of context
+                       when it pays (default 3; 0 = MTP only)
+  --mtp-max-t M        cap the MTP's windows at M tokens (0 = --spec; longer ones come from suffixes)
+  --control-vector-scaled FILE:SCALE[,...]  a control vector GGUF on the residual stream (llama.cpp's
+                       format; --control-vector FILE = scale 1).  --serve: requests switch it (cvec=0|1)
+  --control-vector-layer-range A B  the layers it follows (inclusive; default 1 .. the last)
+  --cvec-mode add|project  h += s v (default) or h -= s (h.v) v with v unit
+  --cvec-dir per-layer|single:L  each layer's own direction (default) or layer L's everywhere (project)
+  --no-token-graph     A/B: two graphs per layer (the host launches each) instead of one per token
+  --no-fused-gr        A/B: the six-kernel hyper-connection read and a separate write (native)
+  --prefill CHUNK      batched prompt processing in chunks of CHUNK tokens (needs --native); auto =
+                       the largest chunk up to 8192 whose buffers the expert cache can lend
+  --no-pool            skip the CPU expert pool (the GPU-only floor)
+  --sync-every-layer   debug: synchronise after every layer
+  --ple-gguf PATH      the n-gram/PLE shard.  WITHOUT IT LAYER 1's PLE IS SILENTLY SKIPPED,
+                       which changes every number downstream - pass it for any real run
+  --dump-mixed PATH    write the post-attention residual (n_embd, f32)
+  --stage-timing       per-stage KERNEL-COUNT shares.  NOT a time profile: an uncaptured
+                       event interval includes host gaps, so run with --gpu-only-full first
+  --graph-only         MEASURE: replay the 48 `pre` graphs only.  OMITS the 48 `post` graphs
+                       and the LM head, so it is NOT the GPU floor (R0.3, Memory/ERRORS.md A4)
+  --gpu-only-full      MEASURE: replay pre+post for all 48 layers plus the LM head, no pool.
+                       THE TRUE PER-TOKEN GPU FLOOR.  Quote this one, not --graph-only.
+  --stats              print the per-stage breakdown
+  --gpu-stages         R0.9: capture the layer as three graphs (mixer / ffn+router / post)
+                       and time them from OUTSIDE the capture.  The per-stage table on the
+                       real graph that --stage-timing cannot give.  Prints and exits.
+  --expert-profile P   R4.2e: pre-load the VRAM tier from a `profile.bin` (see
+                       tools/make_profile.py) instead of admitting on first use.
+  --no-hit-poke        R4.2d's A/B arm.  The hit path pokes the driver once right after its
+                       launch so the GPU starts while the CPU pool runs; without it the work
+                       waits for the next driver entry and does not overlap at all.
+  --no-ple-prefetch     A/B arm: read the PLE table's sixteen rows one at a time, instead of
+                       issuing them in one PrefetchVirtualMemory call.
+  --expert-cache N     R4: keep N expert blobs resident in VRAM and compute their rows on the
+                       GPU via `moe_hit_grouped_s2`.  DEFAULT 0.  Measured at 4096 slots
+                       with --expert-cache-per-layer: 54.4% hits, CPU pool drain 19.1 -> 10.3
+                       ms/token, -2.7 ms/token end to end.
+  --expert-cache-device1 N  pre-fill N experts on CUDA1 (experimental)
+  --expert-cache-device2 N  pre-fill N more experts on CUDA2
+  --expert-cache-device3 N  pre-fill N more experts on CUDA3
+  --expert-cache-remote-placement stripe|layer  distribute expert ranks or whole
+                       layers across CUDA1..3 (default: stripe)
+  --expert-cache-per-layer  R4.2g: give each layer its OWN slots instead of letting the first
+                       position take all of them.  The default policy fills in arrival order
+                       from one shared counter, so 256 slots went to ~26 layers of position 0
+                       and measured **2.97%**.  Per-layer, the same routing gives 21.4% at 8
+                       slots/layer and 70.4% at 64.
+  --no-host-worker     R2.2: the A/B arm.  By default the HOST THREAD joins the drain, so the
+                       pool is six threads on six cores instead of five plus an idle core;
+                       this flag restores the five-worker form for comparison on `pool phases`.
+  --pool-workers N     R2.2: CPU expert pool worker count.  Default 0 = every physical core
+                       except the one the host loop spins on.  A sweep is how the pool's
+                       deviation from `cpu_s2` is attributed.
+  --mmap-experts       R2.1: opt OUT of the resident expert arena, back to MapViewOfFile.
+                       The A/B arm: the mmap's rate depends on the OS page cache holding
+                       34 GB, and measured 71.97 vs 34.78 ms/token cold vs warm.

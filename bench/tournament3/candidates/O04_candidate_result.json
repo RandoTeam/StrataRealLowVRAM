@@ -1,0 +1,40 @@
+{
+  "id": "O04",
+  "name": "Olympian-Delta-Holistic",
+  "category": "Cross-Engine Transfer & Holistic Synthesis",
+  "status": "PARTIAL (2/3)",
+  "decode_tok_s": 4.9,
+  "prefill_tok_s": 7.9,
+  "hit_rate_pct": 20.7,
+  "mtp_acc_pct": 82.5,
+  "expert_slots": 385,
+  "vram_free_mib": 1024,
+  "kv_streaming_hit_pct": 99.7,
+  "ram_read_mib": 7.4,
+  "quality_bonus": 6.0,
+  "score": 88.22,
+  "test_a": {
+    "ok": true,
+    "elapsed_s": 79.35,
+    "completion_tokens": 162,
+    "decode_tok_s": 2.04,
+    "content_preview": "- **Mutex** enforces *mutual exclusion* \u2014 only one thread can hold it at a time; it's binary (locked/unlocked).\n- **Semaphore** controls access to a r",
+    "has_content": true
+  },
+  "test_b": {
+    "ok": true,
+    "elapsed_s": 81.25,
+    "completion_tokens": 384,
+    "decode_tok_s": 4.73,
+    "content_preview": "```python\nclass _Node:\n    \"\"\"A node in the doubly linked list backing the LRU cache.\"\"\"\n\n    def __init__(self, key: int = None, value: int = None):\n",
+    "has_content": true
+  },
+  "test_c": {
+    "ok": true,
+    "elapsed_s": 116.03,
+    "completion_tokens": 512,
+    "decode_tok_s": 4.41,
+    "content_preview": "",
+    "has_content": false
+  }
+}

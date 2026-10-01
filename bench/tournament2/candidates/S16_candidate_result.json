@@ -1,0 +1,30 @@
+{
+  "id": "S16",
+  "name": "Attention-Geometry",
+  "category": "32K INT8 Precision Inversion",
+  "status": "PASSED",
+  "decode_tok_s": 5.5,
+  "prefill_tok_s": 7.5,
+  "hit_rate_pct": 5.8,
+  "mtp_acc_pct": 86.3,
+  "expert_slots": 275,
+  "vram_free_mib": 1024,
+  "quality_bonus": 10.0,
+  "score": 65.8,
+  "test_a": {
+    "ok": true,
+    "elapsed_s": 76.69,
+    "completion_tokens": 256,
+    "decode_tok_s": 3.34,
+    "content_preview": "- **Mutex** allows only one thread to hold the lock at a time (binary, count=1); **Semaphore** permits up to *N* simulta",
+    "has_content": true
+  },
+  "test_b": {
+    "ok": true,
+    "elapsed_s": 82.45,
+    "completion_tokens": 384,
+    "decode_tok_s": 4.66,
+    "content_preview": "```python\nclass _Node:\n    \"\"\"A node in the doubly linked list backing the LRU cache.\"\"\"\n\n    def __init__(self, key: in",
+    "has_content": true
+  }
+}

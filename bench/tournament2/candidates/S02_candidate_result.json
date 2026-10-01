@@ -1,0 +1,30 @@
+{
+  "id": "S02",
+  "name": "KV-Streaming",
+  "category": "KV Streaming & Expert Scaling",
+  "status": "PASSED",
+  "decode_tok_s": 5.7,
+  "prefill_tok_s": 7.9,
+  "hit_rate_pct": 6.2,
+  "mtp_acc_pct": 86.3,
+  "expert_slots": 290,
+  "vram_free_mib": 1024,
+  "quality_bonus": 10.0,
+  "score": 67.8,
+  "test_a": {
+    "ok": true,
+    "elapsed_s": 95.39,
+    "completion_tokens": 211,
+    "decode_tok_s": 2.21,
+    "content_preview": "- **Mutex** grants exclusive access (binary); **Semaphore** allows N simultaneous accesses (counting). Mutex = semaphore",
+    "has_content": true
+  },
+  "test_b": {
+    "ok": true,
+    "elapsed_s": 79.79,
+    "completion_tokens": 384,
+    "decode_tok_s": 4.81,
+    "content_preview": "```python\nclass LRUCache:\n    \"\"\"Least Recently Used (LRU) cache using a doubly linked list + hash map.\n\n    All operati",
+    "has_content": true
+  }
+}

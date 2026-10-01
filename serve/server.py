@@ -175,8 +175,10 @@ class StrataEngine:
         if log:
             threading.Thread(target=narrate_start, args=(log, os.path.getsize(log), args, loading),
                              daemon=True).start()
+        flags = subprocess.HIGH_PRIORITY_CLASS if os.name == "nt" else 0
         self.proc = subprocess.Popen([exe, "--serve", *args], cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                     stderr=self.log, text=True, encoding="utf-8", bufsize=1, env=env)
+                                     stderr=self.log, text=True, encoding="utf-8", bufsize=1, env=env,
+                                     creationflags=flags)
         contain(self.proc)                               # ends with the server, however it ends (Windows)
         self.max_context = 0
         self.unloaded = False            # stopped on purpose (idle unload, POST /unload), not crashed
@@ -1194,6 +1196,44 @@ def _debug_req(api, req, messages, tools, max_new, thinking, prompt_tokens):
           f"prompt_tokens={prompt_tokens} last={last.get('role')!r}:{preview!r}", flush=True)
 
 
+SESSION_TITLE_PREFIX = "Generate the session title from this JSON array of human messages:\n"
+
+
+def _fast_session_title(messages: list[dict]) -> str | None:
+    """Fast-path for auxiliary session-title requests (e.g. DeepSeek Harness session-title-llm):
+    extracts a concise title from the JSON array without running the engine or evicting the
+    resident conversation/root prompt cache."""
+    if not messages:
+        return None
+    last = messages[-1]
+    if last.get("role") != "user":
+        return None
+    body = last.get("content")
+    if not isinstance(body, str) or not body.startswith(SESSION_TITLE_PREFIX):
+        return None
+    raw = body[len(SESSION_TITLE_PREFIX):].strip()
+    text = ""
+    try:
+        arr = json.loads(raw)
+        if isinstance(arr, list):
+            for item in arr:
+                t = item.get("text", "") if isinstance(item, dict) else str(item)
+                if isinstance(t, str) and t.strip():
+                    text = t.strip()
+                    break
+    except Exception:
+        text = raw
+    words = text.replace("\n", " ").split()
+    title = " ".join(words[:6]).strip(" \"'`.,:;!?-—")
+    return title[:60] if title else "New Chat"
+
+
+def _fast_title_run(title: str):
+    print(f"[strata] fast session-title: {title!r} (skipped engine to preserve prompt cache)", flush=True)
+    yield "event", Event(kind="content", text=title)
+    yield "done", {"finish": "stop", "completion_tokens": 1}
+
+
 # ------------------------------------------------------------------------------------------------ MCP tool loop
 def run_with_mcp(svc: Service, hub, messages, tools, kw, ids, thinking, max_new, max_req, sampling, cancel,
                  mcp_names):
@@ -1383,7 +1423,7 @@ def openai_collect(chunks) -> dict:
 
 
 # ------------------------------------------------------------------------------------------------ Anthropic
-def anthropic_events(svc: Service, req: dict, ids, thinking, tools, max_new, cancel):
+def anthropic_events(svc: Service, req: dict, ids, thinking, tools, max_new, cancel, run=None):
     mid = "msg_" + uuid.uuid4().hex[:24]
     yield "message_start", {"type": "message_start", "message": {
         "id": mid, "type": "message", "role": "assistant", "model": svc.model, "content": [],
@@ -1394,7 +1434,7 @@ def anthropic_events(svc: Service, req: dict, ids, thinking, tools, max_new, can
         return ("content_block_stop", {"type": "content_block_stop", "index": index})
 
     streamed, finished = set(), set()              # calls sent piece by piece; those whose final tool_call came (#211)
-    for kind, x in svc.run(ids, thinking, tools, max_new, req, cancel):
+    for kind, x in run if run is not None else svc.run(ids, thinking, tools, max_new, req, cancel):
         if kind == "ping":
             yield None
             continue
@@ -1703,22 +1743,26 @@ def make_handler(svc: Service):
         def _openai(self, req):
             req = svc.with_shared(req, "openai")
             messages, tools, kw = openai_to_messages(req)
-            max_req = max_new = int(req.get("max_completion_tokens") or req.get("max_tokens") or 0)   # 0/-1: the rest
-            use_mcp = req.get("strata_mcp") is True and svc.mcp is not None      # the web app's opt-in (serve/mcp.py)
-            own = {t.get("name") for t in tools or []}
-            if use_mcp:
-                if not self._own_page("MCP tools can be used"):   # tools run with the user's rights on this PC
-                    return
-                svc.mcp.wait(10)                                  # servers still starting (only right after start)
-                extra = svc.mcp.template_tools(exclude=own)       # the request's own tools win a name clash
-                use_mcp = bool(extra)
-                tools = (tools or []) + extra or None
-            svc.reasoning_budget(req)                         # a bad value is a 400 before anything is sent
-            ids, thinking, max_new = svc.prepare(messages, tools, kw, max_new)
-            _debug_req("openai", req, messages, tools, max_new, thinking, len(ids))
+            fast_title = _fast_session_title(messages)
             cancel = threading.Event()
-            run = run_with_mcp(svc, svc.mcp, messages, tools, kw, ids, thinking, max_new, max_req, req, cancel,
-                               {t["name"] for t in extra}) if use_mcp else None
+            if fast_title is not None:
+                ids, thinking, max_new, run = [], False, 16, _fast_title_run(fast_title)
+            else:
+                max_req = max_new = int(req.get("max_completion_tokens") or req.get("max_tokens") or 0)   # 0/-1: the rest
+                use_mcp = req.get("strata_mcp") is True and svc.mcp is not None      # the web app's opt-in (serve/mcp.py)
+                own = {t.get("name") for t in tools or []}
+                if use_mcp:
+                    if not self._own_page("MCP tools can be used"):   # tools run with the user's rights on this PC
+                        return
+                    svc.mcp.wait(10)                                  # servers still starting (only right after start)
+                    extra = svc.mcp.template_tools(exclude=own)       # the request's own tools win a name clash
+                    use_mcp = bool(extra)
+                    tools = (tools or []) + extra or None
+                svc.reasoning_budget(req)                         # a bad value is a 400 before anything is sent
+                ids, thinking, max_new = svc.prepare(messages, tools, kw, max_new)
+                _debug_req("openai", req, messages, tools, max_new, thinking, len(ids))
+                run = run_with_mcp(svc, svc.mcp, messages, tools, kw, ids, thinking, max_new, max_req, req, cancel,
+                                   {t["name"] for t in extra}) if use_mcp else None
             chunks = openai_chunks(svc, req, ids, thinking, tools, max_new, cancel, run=run)
             if not req.get("stream"):
                 return self._json(200, openai_collect(chunks))
@@ -1744,12 +1788,17 @@ def make_handler(svc: Service):
         def _anthropic(self, req):
             req = svc.with_shared(req, "anthropic")
             messages, tools, kw = anthropic_to_messages(req)
-            max_new = int(req.get("max_tokens") or 0)                  # 0/-1: the rest of the context
-            svc.reasoning_budget(req)                         # a bad value is a 400 before anything is sent
-            ids, thinking, max_new = svc.prepare(messages, tools, kw, max_new)
-            _debug_req("anthropic", req, messages, tools, max_new, thinking, len(ids))
+            fast_title = _fast_session_title(messages)
             cancel = threading.Event()
-            events = anthropic_events(svc, req, ids, thinking, tools, max_new, cancel)
+            if fast_title is not None:
+                ids, thinking, max_new, run = [], False, 16, _fast_title_run(fast_title)
+            else:
+                max_new = int(req.get("max_tokens") or 0)                  # 0/-1: the rest of the context
+                svc.reasoning_budget(req)                         # a bad value is a 400 before anything is sent
+                ids, thinking, max_new = svc.prepare(messages, tools, kw, max_new)
+                _debug_req("anthropic", req, messages, tools, max_new, thinking, len(ids))
+                run = None
+            events = anthropic_events(svc, req, ids, thinking, tools, max_new, cancel, run=run)
             if not req.get("stream"):
                 return self._json(200, anthropic_collect(events))
             self._sse()
@@ -1964,6 +2013,14 @@ def main() -> int:
     ap.add_argument("--before-load", help="a command run before the model is loaded again (e.g. to unload another "
                                           "server's model; also \"before_load\" in the config, a string or a list)")
     a = ap.parse_args()
+    if os.name == "nt":
+        try:
+            import ctypes
+            import atexit
+            ctypes.windll.winmm.timeBeginPeriod(1)
+            atexit.register(ctypes.windll.winmm.timeEndPeriod, 1)
+        except Exception:
+            pass
     cfg = json.loads(Path(a.config).read_text(encoding="utf-8-sig")) if a.config else {}   # Notepad adds a BOM
     if a.gpu is not None:
         cfg["gpu"] = int(a.gpu) if a.gpu.strip().isdigit() else a.gpu

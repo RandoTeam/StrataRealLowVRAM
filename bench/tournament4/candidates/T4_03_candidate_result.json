@@ -1,0 +1,40 @@
+{
+  "id": "T4_03",
+  "name": "Speculative-Dual-Tier-Architect",
+  "category": "Decoupled Speculation (MTP 3 + Suffix 6)",
+  "status": "PASSED (Full 3/3)",
+  "decode_tok_s": 5.0,
+  "prefill_tok_s": 9.3,
+  "hit_rate_pct": 24.5,
+  "mtp_acc_pct": 84.4,
+  "expert_slots": 426,
+  "vram_free_mib": 1024,
+  "kv_streaming_hit_pct": 99.69,
+  "ram_read_mib": 7.3,
+  "quality_bonus": 10.0,
+  "score": 109.84,
+  "test_a": {
+    "ok": true,
+    "elapsed_s": 92.47,
+    "completion_tokens": 256,
+    "decode_tok_s": 2.77,
+    "content_preview": "- **Mutex** is binary (one owner at a time); a **semaphore** counts available resources (can be > 1).\n  - `std::mutex m; std::lock_guard<std::mutex> l",
+    "has_content": true
+  },
+  "test_b": {
+    "ok": true,
+    "elapsed_s": 78.99,
+    "completion_tokens": 384,
+    "decode_tok_s": 4.86,
+    "content_preview": "```python\n\"\"\"\nLRU Cache implementation using a doubly linked list + hash map.\n\nAll operations (get, put, eviction) run in O(1) time.\nSpace complexity:",
+    "has_content": true
+  },
+  "test_c": {
+    "ok": true,
+    "elapsed_s": 113.61,
+    "completion_tokens": 512,
+    "decode_tok_s": 4.51,
+    "content_preview": "The user wants a comprehensive, production-quality implementation of an asynchronous Task Worker Pool in Python. Let me think through the design:\n\nKey",
+    "has_content": true
+  }
+}

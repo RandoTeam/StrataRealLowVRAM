@@ -1,0 +1,15 @@
+[
+  {
+    "id": 10,
+    "name": "Hybrid-UltraSpec",
+    "category": "Multi-System Synthesis",
+    "status": "PASSED",
+    "prefill_tok_s": 8.0,
+    "decode_tok_s": 4.8,
+    "hit_rate_pct": 5.1,
+    "mtp_acc_pct": 71.9,
+    "score": 19.32,
+    "p1_tok_s": 3.64,
+    "p2_tok_s": 4.17
+  }
+]

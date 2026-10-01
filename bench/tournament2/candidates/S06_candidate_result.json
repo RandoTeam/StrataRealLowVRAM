@@ -1,0 +1,30 @@
+{
+  "id": "S06",
+  "name": "SSD-Direct-Oracle",
+  "category": "Unbuffered IOCP Storage Architecture",
+  "status": "PASSED",
+  "decode_tok_s": 5.4,
+  "prefill_tok_s": 6.9,
+  "hit_rate_pct": 5.6,
+  "mtp_acc_pct": 85.1,
+  "expert_slots": 290,
+  "vram_free_mib": 1024,
+  "quality_bonus": 10.0,
+  "score": 64.41,
+  "test_a": {
+    "ok": true,
+    "elapsed_s": 84.96,
+    "completion_tokens": 185,
+    "decode_tok_s": 2.18,
+    "content_preview": "- **Mutex** provides mutual exclusion \u2014 only one thread can hold it at a time (binary lock); **Semaphore** counts availa",
+    "has_content": true
+  },
+  "test_b": {
+    "ok": true,
+    "elapsed_s": 85.6,
+    "completion_tokens": 384,
+    "decode_tok_s": 4.49,
+    "content_preview": "```python\nclass LRUCache:\n    \"\"\"\n    Least Recently Used (LRU) cache implemented with a hash map + doubly linked list.\n",
+    "has_content": true
+  }
+}

@@ -49,3 +49,12 @@ build-vision.bat
 *.done
 /third_party/*.zip
 
+# security & environment
+.env
+*.env
+*.secret
+*.key
+*.pem
+.idea/
+.vscode/
+

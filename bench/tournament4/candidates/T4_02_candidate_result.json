@@ -1,0 +1,40 @@
+{
+  "id": "T4_02",
+  "name": "PCIe-DMA-Auditor",
+  "category": "Balanced MTP Threshold & Empirical Audit",
+  "status": "PASSED (Full 3/3)",
+  "decode_tok_s": 5.2,
+  "prefill_tok_s": 9.4,
+  "hit_rate_pct": 21.4,
+  "mtp_acc_pct": 86.5,
+  "expert_slots": 426,
+  "vram_free_mib": 1024,
+  "kv_streaming_hit_pct": 99.69,
+  "ram_read_mib": 7.3,
+  "quality_bonus": 10.0,
+  "score": 107.45,
+  "test_a": {
+    "ok": true,
+    "elapsed_s": 70.42,
+    "completion_tokens": 134,
+    "decode_tok_s": 1.9,
+    "content_preview": "- **Mutex** enforces mutual exclusion (one thread at a time); a **semaphore** counts available resources and allows N threads simultaneously.\n- Mutex:",
+    "has_content": true
+  },
+  "test_b": {
+    "ok": true,
+    "elapsed_s": 80.26,
+    "completion_tokens": 384,
+    "decode_tok_s": 4.78,
+    "content_preview": "```python\nclass LRUCache:\n    \"\"\"\n    An LRU (Least Recently Used) Cache implemented with a doubly linked list\n    and a hash map for O(1) amortized g",
+    "has_content": true
+  },
+  "test_c": {
+    "ok": true,
+    "elapsed_s": 108.46,
+    "completion_tokens": 512,
+    "decode_tok_s": 4.72,
+    "content_preview": "The user wants a comprehensive implementation of a thread-safe asynchronous Task Worker Pool in Python. Let me think through what this needs:\n\n1. **Co",
+    "has_content": true
+  }
+}

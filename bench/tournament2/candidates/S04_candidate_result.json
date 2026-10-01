@@ -1,0 +1,30 @@
+{
+  "id": "S04",
+  "name": "Expert-Profile-Master",
+  "category": "Dynamic DMA Cache Adaptation",
+  "status": "PASSED",
+  "decode_tok_s": 5.2,
+  "prefill_tok_s": 7.9,
+  "hit_rate_pct": 11.0,
+  "mtp_acc_pct": 79.6,
+  "expert_slots": 275,
+  "vram_free_mib": 1024,
+  "quality_bonus": 10.0,
+  "score": 73.89,
+  "test_a": {
+    "ok": true,
+    "elapsed_s": 61.54,
+    "completion_tokens": 168,
+    "decode_tok_s": 2.73,
+    "content_preview": "- **Mutex** provides mutual exclusion (binary lock); **Semaphore** counts available resources (can allow N concurrent ac",
+    "has_content": true
+  },
+  "test_b": {
+    "ok": true,
+    "elapsed_s": 86.25,
+    "completion_tokens": 384,
+    "decode_tok_s": 4.45,
+    "content_preview": "```python\nclass LRUCache:\n    \"\"\"A Least Recently Used (LRU) cache using a doubly linked list and dictionary.\n\n    All o",
+    "has_content": true
+  }
+}

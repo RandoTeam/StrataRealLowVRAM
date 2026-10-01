@@ -1,0 +1,30 @@
+{
+  "id": "S18",
+  "name": "Native-Shard-Pioneer",
+  "category": "Warp-Sum Native Reduction & Unpinned Order",
+  "status": "PASSED",
+  "decode_tok_s": 5.4,
+  "prefill_tok_s": 6.3,
+  "hit_rate_pct": 5.8,
+  "mtp_acc_pct": 87.6,
+  "expert_slots": 285,
+  "vram_free_mib": 1024,
+  "quality_bonus": 10.0,
+  "score": 64.89,
+  "test_a": {
+    "ok": true,
+    "elapsed_s": 63.75,
+    "completion_tokens": 256,
+    "decode_tok_s": 4.02,
+    "content_preview": "- **Counting vs. Binary:** A mutex permits only one thread at a time (binary lock); a semaphore holds a counter allowing",
+    "has_content": true
+  },
+  "test_b": {
+    "ok": true,
+    "elapsed_s": 85.92,
+    "completion_tokens": 384,
+    "decode_tok_s": 4.47,
+    "content_preview": "```python\nclass LRUCache:\n    \"\"\"\n    Least Recently Used (LRU) cache with O(1) get and put operations.\n\n    Internally ",
+    "has_content": true
+  }
+}

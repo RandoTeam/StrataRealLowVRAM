@@ -1,0 +1,602 @@
+[
+  {
+    "id": "S04",
+    "name": "Expert-Profile-Master",
+    "category": "Dynamic DMA Cache Adaptation",
+    "status": "PASSED",
+    "decode_tok_s": 5.2,
+    "prefill_tok_s": 7.9,
+    "hit_rate_pct": 11.0,
+    "mtp_acc_pct": 79.6,
+    "expert_slots": 275,
+    "vram_free_mib": 1024,
+    "quality_bonus": 10.0,
+    "score": 73.89,
+    "test_a": {
+      "ok": true,
+      "elapsed_s": 61.54,
+      "completion_tokens": 168,
+      "decode_tok_s": 2.73,
+      "content_preview": "- **Mutex** provides mutual exclusion (binary lock); **Semaphore** counts available resources (can allow N concurrent ac",
+      "has_content": true
+    },
+    "test_b": {
+      "ok": true,
+      "elapsed_s": 86.25,
+      "completion_tokens": 384,
+      "decode_tok_s": 4.45,
+      "content_preview": "```python\nclass LRUCache:\n    \"\"\"A Least Recently Used (LRU) cache using a doubly linked list and dictionary.\n\n    All o",
+      "has_content": true
+    }
+  },
+  {
+    "id": "S19",
+    "name": "Hybrid-Frankenstein",
+    "category": "Extreme Holistic Synthesis",
+    "status": "PASSED",
+    "decode_tok_s": 5.5,
+    "prefill_tok_s": 5.0,
+    "hit_rate_pct": 7.5,
+    "mtp_acc_pct": 89.0,
+    "expert_slots": 385,
+    "vram_free_mib": 1024,
+    "quality_bonus": 10.0,
+    "score": 68.35,
+    "test_a": {
+      "ok": true,
+      "elapsed_s": 55.27,
+      "completion_tokens": 193,
+      "decode_tok_s": 3.49,
+      "content_preview": "- **Mutex** = exclusive ownership; only one thread can hold it at a time (binary lock).\n  ```cpp\n  std::mutex m; m.lock(",
+      "has_content": true
+    },
+    "test_b": {
+      "ok": true,
+      "elapsed_s": 88.73,
+      "completion_tokens": 384,
+      "decode_tok_s": 4.33,
+      "content_preview": "```python\nfrom typing import Optional\n\n\nclass _Node:\n    \"\"\"Internal doubly-linked-list node for the LRU cache.\"\"\"\n\n    ",
+      "has_content": true
+    }
+  },
+  {
+    "id": "S17",
+    "name": "Graph-Capture-Expert",
+    "category": "CUDA Graph Architecture & WDDM Launch Overhead",
+    "status": "PASSED",
+    "decode_tok_s": 5.3,
+    "prefill_tok_s": 7.8,
+    "hit_rate_pct": 7.3,
+    "mtp_acc_pct": 86.9,
+    "expert_slots": 375,
+    "vram_free_mib": 1024,
+    "quality_bonus": 10.0,
+    "score": 68.03,
+    "test_a": {
+      "ok": true,
+      "elapsed_s": 58.93,
+      "completion_tokens": 213,
+      "decode_tok_s": 3.61,
+      "content_preview": "- **Mutex** allows only one thread to acquire it at a time (binary lock); **Semaphore** permits *N* simultaneous acquisi",
+      "has_content": true
+    },
+    "test_b": {
+      "ok": true,
+      "elapsed_s": 84.61,
+      "completion_tokens": 384,
+      "decode_tok_s": 4.54,
+      "content_preview": "```python\n\"\"\"\nLRU Cache implemented with a hand-rolled doubly linked list + dict.\n\nEvery operation \u2014 get, put, eviction ",
+      "has_content": true
+    }
+  },
+  {
+    "id": "S02",
+    "name": "KV-Streaming",
+    "category": "KV Streaming & Expert Scaling",
+    "status": "PASSED",
+    "decode_tok_s": 5.7,
+    "prefill_tok_s": 7.9,
+    "hit_rate_pct": 6.2,
+    "mtp_acc_pct": 86.3,
+    "expert_slots": 290,
+    "vram_free_mib": 1024,
+    "quality_bonus": 10.0,
+    "score": 67.8,
+    "test_a": {
+      "ok": true,
+      "elapsed_s": 95.39,
+      "completion_tokens": 211,
+      "decode_tok_s": 2.21,
+      "content_preview": "- **Mutex** grants exclusive access (binary); **Semaphore** allows N simultaneous accesses (counting). Mutex = semaphore",
+      "has_content": true
+    },
+    "test_b": {
+      "ok": true,
+      "elapsed_s": 79.79,
+      "completion_tokens": 384,
+      "decode_tok_s": 4.81,
+      "content_preview": "```python\nclass LRUCache:\n    \"\"\"Least Recently Used (LRU) cache using a doubly linked list + hash map.\n\n    All operati",
+      "has_content": true
+    }
+  },
+  {
+    "id": "S03",
+    "name": "Context-Crusher",
+    "category": "Context Optimization & 32K Geometry",
+    "status": "PASSED",
+    "decode_tok_s": 5.7,
+    "prefill_tok_s": 7.9,
+    "hit_rate_pct": 5.9,
+    "mtp_acc_pct": 87.1,
+    "expert_slots": 290,
+    "vram_free_mib": 1024,
+    "quality_bonus": 10.0,
+    "score": 67.31,
+    "test_a": {
+      "ok": true,
+      "elapsed_s": 48.36,
+      "completion_tokens": 167,
+      "decode_tok_s": 3.45,
+      "content_preview": "- **Mutex**: binary lock (one thread at a time); ownership-based \u2014 must unlock from the same thread that locked it.\n- **",
+      "has_content": true
+    },
+    "test_b": {
+      "ok": true,
+      "elapsed_s": 79.77,
+      "completion_tokens": 384,
+      "decode_tok_s": 4.81,
+      "content_preview": "```python\nclass LRUCache:\n    \"\"\"\n    A Least Recently Used (LRU) cache implemented with a doubly linked list\n    and a ",
+      "has_content": true
+    }
+  },
+  {
+    "id": "S08",
+    "name": "Quant-Explorer",
+    "category": "Quantization Architecture & AVX2 Multi-Token Kernels",
+    "status": "PASSED",
+    "decode_tok_s": 5.5,
+    "prefill_tok_s": 7.8,
+    "hit_rate_pct": 6.2,
+    "mtp_acc_pct": 87.8,
+    "expert_slots": 290,
+    "vram_free_mib": 1024,
+    "quality_bonus": 10.0,
+    "score": 66.97,
+    "test_a": {
+      "ok": true,
+      "elapsed_s": 91.96,
+      "completion_tokens": 163,
+      "decode_tok_s": 1.77,
+      "content_preview": "- **Mutex** allows only *one* thread to access a resource at a time (binary lock). **Semaphore** allows up to *N* thread",
+      "has_content": true
+    },
+    "test_b": {
+      "ok": true,
+      "elapsed_s": 81.92,
+      "completion_tokens": 384,
+      "decode_tok_s": 4.69,
+      "content_preview": "```python\nclass LRUCache:\n    \"\"\"\n    An LRU (Least Recently Used) Cache with O(1) time complexity for both\n",
+      "has_content": true
+    }
+  },
+  {
+    "id": "S20",
+    "name": "Cross-Engine-Analyst",
+    "category": "Cross-Engine Architectural Transfer",
+    "status": "PASSED",
+    "decode_tok_s": 5.3,
+    "prefill_tok_s": 8.2,
+    "hit_rate_pct": 6.8,
+    "mtp_acc_pct": 84.8,
+    "expert_slots": 290,
+    "vram_free_mib": 1024,
+    "quality_bonus": 10.0,
+    "score": 66.92,
+    "test_a": {
+      "ok": true,
+      "elapsed_s": 104.01,
+      "completion_tokens": 256,
+      "decode_tok_s": 2.46,
+      "content_preview": "- **Mutex** = binary lock (one at a time); ownership-based \u2014 the *same* thread must unlock it.\n  ```cpp\n ",
+      "has_content": true
+    },
+    "test_b": {
+      "ok": true,
+      "elapsed_s": 84.15,
+      "completion_tokens": 384,
+      "decode_tok_s": 4.56,
+      "content_preview": "```python\n\"\"\"LRU Cache implemented with a doubly-linked list + hash map.\n\nAll operations (get / put) run in O(1) time.\nM",
+      "has_content": true
+    }
+  },
+  {
+    "id": "S01",
+    "name": "VRAM-Liberation",
+    "category": "VRAM Budget & MTP Pruning",
+    "status": "PASSED",
+    "decode_tok_s": 5.5,
+    "prefill_tok_s": 7.8,
+    "hit_rate_pct": 6.0,
+    "mtp_acc_pct": 88.8,
+    "expert_slots": 290,
+    "vram_free_mib": 1024,
+    "quality_bonus": 10.0,
+    "score": 66.72,
+    "test_a": {
+      "ok": true,
+      "elapsed_s": 79.32,
+      "completion_tokens": 225,
+      "decode_tok_s": 2.84,
+      "content_preview": "- **Mutex** is binary (locked/unlocked) and ownership-based \u2014 only the thread that locks it can unlock it; **Semaphore**",
+      "has_content": true
+    },
+    "test_b": {
+      "ok": true,
+      "elapsed_s": 82.44,
+      "completion_tokens": 384,
+      "decode_tok_s": 4.66,
+      "content_preview": "```python\n\"\"\"\nLRU Cache implementation using a doubly linked list + hash map.\n\nAll operations (get, put) run in O(1) ave",
+      "has_content": true
+    }
+  },
+  {
+    "id": "S10",
+    "name": "PCIe-Frac-Scientist",
+    "category": "PCIe Bus Micro-Offload",
+    "status": "PASSED",
+    "decode_tok_s": 5.5,
+    "prefill_tok_s": 7.8,
+    "hit_rate_pct": 6.0,
+    "mtp_acc_pct": 86.7,
+    "expert_slots": 290,
+    "vram_free_mib": 1024,
+    "quality_bonus": 10.0,
+    "score": 66.41,
+    "test_a": {
+      "ok": true,
+      "elapsed_s": 99.3,
+      "completion_tokens": 256,
+      "decode_tok_s": 2.58,
+      "content_preview": "- **Mutex** is strictly binary (locked/unlocked) and enforces **ownership** \u2014 the same thread that locks must unlock. A ",
+      "has_content": true
+    },
+    "test_b": {
+      "ok": true,
+      "elapsed_s": 82.69,
+      "completion_tokens": 384,
+      "decode_tok_s": 4.64,
+      "content_preview": "```python\nclass LRUCache:\n    \"\"\"A Least Recently Used (LRU) cache using a doubly linked list + hash map.\n\n    All opera",
+      "has_content": true
+    }
+  },
+  {
+    "id": "S09",
+    "name": "CPU-Pool-Architect",
+    "category": "CPU Pool Architecture & OS Scheduling",
+    "status": "PASSED",
+    "decode_tok_s": 5.6,
+    "prefill_tok_s": 7.8,
+    "hit_rate_pct": 5.4,
+    "mtp_acc_pct": 91.2,
+    "expert_slots": 275,
+    "vram_free_mib": 1024,
+    "quality_bonus": 10.0,
+    "score": 66.38,
+    "test_a": {
+      "ok": true,
+      "elapsed_s": 79.64,
+      "completion_tokens": 256,
+      "decode_tok_s": 3.21,
+      "content_preview": "- **Mutex** = binary lock (0 or 1); **Semaphore** = counter allowing N simultaneous accesses.\n  ```cpp\n  std::mutex m;  ",
+      "has_content": true
+    },
+    "test_b": {
+      "ok": true,
+      "elapsed_s": 80.57,
+      "completion_tokens": 384,
+      "decode_tok_s": 4.77,
+      "content_preview": "```python\nclass Node:\n    \"\"\"A node in the doubly linked list storing a key-value pair.\"\"\"\n    def __init__(self, key: i",
+      "has_content": true
+    }
+  },
+  {
+    "id": "S13",
+    "name": "Reddit-Scout-Fresh",
+    "category": "KV-Resident & Zen 2 Pool Alignment",
+    "status": "PASSED",
+    "decode_tok_s": 5.3,
+    "prefill_tok_s": 7.7,
+    "hit_rate_pct": 6.4,
+    "mtp_acc_pct": 87.1,
+    "expert_slots": 285,
+    "vram_free_mib": 1024,
+    "quality_bonus": 10.0,
+    "score": 66.22,
+    "test_a": {
+      "ok": true,
+      "elapsed_s": 73.43,
+      "completion_tokens": 206,
+      "decode_tok_s": 2.81,
+      "content_preview": "- **Mutex** = binary lock (1 slot); only one thread can hold it at a time; must be unlocked by the same thread that lock",
+      "has_content": true
+    },
+    "test_b": {
+      "ok": true,
+      "elapsed_s": 85.26,
+      "completion_tokens": 384,
+      "decode_tok_s": 4.5,
+      "content_preview": "```python\nclass Node:\n    \"\"\"A",
+      "has_content": true
+    }
+  },
+  {
+    "id": "S15",
+    "name": "PLE-IO-Optimizer",
+    "category": "Deep IOCP & Expanded PLE Row Cache",
+    "status": "PASSED",
+    "decode_tok_s": 5.4,
+    "prefill_tok_s": 7.8,
+    "hit_rate_pct": 6.2,
+    "mtp_acc_pct": 84.4,
+    "expert_slots": 290,
+    "vram_free_mib": 1024,
+    "quality_bonus": 10.0,
+    "score": 65.96,
+    "test_a": {
+      "ok": true,
+      "elapsed_s": 77.52,
+      "completion_tokens": 164,
+      "decode_tok_s": 2.12,
+      "content_preview": "- **Mutex** = exclusive access (binary lock); **Semaphore** = counting resource (allows N simultaneous accesses).\n- **Mu",
+      "has_content": true
+    },
+    "test_b": {
+      "ok": true,
+      "elapsed_s": 82.94,
+      "completion_tokens": 384,
+      "decode_tok_s": 4.63,
+      "content_preview": "```python\nclass LRUCache:\n    \"\"\"A Least Recently Used (LRU) cache with O(1) get and put operations.\n\n    Internally use",
+      "has_content": true
+    }
+  },
+  {
+    "id": "S16",
+    "name": "Attention-Geometry",
+    "category": "32K INT8 Precision Inversion",
+    "status": "PASSED",
+    "decode_tok_s": 5.5,
+    "prefill_tok_s": 7.5,
+    "hit_rate_pct": 5.8,
+    "mtp_acc_pct": 86.3,
+    "expert_slots": 275,
+    "vram_free_mib": 1024,
+    "quality_bonus": 10.0,
+    "score": 65.8,
+    "test_a": {
+      "ok": true,
+      "elapsed_s": 76.69,
+      "completion_tokens": 256,
+      "decode_tok_s": 3.34,
+      "content_preview": "- **Mutex** allows only one thread to hold the lock at a time (binary, count=1); **Semaphore** permits up to *N* simulta",
+      "has_content": true
+    },
+    "test_b": {
+      "ok": true,
+      "elapsed_s": 82.45,
+      "completion_tokens": 384,
+      "decode_tok_s": 4.66,
+      "content_preview": "```python\nclass _Node:\n    \"\"\"A node in the doubly linked list backing the LRU cache.\"\"\"\n\n    def __init__(self, key: in",
+      "has_content": true
+    }
+  },
+  {
+    "id": "S07",
+    "name": "MTP-Kill-MaxVRAM",
+    "category": "MTP-MicroStub & Massive Expert VRAM Allocation",
+    "status": "PARTIAL",
+    "decode_tok_s": 5.2,
+    "prefill_tok_s": 8.7,
+    "hit_rate_pct": 8.2,
+    "mtp_acc_pct": 91.6,
+    "expert_slots": 385,
+    "vram_free_mib": 1024,
+    "quality_bonus": 5.0,
+    "score": 65.49,
+    "test_a": {
+      "ok": true,
+      "elapsed_s": 58.44,
+      "completion_tokens": 228,
+      "decode_tok_s": 3.9,
+      "content_preview": "- **Mutex** is binary (one lock) and must be unlocked by the same thread that locked it; it enforces mutual exclusion.\n ",
+      "has_content": true
+    },
+    "test_b": {
+      "ok": true,
+      "elapsed_s": 84.67,
+      "completion_tokens": 384,
+      "decode_tok_s": 4.54,
+      "content_preview": "",
+      "has_content": false
+    }
+  },
+  {
+    "id": "S12",
+    "name": "StrataGP-Hunter",
+    "category": "Thread Spin & Memory Locking",
+    "status": "PASSED",
+    "decode_tok_s": 5.6,
+    "prefill_tok_s": 4.7,
+    "hit_rate_pct": 6.1,
+    "mtp_acc_pct": 86.1,
+    "expert_slots": 290,
+    "vram_free_mib": 1024,
+    "quality_bonus": 10.0,
+    "score": 65.47,
+    "test_a": {
+      "ok": true,
+      "elapsed_s": 86.61,
+      "completion_tokens": 201,
+      "decode_tok_s": 2.32,
+      "content_preview": "- **Mutex** allows only *one* thread to access a resource at a time (binary lock). **Semaphore** allows *N* threads simu",
+      "has_content": true
+    },
+    "test_b": {
+      "ok": true,
+      "elapsed_s": 88.84,
+      "completion_tokens": 384,
+      "decode_tok_s": 4.32,
+      "content_preview": "```python\nclass LRUCache:\n    \"\"\"A Least Recently Used (LRU) cache backed by a doubly linked list + dict.\n\n    All opera",
+      "has_content": true
+    }
+  },
+  {
+    "id": "S18",
+    "name": "Native-Shard-Pioneer",
+    "category": "Warp-Sum Native Reduction & Unpinned Order",
+    "status": "PASSED",
+    "decode_tok_s": 5.4,
+    "prefill_tok_s": 6.3,
+    "hit_rate_pct": 5.8,
+    "mtp_acc_pct": 87.6,
+    "expert_slots": 285,
+    "vram_free_mib": 1024,
+    "quality_bonus": 10.0,
+    "score": 64.89,
+    "test_a": {
+      "ok": true,
+      "elapsed_s": 63.75,
+      "completion_tokens": 256,
+      "decode_tok_s": 4.02,
+      "content_preview": "- **Counting vs. Binary:** A mutex permits only one thread at a time (binary lock); a semaphore holds a counter allowing",
+      "has_content": true
+    },
+    "test_b": {
+      "ok": true,
+      "elapsed_s": 85.92,
+      "completion_tokens": 384,
+      "decode_tok_s": 4.47,
+      "content_preview": "```python\nclass LRUCache:\n    \"\"\"\n    Least Recently Used (LRU) cache with O(1) get and put operations.\n\n    Internally ",
+      "has_content": true
+    }
+  },
+  {
+    "id": "S11",
+    "name": "Speculation-Mathematician",
+    "category": "Speculative Math & Dual Drafting",
+    "status": "PASSED",
+    "decode_tok_s": 5.3,
+    "prefill_tok_s": 7.8,
+    "hit_rate_pct": 5.9,
+    "mtp_acc_pct": 83.9,
+    "expert_slots": 275,
+    "vram_free_mib": 1024,
+    "quality_bonus": 10.0,
+    "score": 64.78,
+    "test_a": {
+      "ok": true,
+      "elapsed_s": 82.74,
+      "completion_tokens": 256,
+      "decode_tok_s": 3.09,
+      "content_preview": "- **Binary vs. counting:** A mutex permits exactly one holder at a time; a semaphore allows *N* simultaneous holders (e.",
+      "has_content": true
+    },
+    "test_b": {
+      "ok": true,
+      "elapsed_s": 84.37,
+      "completion_tokens": 384,
+      "decode_tok_s": 4.55,
+      "content_preview": "```python\nclass LRUCache:\n    \"\"\"Least Recently Used cache backed by a hash map + doubly linked list.",
+      "has_content": true
+    }
+  },
+  {
+    "id": "S06",
+    "name": "SSD-Direct-Oracle",
+    "category": "Unbuffered IOCP Storage Architecture",
+    "status": "PASSED",
+    "decode_tok_s": 5.4,
+    "prefill_tok_s": 6.9,
+    "hit_rate_pct": 5.6,
+    "mtp_acc_pct": 85.1,
+    "expert_slots": 290,
+    "vram_free_mib": 1024,
+    "quality_bonus": 10.0,
+    "score": 64.41,
+    "test_a": {
+      "ok": true,
+      "elapsed_s": 84.96,
+      "completion_tokens": 185,
+      "decode_tok_s": 2.18,
+      "content_preview": "- **Mutex** provides mutual exclusion \u2014 only one thread can hold it at a time (binary lock); **Semaphore** counts availa",
+      "has_content": true
+    },
+    "test_b": {
+      "ok": true,
+      "elapsed_s": 85.6,
+      "completion_tokens": 384,
+      "decode_tok_s": 4.49,
+      "content_preview": "```python\nclass LRUCache:\n    \"\"\"\n    Least Recently Used (LRU) cache implemented with a hash map + doubly linked list.\n",
+      "has_content": true
+    }
+  },
+  {
+    "id": "S05",
+    "name": "Huge-Pages-Engineer",
+    "category": "Memory Subsystem & Page Locking",
+    "status": "PASSED",
+    "decode_tok_s": 5.2,
+    "prefill_tok_s": 7.9,
+    "hit_rate_pct": 6.1,
+    "mtp_acc_pct": 79.7,
+    "expert_slots": 290,
+    "vram_free_mib": 1024,
+    "quality_bonus": 10.0,
+    "score": 64.1,
+    "test_a": {
+      "ok": true,
+      "elapsed_s": 97.25,
+      "completion_tokens": 256,
+      "decode_tok_s": 2.63,
+      "content_preview": "- **Ownership & capacity**: A mutex allows exactly *one* holder at a time and must be unlocked by the same thread that l",
+      "has_content": true
+    },
+    "test_b": {
+      "ok": true,
+      "elapsed_s": 85.43,
+      "completion_tokens": 384,
+      "decode_tok_s": 4.49,
+      "content_preview": "```python\nclass LRUCache:\n    \"\"\"\n    Least Recently Used (LRU) Cache implemented with a doubly linked list\n    and a ha",
+      "has_content": true
+    }
+  },
+  {
+    "id": "S14",
+    "name": "OS-Kernel-Tuner",
+    "category": "Windows 11 Kernel, Memory & Scheduling Optimization",
+    "status": "PASSED",
+    "decode_tok_s": 5.2,
+    "prefill_tok_s": 7.8,
+    "hit_rate_pct": 6.0,
+    "mtp_acc_pct": 79.8,
+    "expert_slots": 290,
+    "vram_free_mib": 1024,
+    "quality_bonus": 10.0,
+    "score": 63.87,
+    "test_a": {
+      "ok": true,
+      "elapsed_s": 85.21,
+      "completion_tokens": 183,
+      "decode_tok_s": 2.15,
+      "content_preview": "- **Mutex** = binary (0 or 1), ownership-based; **Semaphore** = counter (\u22650), no ownership concept.\n- **Mutex** must be ",
+      "has_content": true
+    },
+    "test_b": {
+      "ok": true,
+      "elapsed_s": 86.05,
+      "completion_tokens": 384,
+      "decode_tok_s": 4.46,
+      "content_preview": "```python\nclass LRUCache:\n    \"\"\"A Least Recently Used (LRU) cache implemented with a doubly linked list\n    and a hash ",
+      "has_content": true
+    }
+  }
+]

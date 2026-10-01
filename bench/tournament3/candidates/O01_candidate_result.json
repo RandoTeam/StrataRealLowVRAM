@@ -1,0 +1,40 @@
+{
+  "id": "O01",
+  "name": "Olympian-Alpha-Frontier",
+  "category": "Frontier Network Intelligence & Fast DMA Adaptation",
+  "status": "PARTIAL (1/3)",
+  "decode_tok_s": 4.8,
+  "prefill_tok_s": 7.9,
+  "hit_rate_pct": 22.6,
+  "mtp_acc_pct": 84.5,
+  "expert_slots": 385,
+  "vram_free_mib": 1024,
+  "kv_streaming_hit_pct": 99.69,
+  "ram_read_mib": 7.3,
+  "quality_bonus": 3.0,
+  "score": 88.83,
+  "test_a": {
+    "ok": true,
+    "elapsed_s": 63.05,
+    "completion_tokens": 253,
+    "decode_tok_s": 4.01,
+    "content_preview": "- **Mutex** = binary lock (only one thread may hold it at a time); **Semaphore** = a counter allowing *N* threads to \"hold\" it simultaneously.\n- **Mut",
+    "has_content": true
+  },
+  "test_b": {
+    "ok": true,
+    "elapsed_s": 83.63,
+    "completion_tokens": 384,
+    "decode_tok_s": 4.59,
+    "content_preview": "",
+    "has_content": false
+  },
+  "test_c": {
+    "ok": true,
+    "elapsed_s": 118.13,
+    "completion_tokens": 512,
+    "decode_tok_s": 4.33,
+    "content_preview": "",
+    "has_content": false
+  }
+}

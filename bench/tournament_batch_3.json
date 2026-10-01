@@ -1,0 +1,15 @@
+[
+  {
+    "id": 3,
+    "name": "VRAM-Dense-200",
+    "category": "VRAM Maximization",
+    "status": "FAILED",
+    "prefill_tok_s": 8.4,
+    "decode_tok_s": 5.7,
+    "hit_rate_pct": 5.2,
+    "mtp_acc_pct": 83.3,
+    "score": 21.06,
+    "p1_tok_s": 3.47,
+    "p2_tok_s": 0
+  }
+]
