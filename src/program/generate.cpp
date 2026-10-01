@@ -2701,8 +2701,8 @@ int main(int argc, char** argv) {
 #if defined(_WIN32)
         // StrataRealLowVRAM: on WDDM, cudaMemGetInfo reports 0 free when allocations exceed
         // physical VRAM via virtual paging. With an explicit --expert-cache N (not auto), honour
-        // the requested budget and let xcache.open_sized + the WDDM retry loop handle overcommit.
-        const uint64_t cap = (free_room == 0 && !auto_cache) ? budget : std::min<uint64_t>(budget, (uint64_t) free_room);
+        // the requested budget unconditionally and let xcache.open_sized handle overcommit.
+        const uint64_t cap = (!auto_cache) ? budget : std::min<uint64_t>(budget, (uint64_t) free_room);
 #else
         const uint64_t cap = std::min<uint64_t>(budget, (uint64_t) free_room);
 #endif
