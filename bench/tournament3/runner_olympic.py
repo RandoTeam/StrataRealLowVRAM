@@ -8,7 +8,7 @@ import urllib.error
 
 STRATA_DIR = r"C:\Users\Ilia V\Documents\antigravity\calm-noether\Strata"
 CONFIG_FILE = os.path.join(STRATA_DIR, "strata-coder-iq1_m.json")
-BASELINE_FILE = os.path.join(STRATA_DIR, "strata-coder-iq1_m.baseline.json")
+BASELINE_FILE = os.path.join(STRATA_DIR, "bench", "strata-coder-iq1_m.baseline.json")
 LOG_FILE = os.path.join(STRATA_DIR, "strata-coder-iq1_m.log")
 PYTHON_EXE = os.path.join(STRATA_DIR, r".venv\Scripts\python.exe")
 SERVER_PY = os.path.join(STRATA_DIR, r"serve\server.py")

@@ -35,6 +35,7 @@ td.log
 /run-*.bat
 /run-*.sh
 /strata-*.json
+*.baseline.json
 /strata-*.log
 /build-strata.bat
 
