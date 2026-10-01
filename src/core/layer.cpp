@@ -1062,6 +1062,25 @@ bool lm_head_mix(const WeightTable& tables, const ModelGeometry& g, const BlockB
         err = "lm_head: the output_hc_* weights have the wrong engine forms";
         return false;
     }
+    if (g_fused_gr && strata::kernels::fused_gr_supported(g.n_embd, g.hc, g.hc_lr)) {
+        strata::kernels::FusedGrArgs fa;
+        fa.R = bb.R;
+        fa.R_out = nullptr;
+        fa.apply = false;
+        fa.bo_prev = nullptr;
+        fa.inj_prev = nullptr;
+        fa.w_norm = (const float*) wn->data;
+        fa.w_down = (const uint16_t*) wd->data;
+        fa.w_up = (const uint16_t*) wu->data;
+        fa.w_inject = nullptr;
+        fa.eps = RMS_EPS;
+        fa.lo = bb.gr.lo;
+        fa.rs = bb.gr_rs;
+        fa.inject_out = nullptr;
+        fa.mixed = bb.mixed;
+        strata::kernels::fused_gr_read(fa, stream);
+        return true;
+    }
     const strata::kernels::GrShapes gs{g.n_embd, g.hc, g.hc_lr};
     strata::kernels::gr_read(bb.R, (const float*) wn->data, (const uint16_t*) wd->data,
                             (const uint16_t*) wu->data, nullptr, RMS_EPS, gs, bb.gr,

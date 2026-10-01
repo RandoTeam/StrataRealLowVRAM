@@ -1608,7 +1608,17 @@ def find_in(roots: list, rel: str):
 
 # ------------------------------------------------------------------------------------------------ start
 def installed_configs():
-    return sorted(ROOT.glob("strata-*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    cfgs = sorted(ROOT.glob("strata-*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    valid = []
+    for c in cfgs:
+        try:
+            data = json.loads(c.read_text(encoding="utf-8-sig"))
+            missing = [p for p in [data.get("exe", ""), *[a for a in data.get("args", []) if str(a).endswith(".gguf")]] if not Path(p).exists()]
+            if not missing:
+                valid.append(c)
+        except Exception:
+            pass
+    return valid
 
 
 def source_version() -> str:

@@ -994,7 +994,10 @@ struct SmallTraits {
 // ncols = 1 layout and keeps every column bitwise equal to a single-column call. The UPSTREAM layout is
 // llama.cpp's generic multi-column table (ncols 2-4: 4 warps; 5-8: 2 warps; always 2 rows per block): faster,
 // equal to ncols = 1 only to float rounding (the cross-warp reduction groups partial sums differently).
-bool g_multi_exact = true;   // until the upstream layout is timed on an idle GPU (plan rule: default only what is measured)
+bool g_multi_exact = [] {
+    const char* v = std::getenv("STRATA_MMVQ_FAST");
+    return !(v != nullptr && std::atoi(v) != 0);
+}();
 
 template<typename F, int NCOLS, int NW, int ROWS>
 __launch_bounds__(NW * WARP, 1)
@@ -1042,10 +1045,62 @@ __global__ void native_mmvq_multi_kernel(const typename F::Block* __restrict__ w
     }
 }
 
+template<typename F, int NCOLS, int NW, int ROWS_PER_WARP>
+__launch_bounds__(NW * WARP, 1)
+__global__ void native_mmvq_warp_kernel(const typename F::Block* __restrict__ w,
+                                        const Q81Block* __restrict__ x,
+                                        float* __restrict__ y, int n_in, int n_out) {
+    const int lane = threadIdx.x;
+    const int warp_id = threadIdx.y;
+    const int blocks_per_row = n_in / F::DIV;
+    const int x_stride = n_in / Q8K;
+    const int kbx = lane / F::T;
+    const int kby = kbx * F::KBY;
+    const int kqs = F::kqs(lane);
+    const int row_base = (int(blockIdx.x) * NW + warp_id) * ROWS_PER_WARP;
+
+    float tmp[NCOLS][ROWS_PER_WARP] = {};
+
+    if (kbx < blocks_per_row) {
+#pragma unroll
+        for (int i = 0; i < ROWS_PER_WARP; ++i) {
+            const int row = row_base + i;
+            if (row < n_out) {
+                const std::size_t block = std::size_t(row) * blocks_per_row + kbx;
+                const typename F::W wv = F::load(w + block, kqs);
+#pragma unroll
+                for (int j = 0; j < NCOLS; ++j) {
+                    tmp[j][i] += F::apply(wv, x + std::size_t(j) * x_stride + kby, kqs);
+                }
+            }
+        }
+    }
+
+#pragma unroll
+    for (int j = 0; j < NCOLS; ++j) {
+#pragma unroll
+        for (int i = 0; i < ROWS_PER_WARP; ++i) {
+            const float sum = warp_sum(tmp[j][i]);
+            const int row = row_base + i;
+            if (lane == i && row < n_out) {
+                y[std::size_t(j) * n_out + row] = sum;
+            }
+        }
+    }
+}
+
 template<typename F, int NCOLS>
 void launch_multi_n(const void* weights, const void* x_q8_1, float* y, int n_in, int n_out, cudaStream_t s) {
     const auto* w = static_cast<const typename F::Block*>(weights);
     const auto* x = static_cast<const Q81Block*>(x_q8_1);
+    const int blocks_per_row = n_in / F::DIV;
+    if (blocks_per_row * F::T <= WARP) {
+        constexpr int NW = 4;
+        constexpr int ROWS_PER_WARP = 4;
+        const unsigned blocks = unsigned((std::size_t(n_out) + NW * ROWS_PER_WARP - 1) / (NW * ROWS_PER_WARP));
+        native_mmvq_warp_kernel<F, NCOLS, NW, ROWS_PER_WARP><<<blocks, dim3(WARP, NW), 0, s>>>(w, x, y, n_in, n_out);
+        return;
+    }
     if (!g_multi_exact) {
         constexpr int NW = NCOLS <= 4 ? 4 : 2;
         const unsigned blocks = unsigned((std::size_t(n_out) + 1) / 2);
@@ -1066,6 +1121,7 @@ void launch_multi(const void* weights, const void* x_q8_1, float* y, int n_in, i
                   void* stream) {
     const auto s = static_cast<cudaStream_t>(stream);
     switch (ncols) {
+        case 1: launch_multi_n<F, 1>(weights, x_q8_1, y, n_in, n_out, s); break;
         case 2: launch_multi_n<F, 2>(weights, x_q8_1, y, n_in, n_out, s); break;
         case 3: launch_multi_n<F, 3>(weights, x_q8_1, y, n_in, n_out, s); break;
         case 4: launch_multi_n<F, 4>(weights, x_q8_1, y, n_in, n_out, s); break;
@@ -1073,7 +1129,7 @@ void launch_multi(const void* weights, const void* x_q8_1, float* y, int n_in, i
         case 6: launch_multi_n<F, 6>(weights, x_q8_1, y, n_in, n_out, s); break;
         case 7: launch_multi_n<F, 7>(weights, x_q8_1, y, n_in, n_out, s); break;
         case 8: launch_multi_n<F, 8>(weights, x_q8_1, y, n_in, n_out, s); break;
-        default: throw std::invalid_argument("native MMVQ multi-column launch requires 2 <= ncols <= 8");
+        default: throw std::invalid_argument("native MMVQ multi-column launch requires 1 <= ncols <= 8");
     }
 }
 
@@ -1171,7 +1227,7 @@ void native_q5_k_mmvq(const void* weights, const void* x_q8_1, float* y,
     validate_pointer(x_q8_1);
     validate_pointer(y);
     validate_stream(stream);
-    if (ncols > 1) {
+    if (ncols > 1 || (n_in / QK) * (QI / VDR) <= WARP) {
         launch_multi<Q5KTraits>(weights, x_q8_1, y, n_in, n_out, ncols, stream);
         launch_check();
         return;
@@ -1328,7 +1384,7 @@ void native_q4_k_mmvq(const void* weights, const void* x_q8_1, float* y,
     validate_pointer(x_q8_1);
     validate_pointer(y);
     validate_stream(stream);
-    if (ncols > 1) {
+    if (ncols > 1 || (n_in / 256) * (QI / VDR) <= WARP) {
         launch_multi<Q4KTraits>(weights, x_q8_1, y, n_in, n_out, ncols, stream);
         launch_check();
         return;
