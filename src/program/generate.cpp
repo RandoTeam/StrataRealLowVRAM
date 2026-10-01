@@ -2530,7 +2530,14 @@ int main(int argc, char** argv) {
         const uint64_t budget = (uint64_t) o.expert_cache * lay.max_blob;   // what the uniform sizing granted
         uint64_t used = 0;
         size_t free_room = free_b > ((size_t) o.vram_reserve_mib << 20) ? free_b - ((size_t) o.vram_reserve_mib << 20) : 0;
+#if defined(_WIN32)
+        // StrataRealLowVRAM: on WDDM, cudaMemGetInfo reports 0 free when allocations exceed
+        // physical VRAM via virtual paging. With an explicit --expert-cache N (not auto), honour
+        // the requested budget and let xcache.open_sized + the WDDM retry loop handle overcommit.
+        const uint64_t cap = (free_room == 0 && !auto_cache) ? budget : std::min<uint64_t>(budget, (uint64_t) free_room);
+#else
         const uint64_t cap = std::min<uint64_t>(budget, (uint64_t) free_room);
+#endif
         for (const auto& pr : profile) {
             const uint64_t b = (lay.blob_bytes(pr.first) + 255) / 256 * 256;
             if (used + b > cap) break;
@@ -2592,8 +2599,12 @@ int main(int argc, char** argv) {
                 if (GlobalMemoryStatusEx(&ms))
                     std::snprintf(commit, sizeof commit, " (Windows has %.1f GiB of commit left: RAM + page file)",
                                   (double) ms.ullAvailPageFile / 1073741824.0);
-#endif
+#if defined(_WIN32)
+                // StrataRealLowVRAM: also allow retry-shrink for explicit cache if initial allocation fails under WDDM
+                if ((auto_cache || !sized_slots.empty()) && failed < 8 && shrink_to(cache_bytes() / 4 * 3)) {
+#else
                 if (auto_cache && failed < 8 && shrink_to(cache_bytes() / 4 * 3)) {
+#endif
                     ++failed;
                     std::fprintf(stderr, "strata generate: %s%s; trying a smaller expert cache: %d slots\n", err.c_str(),
                                  commit, o.expert_cache);

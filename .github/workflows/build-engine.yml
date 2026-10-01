@@ -1,0 +1,61 @@
+name: Build Strata Engine Windows x64
+
+on:
+  push:
+    paths:
+      - 'patches/**'
+      - 'src/**'
+      - 'include/**'
+      - '.github/workflows/build-engine.yml'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install CUDA Toolkit 13.0
+        uses: Jimver/cuda-toolkit@v0.2.21
+        with:
+          cuda: '13.0.0'
+          method: 'network'
+
+      - name: Apply StrataRealLowVRAM Patches
+        shell: bash
+        run: |
+          if [ -d "patches" ]; then
+            for p in patches/*.patch; do
+              echo "Applying $p..."
+              git apply --verbose "$p" || patch -p1 < "$p"
+            done
+          fi
+
+      - name: Configure CMake
+        shell: pwsh
+        run: |
+          cmake -G Ninja -B build `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DSTRATA_ENABLE_CUDA=ON `
+            -DSTRATA_BUILD_TESTS=OFF `
+            -DCMAKE_CUDA_ARCHITECTURES="86" `
+            -DSTRATA_PORTABLE=ON
+
+      - name: Build Engine
+        shell: pwsh
+        run: |
+          cmake --build build --target strata --config Release -j 4
+
+      - name: Upload strata.exe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: strata-windows-x64-patched
+          path: build/strata.exe
