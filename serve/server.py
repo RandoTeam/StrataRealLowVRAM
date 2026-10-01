@@ -217,24 +217,9 @@ class StrataEngine:
         paths = {k: v for k, v in zip(args, args[1:]) if k in ("--native", "--pack")}
         self.model_path = paths.get("--native") or paths.get("--pack", "pack/full")
         self.log_path = log
-<<<<<<< HEAD
-        self.log = open(log, "a", encoding="utf-8") if log else subprocess.DEVNULL
-        loading = threading.Event()                     # set once READY: the narrator below stops
-        if log:
-            threading.Thread(target=narrate_start, args=(log, os.path.getsize(log), args, loading),
-                             daemon=True).start()
-        flags = subprocess.HIGH_PRIORITY_CLASS if os.name == "nt" else 0
-        self.proc = subprocess.Popen([exe, "--serve", *args], cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                     stderr=self.log, text=True, encoding="utf-8", bufsize=1, env=env,
-                                     creationflags=flags)
-        contain(self.proc)                               # ends with the server, however it ends (Windows)
-        self.max_context = 0
-        self.unloaded = False            # stopped on purpose (idle unload, POST /unload), not crashed
-=======
         self.proc, self.pump, self.log = None, None, None
         self.ended, self.unloaded = True, True
         self.max_context = int(args[args.index("--max-context") + 1]) if "--max-context" in args else 4096
->>>>>>> upstream/main
         self.can_stop = False            # the engine honours a STOP line mid-request (READY <ctx> stop)
         self.last = {}
         self.info = {}                   # INFO key=value facts (engine 0.1.8+): kv, expert slots, ... (Monitor tab)
@@ -256,8 +241,10 @@ class StrataEngine:
             if os.environ.get("STRATA_REQUEST_LINES") and os.path.abspath(log) not in _echoing:
                 _echoing.add(os.path.abspath(log))
                 threading.Thread(target=echo_requests, args=(log, os.path.getsize(log)), daemon=True).start()
+        flags = subprocess.HIGH_PRIORITY_CLASS if os.name == "nt" else 0
         self.proc = subprocess.Popen([exe, "--serve", *args], cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                     stderr=self.log, text=True, encoding="utf-8", bufsize=1, env=env)
+                                     stderr=self.log, text=True, encoding="utf-8", bufsize=1, env=env,
+                                     creationflags=flags)
         contain(self.proc)                               # ends with the server, however it ends (Windows)
         self.max_context = 0
         for line in self.proc.stdout:
