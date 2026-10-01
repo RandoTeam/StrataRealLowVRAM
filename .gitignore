@@ -48,6 +48,7 @@ build-vision.bat
 /build-release*/
 /dist/
 *.done
+rust/**/target/
 /third_party/*.zip
 
 # security & environment
