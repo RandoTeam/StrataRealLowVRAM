@@ -1,0 +1,16 @@
+{
+  "model": "Full_Q2_0",
+  "config": "strata-q2_0-our.json",
+  "total_tokens": 249,
+  "tokens_think": 249,
+  "tokens_decode": 0,
+  "ttft_s": 0.02,
+  "think_tok_s": 249000.0,
+  "decode_tok_s": 0.0,
+  "overall_tok_s": 2.66,
+  "ram_used_gb": 28.71,
+  "ram_avail_gb": 2.63,
+  "vram_used_mb": 3951.0,
+  "avg_cpu_percent": 29.6,
+  "avg_gpu_util_percent": 94.0
+}

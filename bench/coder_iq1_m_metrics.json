@@ -1,0 +1,16 @@
+{
+  "model": "Coder_IQ1_M",
+  "config": "strata-coder-our.json",
+  "total_tokens": 246,
+  "tokens_think": 192,
+  "tokens_decode": 54,
+  "ttft_s": 0.02,
+  "think_tok_s": 2.19,
+  "decode_tok_s": 2.65,
+  "overall_tok_s": 2.28,
+  "ram_used_gb": 29.98,
+  "ram_avail_gb": 1.36,
+  "vram_used_mb": 3947.0,
+  "avg_cpu_percent": 31.0,
+  "avg_gpu_util_percent": 94.1
+}
