@@ -1225,7 +1225,7 @@ def get_prebuilt(url_base, gpu, vision, updating=False) -> Path | None:
     if info.exists() and (eng / EXE).exists():
         meta = json.loads(info.read_text())
         ver = tuple(int(x) for x in str(meta.get("version", "0")).split(".")[:3] if x.isdigit())
-        if meta.get("source") == "local":              # compiled here: build_engine checks its source and cards
+        if meta.get("source") in ("local", "custom") or bool(meta.get("patched")) or (ROOT / "build" / EXE).exists():
             return None
         have = [int(a) for a in meta.get("archs", [])]
         miss = [int(x) for x in gpu.get("archs", [gpu["arch"]])
@@ -1326,11 +1326,10 @@ def update_installed_engine(url_base) -> None:
                      "starting the installed one")
         return
     ver = tuple(int(x) for x in str(meta.get("version", "0")).split(".")[:3] if x.isdigit())
-    local = meta.get("source") == "local"
+    local = meta.get("source") in ("local", "custom") or bool(meta.get("patched")) or (ROOT / "build" / EXE).exists()
     vision = meta.get("vision") or "none"
-    if local:                                          # compiled here: is it older than the source (a git pull)?
-        if meta.get("src") == source_hash(ENGINE_SOURCES) and \
-                (vision == "none" or meta.get("vision_src") == source_hash(VISION_SOURCES)):
+    if local:                                          # compiled here: keep custom/patched binary
+        if meta.get("patched") or meta.get("src") == source_hash(ENGINE_SOURCES):
             return
     elif ver >= MIN_ENGINE:
         return
@@ -1504,14 +1503,14 @@ def build_engine(gpu, vision, yes, llama) -> Path:
     stamp = eng / "BUILD.json"
     meta = json.loads(stamp.read_text()) if stamp.exists() else {}
     want_vision = vision != "none"
-    local = meta.get("source") == "local"
+    local = meta.get("source") in ("local", "custom") or bool(meta.get("patched")) or (ROOT / "build" / EXE).exists()
     src, vsrc = source_hash(ENGINE_SOURCES), source_hash(VISION_SOURCES)
     archs = sorted({int(x) for x in gpu.get("archs", [gpu["arch"]])})    # every card the model runs on
     built = {int(x) for x in meta.get("archs", [])}
     # a card the engine has no code for (a GPU added with --gpus, #128) needs a compile even when the source is the
     # same; the compile keeps the generations it was built for
     new_arch = local and not set(archs) <= built
-    engine_ok = local and (eng / EXE).exists() and meta.get("src") == src and not new_arch
+    engine_ok = local and (eng / EXE).exists() and (meta.get("patched") or meta.get("src") == src) and not new_arch
     vision_ok = not want_vision or ((eng / VEXE).exists() and (not local or meta.get("vision_src") == vsrc))
     if engine_ok and vision_ok:
         ok("engine already built for this PC")
@@ -2696,7 +2695,7 @@ def main() -> int:
     llama = get_llama_cpp()
     ok(f"llama.cpp {LLAMA_CPP_COMMIT[:7]} (gguf-py, ggml, mtmd)")
     eng = None if a.build or hip else get_prebuilt(a.prebuilt, gpu, vision)
-    if eng is not None and json.loads((eng / "BUILD.json").read_text()).get("source") != "local":
+    if eng is not None and json.loads((eng / "BUILD.json").read_text()).get("source") not in ("local", "custom") and not json.loads((eng / "BUILD.json").read_text()).get("patched"):
         pip_install(CUDA_WHEELS, "NVIDIA CUDA libraries (cuBLAS, CUDA runtime; ~0.4 GB)")
         if vision != "none" and not (eng / VEXE).exists():
             warn("the ready-made engine has no image encoder: compiling it")

@@ -36,3 +36,9 @@ if %ERRORLEVEL% NEQ 0 (
 echo Engine build successful!
 copy /y build\strata.exe engine\strata.exe
 echo Deployed to engine\strata.exe
+
+echo Updating engine\BUILD.json stamp...
+if exist ".venv\Scripts\python.exe" (
+  ".venv\Scripts\python.exe" -c "import setup, json, pathlib; src = setup.source_hash(setup.ENGINE_SOURCES); meta = {'version': setup.source_version(), 'source': 'local', 'archs': [86], 'ptx': True, 'cuda': '13.0', 'vision': 'gpu', 'src': src, 'patched': True}; pathlib.Path('engine/BUILD.json').write_text(json.dumps(meta, indent=1))"
+)
+
