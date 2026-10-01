@@ -2,7 +2,7 @@
 
 <p align="center">
   <b>Extreme Low-VRAM & Mobile GPU Optimization Edition of Strata</b><br>
-  Running 125B MoE (Qwen 3.8 Flash Next Coder IQ1_M) on <b>4 GB VRAM</b> (RTX 3050 Laptop) + <b>32 GB DDR4</b> on Windows 11<br>
+  Running 125B MoE (Coder IQ1_M & Full Q2_0) on <b>4 GB VRAM</b> (RTX 3050 Laptop) + <b>32 GB DDR4</b> on Windows 11 · <b>Engine 0.1.33</b><br>
   <i>DeepSeek Harness Integration · Windows WDDM Sub-Millisecond Tuning · Empirical Architecture Tournaments</i>
 </p>
 
@@ -51,8 +51,19 @@ This repository incorporates architectural insights from community research (inc
 - **Fast-Path Session Title Interception (`_fast_session_title`)**: DeepSeek Harness frequently fires auxiliary `session-title-llm` JSON requests (`Generate the session title from this JSON array...`). In vanilla Strata, each auxiliary request flushed and evicted the engine's resident prompt cache, destroying multi-turn KV continuity. Our lightweight interceptor synthesizes titles directly in Python/Rust, preserving 100% of the resident conversation and root prompt cache.
 - **Reasoning Preservation (`preserve_thinking: False`)**: Maintained proper template rendering and tool call stream contracts without breaking long reasoning chains.
 
-### 5. Multi-Model Support & Q2_0 Readiness
-- **Q2_0 Model Template (`strata-q2_0.json`)**: Prepared configuration for Qwen 3.8 Flash Next Q2_0. The simpler quantization format eliminates complex i-quant bit-grid unpacking, unlocking 35–45% faster execution on AVX-2 (Zen 2) cores while strictly honoring `--max-context 65536`.
+### 5. Dual-Model Empirical Verification & Developer Co-Existence (Coder IQ1_M & Full Q2_0)
+Both 125B MoE model variants are empirically verified and benchmarked back-to-back under **Engine 0.1.33** on mobile hardware:
+- **Coder IQ1_M (`strata-coder-iq1_m.json`)**:
+  - **Memory Allocation**: 20.00 GiB resident RAM budget (`VirtualLock`), 643 GPU expert slots. 90% of model experts held in RAM.
+  - **Generation Performance**: **3.30–3.42 tok/s** decode rate, **7.49 tok/s** prompt reuse.
+  - **Speculative Verification**: **82.0%–85.6%** MTP draft acceptance rate (`--spec 7 --mtp-max-t 4 --spec-min-p 0.68`).
+  - **Best Use Case**: Pure algorithmic reasoning, coding assistant, and deep research tasks.
+- **Full Q2_0 (`strata-q2_0.json`)**:
+  - **Memory Allocation**: 16.00 GiB resident RAM budget, 426 GPU expert slots.
+  - **Developer Co-Existence**: Leaves **12–14 GB physical RAM completely free** for Visual Studio, MSVC/Ninja compilation, game engines, and browser tabs without memory starvation.
+  - **Generation Performance**: **3.04–3.31 tok/s** decode rate, **6.48 tok/s** prompt reuse.
+  - **Speculative Verification**: **70.0%–78.6%** MTP draft acceptance rate, **88.9%** Suffix drafter acceptance rate (capturing windows up to 8 tokens).
+  - **Best Use Case**: Daily programming and systems development when heavy compilation or background applications run concurrently.
 
 ### 6. Seamless Upstream Synchronization
 - **Automated Sync Tool (`tools/sync_upstream.ps1`)**: Effortlessly tracks and merges incoming upstream changes from [Niko1221/Strata](https://github.com/Niko1221/Strata) and cherry-picks CPU kernel optimizations from [gputier/StrataGP](https://github.com/gputier/StrataGP) without code regressions.
