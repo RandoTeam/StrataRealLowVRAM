@@ -286,16 +286,70 @@ def main():
             "arg:--mtp-max-t": "8",
             "arg:--spec-min-p": "0.55",
         },
-        "i1-mtp-t8-p70": {
-            "arg:--mtp-max-t": "8",
-            "arg:--spec-min-p": "0.70",
+        # Iteration 2: VRAM Expert Cache Ceiling Push
+        "i2-cache650": {},  # current baseline (650 slots)
+        "i2-cache675": {
+            "arg:--expert-cache": "675",
+        },
+        "i2-cache700": {
+            "arg:--expert-cache": "700",
+        },
+        "i2-cache725": {
+            "arg:--expert-cache": "725",
+        },
+        # Iteration 3: CPU Pool & Adaptive Swap Dynamics
+        "i3-base": {},  # current baseline (700 slots, 5 workers, adapt 4/8)
+        "i3-workers-6": {
+            "arg:--pool-workers": "6",
+        },
+        "i3-workers-4": {
+            "arg:--pool-workers": "4",
+        },
+        "i3-adapt-2-8": {
+            "arg:--adapt-every": "2",
+            "arg:--adapt-swaps": "8",
+        },
+        # Iteration 4: Prefill, Direct I/O & SSD Keepalive
+        "i4-base": {},  # current baseline (700 slots, 6 workers, prefill 1024, inflight 128)
+        "i4-prefill-512": {
+            "arg:--prefill": "512",
+        },
+        "i4-prefill-2048": {
+            "arg:--prefill": "2048",
+        },
+        # Iteration 5: Coder Port & Cross-Model Comparison
+        "coder-baseline": {},  # current baseline settings of strata-coder-iq1_m.json
+        "coder-opt": {
+            "arg:--pool-workers": "6",
+            "arg:--adapt-every": "4",
+            "arg:--adapt-swaps": "8",
+            "arg:--ple-inflight": "256",
+            "arg:--prefill": "2048",
+        },
+        "coder-cache600": {
+            "arg:--pool-workers": "6",
+            "arg:--adapt-every": "4",
+            "arg:--adapt-swaps": "8",
+            "arg:--ple-inflight": "256",
+            "arg:--prefill": "2048",
+            "arg:--expert-cache": "600",
+        },
+        "coder-spec8": {
+            "arg:--pool-workers": "6",
+            "arg:--adapt-every": "4",
+            "arg:--adapt-swaps": "8",
+            "arg:--ple-inflight": "256",
+            "arg:--prefill": "2048",
+            "arg:--expert-cache": "600",
+            "arg:--spec": "8",
+            "arg:--spec-min-p": "0.65",
         },
     }
 
     # Filter variants
     if args.variants != "all":
         selected = [v.strip() for v in args.variants.split(",")]
-        if "baseline" not in selected and "p2-baseline" not in selected and "i1-mtp-t4" not in selected:
+        if "baseline" not in selected and "p2-baseline" not in selected and "i1-mtp-t4" not in selected and "i2-cache650" not in selected and "i3-base" not in selected and "i4-base" not in selected and "coder-baseline" not in selected:
             selected.insert(0, "baseline")
         variants = {k: v for k, v in variants.items() if k in selected}
 
@@ -344,13 +398,13 @@ def main():
     baseline_tps = None
     for name, r in results.items():
         tps = r.get("gen_tok_s", r.get("tok_s", 0))
-        if name in ("baseline", "p2-baseline", "i1-mtp-t4") and baseline_tps is None:
+        if name in ("baseline", "p2-baseline", "i1-mtp-t4", "i2-cache650", "i3-base", "i4-base", "coder-baseline") and baseline_tps is None:
             baseline_tps = tps
         tokens = r.get("gen_tokens", r.get("tokens", "?"))
         draft = r.get("draft_rate", "?")
         cache = r.get("cache_hit_rate", "?")
         delta = ""
-        if baseline_tps and tps and baseline_tps > 0 and name not in ("baseline", "p2-baseline", "i1-mtp-t4"):
+        if baseline_tps and tps and baseline_tps > 0 and name not in ("baseline", "p2-baseline", "i1-mtp-t4", "i2-cache650", "i3-base", "i4-base", "coder-baseline"):
             pct = (tps - baseline_tps) / baseline_tps * 100
             delta = f" ({pct:+.1f}%)"
         print(f"{name:<25} {str(tps) + delta:>8} {str(tokens):>8} {str(draft):>8} {str(cache):>8}")
