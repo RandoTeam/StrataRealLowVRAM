@@ -1,11 +1,13 @@
 # Strata - the details
 
 The technical side of Strata: every measured number, the API, images, all settings and how the engine works.
-New here? Start with the [README](../README.md) - it has everything you need to install and use it.
+New here? Start with the [README](../README.md); installing step by step is in [INSTALL.md](INSTALL.md), the models in
+[MODELS.md](MODELS.md), common problems in [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 > **On this page:** [Speed](#speed-measured) · [Other GPUs](#other-gpus-estimated) · [Which model?](#which-model) ·
 > [Requirements](#before-you-start) · [Windows](#windows) · [Linux](#linux) · [API](#using-it) ·
-> [MCP tools](#tools-from-mcp-servers) · [Images](#images-vision) ·
+> [MCP tools](#tools-from-mcp-servers) · [MCP server](#manage-strata-from-your-ai-assistant-mcp-server) ·
+> [Images](#images-vision) ·
 > [Troubleshooting](#troubleshooting) · [How it works](#how-it-works)
 
 ---
@@ -82,7 +84,11 @@ every group: the answer then no longer depends on the drafting. Measured on a Ry
 -1..-3%, the other models the same; the default stays the fastest rule. Through the server, two more things carry
 over from one request to the next (#410): the adaptive tier moves experts between RAM and VRAM (the GPU and the CPU
 round an expert differently), and the prompt cache resumes a repeated prompt and reads only its tail through the
-decode path. For byte-identical repeats add `--prompt-cache 0 --adapt-swaps 0` to the engine's args as well.
+decode path. For byte-identical repeats add `--prompt-cache 0 --adapt-swaps 0 --pcie-frac 0` to the engine's args
+as well (#410): the PCIe share of the missed experts (computed on the GPU instead of the CPU) still made the first
+answer after a start differ from the next ones. Measured here (IQ3_XXS, a 3.6K-token prompt, 4 repeats): with all
+three switches 1 answer of 4, without `--pcie-frac 0` 2 of 4 (the first one differs), with the defaults 2 of 4.
+`--pcie-frac 0` costs decode speed (the missed experts all run on the CPU), so keep it for A/B runs.
 
 **The draft layer's tokens (0.1.27, `--draft-vocab`):** the MTP draft layer can only propose tokens from a subset
 of the vocabulary (`mtp/rt/draft_vocab.bin`). Since 0.1.27 the subset includes every Chinese, Japanese and Korean
@@ -249,12 +255,13 @@ the positions of short greedy answers, 90-91% after a 16K prompt, differing most
 
 ## Before you start
 
-You need **only an NVIDIA driver** (version 580 or newer; update it with the NVIDIA App or from
-[nvidia.com/drivers](https://www.nvidia.com/drivers)). Everything else is installed for you the first time.
+You need **only a graphics driver**: NVIDIA 580 or newer (update it with the NVIDIA App or from
+[nvidia.com/drivers](https://www.nvidia.com/drivers)), or for AMD the one in [INSTALL.md](INSTALL.md#what-you-need).
+Everything else is installed for you the first time.
 
 | | |
 | --- | --- |
-| GPU | NVIDIA **RTX 20, 30, 40 or 50 series**, **12 GB VRAM or more** (8 GB runs, slowly). Measured on an RTX 5070 and an RTX 3090; RTX 20 (Turing, since 0.1.27) was tested by a contributor on an RTX 2070. |
+| GPU | NVIDIA **RTX 20, 30, 40 or 50 series**, **12 GB VRAM or more** (8 GB runs, slowly). Measured on an RTX 5070 and an RTX 3090; RTX 20 (Turing, since 0.1.27) was tested by a contributor on an RTX 2070. Or AMD **Radeon RX 7900 XT / XTX, RX 7800 XT / 7700 XT, RX 9060 XT, RX 9070 / 9070 XT, Radeon AI PRO R9700, RX 6800 / 6900 series**: [AMD_HIP.md](AMD_HIP.md). |
 | RAM | **64 GB** recommended (see the table above). |
 | CPU | x86-64 with AVX2 (any Intel/AMD desktop CPU from the last ~8 years). AVX-512 (Ryzen 7000/9000) is a bit faster. |
 | Disk | ~70-80 GB free for the model, ~6 GB for the MTP layer (+1 GB with images). **Q2_0 on an AVX-512 CPU** also writes a one-time ~40 GB copy of its experts for the fast CPU kernel. An NVMe SSD is strongly recommended. |
@@ -620,6 +627,29 @@ run is a slightly different model: the rescaled angles, and `yarn`'s magnitude c
 position, not only past the trained end. That is why the setup turns scaling on only for a context past
 262,144. Pictures read the same scaled table (their (t, h, w) positions feed it). That should work, but it is
 unmeasured: all the runs above are text.
+
+---
+
+## Manage Strata from your AI assistant (MCP server)
+
+`tools/strata_mcp.py` is an MCP server for Claude Code, Claude Desktop, Cursor, VS Code, Codex and other assistants.
+Once it is added, you can ask your assistant "install Strata for this PC", "start Strata" or "is Strata running?".
+In Claude Code, add it with:
+
+```bash
+claude mcp add strata -- python C:\Users\you\Strata\tools\strata_mcp.py
+```
+
+It has eight tools: status (the running model, what is installed, the hardware, a recommended size), the model
+list, install, start, stop, logs, a speed test, and connection settings for other apps.
+
+Install runs `setup.py` with `--yes` in the background. Before it downloads anything, it shows the plan and waits
+for your OK. Start and stop work like the run scripts and the server's own unload. The MCP server only ends
+processes it started itself. It uses only Python's standard library, so it works before `.venv` exists.
+
+The config snippets for every client, the tool arguments and the safety rules are in
+[docs/MCP_SERVER.md](MCP_SERVER.md). This is the opposite direction from
+[Tools from MCP servers](#tools-from-mcp-servers) above, where the Strata model calls *your* MCP tools.
 
 ---
 

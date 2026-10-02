@@ -73,6 +73,34 @@ const char* compiled_gpu_archs() {
 #endif
 }
 
+int device_count() {
+    int count = 0;
+    if (cudaGetDeviceCount(&count) != cudaSuccess) {   // HIP without a usable device reports an error, not 0
+        cudaGetLastError();
+        return 0;
+    }
+    return count < 0 ? 0 : count;
+}
+
+bool device_summary(int ordinal, std::string& name, std::string& detail) {
+    cudaDeviceProp p{};
+    if (ordinal < 0 || ordinal >= device_count() || cudaGetDeviceProperties(&p, ordinal) != cudaSuccess) {
+        cudaGetLastError();
+        return false;
+    }
+    char buf[160];
+#if defined(STRATA_USE_HIP)
+    std::snprintf(buf, sizeof(buf), "arch %s, %.1f GiB, wave%d", base_arch(p.gcnArchName).c_str(),
+                  (double) p.totalGlobalMem / (1024.0 * 1024 * 1024), p.warpSize);
+#else
+    std::snprintf(buf, sizeof(buf), "compute capability %d.%d, %.1f GiB", p.major, p.minor,
+                  (double) p.totalGlobalMem / (1024.0 * 1024 * 1024));
+#endif
+    name = p.name;
+    detail = buf;
+    return true;
+}
+
 std::string gpu_arch_problem(int ordinal) {
 #if defined(STRATA_USE_HIP)
     int count = 0;

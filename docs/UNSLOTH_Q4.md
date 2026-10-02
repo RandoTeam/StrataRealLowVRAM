@@ -24,7 +24,8 @@ What setup does differently for this model:
 
 - It needs 48 GB of RAM or more (with less it asks, default no; `--model UD-Q4_K_XL --yes` installs it anyway) and
   engine 0.1.32 or newer (checked before anything is downloaded), and an NVIDIA
-  GPU. One GPU only: with `--gpus` it uses the first one and says so. No images (the vision encoder is not wired to
+  GPU: it has not been run on AMD cards (its prompt kernels for the Q4_K / Q5_K experts are NVIDIA-only), so with
+  `--backend hip` setup says so and asks before the download (#429; `--model UD-Q4_K_XL --yes` tries it). One GPU only: with `--gpus` it uses the first one and says so. No images (the vision encoder is not wired to
   this file yet) and no experimental speed projection (not tested with it).
 - It downloads the four shards below from the pinned revision `38bb39e` (resumable, like the other models), then
   checks each one's size and SHA-256 against the table below; the check takes a few minutes once and is remembered

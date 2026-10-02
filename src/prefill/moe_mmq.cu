@@ -107,6 +107,34 @@ bool supported(int t) {
     }
 }
 
+bool fits(int t, int64_t w_rows) {
+    if (!supported(t)) return false;
+    // mul_mat_q_case's choice: the "fallback" configs when the rows are not a multiple of 128; then
+    // mul_mat_q_switch_J's loop - a tile size whose config exists for this card and fits its shared memory
+    const bool fallback = w_rows % 128 != 0;
+    const ggml_cuda_device_info& info = ggml_cuda_info();
+    for (int id = 0; id < info.device_count; ++id) {
+        const int cc = info.devices[id].cc;
+        const size_t smpbo = info.devices[id].smpbo;
+        bool any = false;
+        for (int J = 8; J <= 128 && !any; J += 8) {
+            const ggml_cuda_mmq_config c = ggml_cuda_mmq_get_config((ggml_type) t, J, fallback, cc);
+            any = c.type != GGML_TYPE_COUNT && mmq_get_nbytes_shared(c, cc) <= smpbo;
+        }
+        if (!any) {
+            static bool said[GGML_TYPE_COUNT] = {};
+            if (t >= 0 && t < GGML_TYPE_COUNT && !said[t]) {
+                said[t] = true;
+                std::fprintf(stderr, "strata: prompt kernels: llama.cpp's MMQ has no tile for %s (%lld rows) on GPU %d "
+                                     "(cc %d, %zu bytes of shared memory per block): that product takes the non-MMQ path "
+                                     "(#420)\n", ggml_type_name((ggml_type) t), (long long) w_rows, id, cc, smpbo);
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
 size_t matrix_bytes(int t, int64_t rows, int64_t cols) {
     return (size_t) rows * (size_t) (cols / ggml_blck_size((ggml_type) t)) * ggml_type_size((ggml_type) t);
 }

@@ -1,10 +1,12 @@
-# Experimental AMD HIP backend (gfx1100, gfx1101, gfx1200, gfx1201, gfx1030)
+# AMD Radeon: the HIP backend (gfx1100, gfx1101, gfx1200, gfx1201, gfx1030)
 
-This is a Linux source build for the RX 7900 XT / XTX (RDNA3, gfx1100) and the
+Strata runs on AMD Radeon cards through its HIP backend, the same engine as on NVIDIA compiled for AMD. This page
+covers the build on Linux (on Windows a ready-made engine, see [Windows](#windows)) for the RX 7900 XT / XTX (RDNA3, gfx1100) and the
 RX 9070 / 9070 XT / Radeon AI PRO R9700 (RDNA4, gfx1201; see [RDNA4](#rdna4-gfx1201)). The RX 7800 XT / 7700 XT
 (gfx1101) and the RX 9060 XT (gfx1200) were validated by their owners (see [Community-validated
-cards](#community-validated-cards)); the RX 6800 / 6900 series (RDNA2, gfx1030) builds and runs too, reported by a community machine and not yet validated by the maintainers (see [RDNA2](#rdna2-gfx1030)). It is opt-in; the NVIDIA installer and CUDA build remain the default. Other AMD
-architectures, wave64, Windows HIP, and mixed AMD/NVIDIA execution are outside this contribution.
+cards](#community-validated-cards)); the RX 6800 / 6900 series (RDNA2, gfx1030) builds and runs too, reported by a community machine and not yet validated by the maintainers (see [RDNA2](#rdna2-gfx1030)). Setup chooses it by itself on a PC with no NVIDIA card Strata can use (`--backend hip` on a PC with both); the
+install steps for users are in [INSTALL.md](INSTALL.md#amd-cards). Other AMD architectures, wave64, and mixed
+AMD/NVIDIA execution in one run are not supported.
 
 The backend maps the CUDA-shaped runtime and BLAS calls to HIP/hipBLAS, uses
 RDNA2/RDNA3/RDNA4's signed integer dot instruction for quantized kernels, and supplies
@@ -48,6 +50,59 @@ the kernel's amdgpu driver (no ROCm install needed):
   shows the card's load, VRAM, temperature and power from Linux sysfs (0.1.32).
 
 The rest of setup is the same as on NVIDIA: the model download, the start script, the server.
+
+## Windows
+
+Since 0.1.34 an AMD card on Windows is set up like an NVIDIA one: download Strata, double-click `START-HERE.bat`.
+On a PC with no NVIDIA card Strata can use, the AMD card is chosen by itself; with both, setup asks
+(`START-HERE.bat --backend hip` picks AMD directly).
+
+- **You need:** Windows 10 or 11 (64-bit), one of the cards above, and a current AMD driver ([AMD Software:
+  Adrenalin Edition](https://www.amd.com/en/support/download/drivers.html)). Nothing else: no ROCm or HIP SDK
+  install, no compiler, no admin rights.
+- **Detection:** setup reads the display adapters Windows lists (their PCI ids; the VRAM size from the display
+  driver's registry entry). An integrated Radeon is listed as not supported.
+- **Engine:** the ready-made `strata-windows-x64-hip.zip` from the release (built by `tools\hip\build_windows.bat`
+  for gfx1100, gfx1101, gfx1102, gfx1200, gfx1201 and gfx1030) goes into `engine\`. It carries the ROCm libraries the
+  engine loads (`engine\rocm\bin`: the HIP runtime, hipBLAS / rocBLAS / hipBLASLt with their kernels for these cards,
+  amd_comgr and the Microsoft C++ runtime; ROCm 10.2.0a20260930 from AMD's TheRock builds, licenses in
+  `engine\rocm\licenses`). The HIP runtime works through the AMD driver's own components, so the driver is the one
+  thing it needs from the PC.
+- **Before the ~60 GB model download** setup runs `engine\strata-device.exe --list-devices` (with `engine\rocm\bin` on
+  the PATH): if the HIP runtime does not see the card, setup stops there and points to the driver. It also gives the
+  card's HIP number: with an integrated Radeon that is device 1, not 0 (#325). From then on setup lists the AMD cards
+  as HIP numbers them, so `--gpu N` and the config's `"gpu"` are HIP numbers.
+- **Differences from Windows-on-NVIDIA and Linux-on-AMD:** no images yet (the CPU image encoder is Linux-only for
+  now), one card per model (`--gpus` is Linux-only for now), no calibration.
+- Two Windows-only engine details (#247, #325): hipBLAS can return success and still leave `hipErrorInvalidValue`
+  set after some BF16/FP16 GEMMs (seen on gfx1201); the engine clears that one stale error after a GEMM that
+  succeeded, on Windows only. `hipHostGetDevicePointer` returns the host pointer itself on Windows: kernels read
+  mapped memory through it correctly, but a device-to-device copy into it does not land, which is why
+  `tests/hip/handoff` times out there (the engine does not use that copy; `tests/hip/mapped_alias` reports it).
+
+**What is validated (0.1.34):** #325's author ran the engine of this port on an RX 9070 XT (Windows 11, ROCm
+10.2.0a20260930 in `.venv`, compiled on the PC): Coder IQ1_M at 32K, 29.2 tok/s decode, ~181 tok/s prefill,
+correct answers; ctest 42 of 46. The maintainers have no Windows AMD card: the release zip was built on an NVIDIA PC,
+and checked there on the Ryzen CPU's integrated Radeon (gfx1036, a test build of the same tree): with only the zip's
+libraries on the PATH, `strata-device` lists the card and a hipBLAS BF16 GEMM matches the CPU; the HIP ctest passes
+52 of 56, the 4 failures the same as on the RX 9070 XT (`hip_handoff`, and three tests that need a pack fixture).
+The ready-made zip itself has not run a model on a discrete card yet - please report.
+
+**Reporting a Windows AMD run** (an issue, or on #325): your card and driver version (AMD Software > System), then
+
+```bat
+engine\strata-device.exe --list-devices
+engine\strata-device.exe --selftest
+```
+
+(from the Strata folder, after `set PATH=%CD%\engine\rocm\bin;%PATH%`), the end of `strata-<model>.log`, and the
+speed lines the server window prints for a first answer.
+
+**Building it yourself:** `tools\hip\build_windows.bat` (Visual Studio 2022 Build Tools with the C++ workload, Python,
+git; no admin, no AMD GPU) installs ROCm from AMD's TheRock wheels into `.rocm-win`, builds, and packages
+`dist\strata-windows-x64-hip.zip`; `START-HERE.bat --backend hip --prebuilt dist\` installs that one.
+`tools\hip\build_windows.bat tests` also builds the HIP tests (`ctest` in `build-hip-win`, with
+`.rocm-win\Lib\site-packages\_rocm_sdk_devel\bin` on the PATH). `STRATA_HIP_ARCHS` picks other architectures.
 
 ## Build
 
@@ -123,7 +178,7 @@ The worker count above was used on a 16-core CPU; measure it for your CPU.
 The 4K context is a smoke-test starting point, not a model limit. The expert cache
 sizes itself automatically and leaves 1 GiB of VRAM headroom.
 
-The installer supports this backend (see "Install with setup" above). The vision helper is NVIDIA-only for now.
+The installer supports this backend (see "Install with setup" above). Images run through the CPU encoder for now (`--vision cpu`).
 Setup installs one AMD card, or several with `--gpus` (the engine's layer split; see RDNA4 below).
 
 ## RDNA4 (gfx1201)
@@ -183,13 +238,15 @@ an RX 9070 XT 16 GB and a Radeon AI PRO R9700 32 GB (both gfx1201), a Ryzen 9 39
   (split: ~51), the tokens of the R9700 alone (docs/MULTI_GPU.md).
 - **Speed switches (engine 0.1.32, measured on the R9700 / 9070 XT with the Coder IQ1_M pack):**
   - the MoE router (`router_top10`) runs a HIP kernel without its serial FP64 sum and block barriers by default: the
-    same ids and weights bit for bit (`hip_router_fast` checks 65,536 rows), 39 -> 9-12 us per call, decode
-    62.4 -> 70.0 tok/s on the R9700 and +4% on the 9070 XT, the same greedy tokens (5 + 5 starts).
+    same ids and weights bit for bit (`hip_router_fast` checks 65,536 rows), 39 -> 9-12 us per call, the same greedy
+    tokens (5 + 5 starts). Decode: 62.4 -> 70.0 tok/s on the R9700 and +4% on the 9070 XT in one A/B here (ROCm 10.2
+    nightly); a user's repeated A/B/A/B with setup's TheRock 7.10 wheels and an i5-12600K measured +1-4%, inside a
+    12-20% run-to-run spread (#432) - how much it gains depends on how much of decode the router is on that setup.
     `STRATA_HIP_ROUTER_OLD=1` runs the portable kernel.
   - `STRATA_HIP_WMMA=1` (opt-in, gfx12 only, int8 KV): the prompt path's QSA attention on RDNA4 matrix cores
     (`v_wmma_f32_16x16x16_f16`, FP16 hi + lo halves like the CUDA tensor-core kernel; `hip_prompt_attn_wmma` bounds it
     against the FP32 kernel and FP64). 7.2-7.5x the portable kernel; R9700 prompts 4K 1,784 -> 2,427 tok/s, 16K
-    1,797 -> 2,700. Not bitwise: greedy text differs from token ~50 on, as with the CUDA tensor-core attention. With it
+    1,797 -> 2,700 (a user with TheRock 7.10: +29-34%, #432). Not bitwise: greedy text differs from token ~50 on, as with the CUDA tensor-core attention. With it
     the prompt path's expert ring is 96 slots (as STRATA_PREFILL_RING=96): with the default 384 the 9070 XT's 4K
     prompts fell to 718 tok/s; with 96 they gain (1,017 -> 1,211; 16K 1,518 -> 2,032). PR #329
     (bsorensen110) contributed an equivalent gfx12 WMMA kernel of the same speed (within 1%); this one also masks KV

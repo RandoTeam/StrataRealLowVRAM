@@ -139,7 +139,7 @@ class Main(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def main(self, argv, ram=63.7, version="0.1.32", n_gpus=1, model=True):
+    def main(self, argv, ram=63.7, version="0.1.32", n_gpus=1, model=True, amd=(), free=500.0):
         eng = self.t / "engine"
         eng.mkdir(exist_ok=True)
         (eng / "BUILD.json").write_text(json.dumps({"version": version, "source": "local"}))
@@ -161,11 +161,11 @@ class Main(unittest.TestCase):
             mock.patch.object(setup, "data_folder", lambda d: (self.t / "data", [])),
             mock.patch.object(setup, "installed_configs", lambda: []),
             mock.patch.object(setup, "gpus", lambda: found),
-            mock.patch.object(setup, "amd_gpus", lambda: []),
+            mock.patch.object(setup, "amd_gpus", lambda *a: list(amd)),
             mock.patch.object(setup, "ram_gb", lambda: ram),
             mock.patch.object(setup, "cpu_info", lambda: ("Test CPU", True, True)),
             mock.patch.object(setup, "page_file_gb", lambda: 16.0),
-            mock.patch.object(setup, "free_gb", lambda p: 500.0),
+            mock.patch.object(setup, "free_gb", lambda p: free),
             mock.patch.object(setup, "pip_install", lambda *a, **k: None),
             mock.patch.object(setup, "get_llama_cpp", lambda: self.t / "llama.cpp"),
             mock.patch.object(setup, "get_prebuilt", lambda *a, **k: eng),
@@ -244,6 +244,35 @@ class Main(unittest.TestCase):
         self.assertIn("needs 48 GB of RAM or more", out)
         self.assertIn("--model UD-Q4_K_XL --yes", out)                             # the way to insist
         self.assertEqual(self.downloads, [])
+
+    def test_amd_is_asked_before_the_download(self):
+        """#429: UD-Q4_K_XL has not run on AMD (CUDA-only prompt kernels): --yes alone stops before the 111 GB
+        download, saying why; it is not refused outright (the owner's rule: --model with --yes goes on)."""
+        r9700 = [{"index": 0, "name": "AMD Radeon AI PRO R9700", "vram_gb": 31.9, "arch": "gfx1201",
+                  "driver": "amdgpu"}]
+        code, out, cfg = self.main(["--context", "8192", "--backend", "hip"], model=False, amd=r9700)
+        self.assertEqual(code, 1, out)
+        self.assertIn("has not been run on AMD cards yet", out)
+        self.assertIn("--model UD-Q4_K_XL --yes", out)
+        self.assertEqual(self.downloads, [])
+
+    def test_resumed_download_needs_room_for_the_rest_only(self):
+        """#425: the disk check counts the finished shards and .part files already there (sizes scaled down: a
+        2 MB "model" with 1.5 MB on the disk, 8 GB of other room needed, 8.001 GB free)."""
+        d = self.t / "models" / "unsloth-UD-Q4_K_XL"
+        d.mkdir(parents=True)
+        (d / (list(setup.UNSLOTH_SHARDS)[0] + ".part")).write_bytes(b"x" * 1_500_000)
+        with mock.patch.dict(setup.MODELS[M], {"download_gb": 0.002}):
+            code, out, cfg = self.main(["--context", "8192"], free=8.001)
+        self.assertNotIn("not enough free disk space", out)
+        self.assertEqual(code, 0, out)
+        for f in d.iterdir():                                                         # the first run "downloaded" them
+            f.unlink()
+        (d / (list(setup.UNSLOTH_SHARDS)[0] + ".part")).write_bytes(b"x" * 1_500_000)
+        with mock.patch.dict(setup.MODELS[M], {"download_gb": 0.003}):              # 1.5 MB still missing: no room
+            code, out, cfg = self.main(["--context", "8192"], free=8.001)
+        self.assertEqual(code, 1)
+        self.assertIn("not enough free disk space", out)
 
     def test_too_little_ram_with_an_explicit_model_installs(self):
         """S6 (the owner's rule): --model with --yes is the consent; the risk is said."""

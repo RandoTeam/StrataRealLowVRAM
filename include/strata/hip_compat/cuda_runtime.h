@@ -1,5 +1,14 @@
 #pragma once
 // Included only by STRATA_ENABLE_HIP builds. CUDA builds use NVIDIA headers.
+#if defined(_WIN32)
+// hip_runtime.h pulls in <windows.h> on Windows: keep its min/max macros and the rarely used APIs out of the engine.
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#endif
 #include <hip/hip_runtime.h>
 // Do not let HIP's legacy macro corrupt libstdc++ attribute names.
 #ifdef __noinline__
