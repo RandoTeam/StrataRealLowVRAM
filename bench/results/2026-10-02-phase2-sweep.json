@@ -1,0 +1,68 @@
+{
+  "p2-baseline": {
+    "tokens": 64,
+    "elapsed": 27.59,
+    "tok_s": 2.32,
+    "gen_tokens": 46,
+    "gen_ms": 9373,
+    "gen_tok_s": 4.91,
+    "drafts_accepted": 33,
+    "drafts_total": 35,
+    "draft_rate": 94.3,
+    "cache_hit_rate": 6.4
+  },
+  "p2-cache600-adapt": {
+    "tokens": 64,
+    "elapsed": 28.17,
+    "tok_s": 2.27,
+    "gen_tokens": 46,
+    "gen_ms": 9888,
+    "gen_tok_s": 4.65,
+    "drafts_accepted": 33,
+    "drafts_total": 38,
+    "draft_rate": 86.8,
+    "cache_hit_rate": 9.5
+  },
+  "p2-spec10": {
+    "error": "timeout"
+  },
+  "p2-spec6": {
+    "tokens": 64,
+    "elapsed": 28.54,
+    "tok_s": 2.24,
+    "gen_tokens": 46,
+    "gen_ms": 10328,
+    "gen_tok_s": 4.45,
+    "drafts_accepted": 32,
+    "drafts_total": 36,
+    "draft_rate": 88.9,
+    "cache_hit_rate": 10.7
+  },
+  "p2-mtmin1": {
+    "tokens": 64,
+    "elapsed": 28.22,
+    "tok_s": 2.27,
+    "gen_tokens": 46,
+    "gen_ms": 10050,
+    "gen_tok_s": 4.58,
+    "drafts_accepted": 33,
+    "drafts_total": 41,
+    "draft_rate": 80.5,
+    "cache_hit_rate": 9.8
+  },
+  "p2-cache650": {
+    "tokens": 64,
+    "elapsed": 27.32,
+    "tok_s": 2.34,
+    "gen_tokens": 46,
+    "gen_ms": 9264,
+    "gen_tok_s": 4.97,
+    "drafts_accepted": 33,
+    "drafts_total": 35,
+    "draft_rate": 94.3,
+    "cache_hit_rate": 11.1
+  },
+  "p2-ultimate": {
+    "error": "timeout"
+  }
+}

@@ -60,11 +60,11 @@ Both 125B MoE model variants are empirically verified and benchmarked back-to-ba
   - **Speculative Verification**: **82.0%–85.6%** MTP draft acceptance rate (`--spec 7 --mtp-max-t 4 --spec-min-p 0.68`).
   - **Best Use Case**: Pure algorithmic reasoning, coding assistant, and deep research tasks.
 - **Full Q2_0 (`strata-q2_0.json`)**:
-  - **Memory Allocation**: 16.00 GiB resident RAM budget, 426 GPU expert slots.
+  - **Memory Allocation**: 16.00 GiB resident RAM budget, **650 GPU expert slots** (856 MiB VRAM cache, +52% larger than original 426 slots).
   - **Developer Co-Existence**: Leaves **12–14 GB physical RAM completely free** for Visual Studio, MSVC/Ninja compilation, game engines, and browser tabs without memory starvation.
-  - **Generation Performance**: **3.04–3.31 tok/s** decode rate, **6.48 tok/s** prompt reuse.
-  - **Speculative Verification**: **70.0%–78.6%** MTP draft acceptance rate, **88.9%** Suffix drafter acceptance rate (capturing windows up to 8 tokens).
-  - **Best Use Case**: Daily programming and systems development when heavy compilation or background applications run concurrently.
+  - **Generation Performance**: **4.97–5.20 tok/s** sustained decode rate (**~60% faster than Coder**), **7.00 tok/s** prompt reuse.
+  - **Speculative Verification**: **93.8%–94.3%** MTP draft acceptance rate (`--spec 8 --mtp-max-t 4 --spec-min-p 0.65 --adapt-every 4 --adapt-swaps 8`), **88.9%** Suffix drafter acceptance rate (capturing windows up to 8 tokens).
+  - **Best Use Case**: Maximum speed, daily programming, and systems development when heavy compilation or background applications run concurrently.
 
 ### 6. Seamless Upstream Synchronization
 - **Automated Sync Tool (`tools/sync_upstream.ps1`)**: Effortlessly tracks and merges incoming upstream changes from [Niko1221/Strata](https://github.com/Niko1221/Strata) and cherry-picks CPU kernel optimizations from [gputier/StrataGP](https://github.com/gputier/StrataGP) without code regressions.

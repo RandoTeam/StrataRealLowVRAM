@@ -1,0 +1,62 @@
+{
+  "baseline": {
+    "tokens": 64,
+    "elapsed": 30.18,
+    "tok_s": 2.12,
+    "cache_hit_rate": 4.1,
+    "gen_tokens": 6,
+    "gen_ms": 1796,
+    "gen_tok_s": 3.3,
+    "drafts_accepted": 4,
+    "drafts_total": 5,
+    "draft_rate": 80.0
+  },
+  "expert-cache-550": {
+    "tokens": 64,
+    "elapsed": 29.84,
+    "tok_s": 2.14,
+    "cache_hit_rate": 5.1,
+    "gen_tokens": 6,
+    "gen_ms": 1769,
+    "gen_tok_s": 3.4,
+    "drafts_accepted": 4,
+    "drafts_total": 5,
+    "draft_rate": 80.0
+  },
+  "expert-cache-600": {
+    "tokens": 64,
+    "elapsed": 29.9,
+    "tok_s": 2.14,
+    "cache_hit_rate": 5.7,
+    "gen_tokens": 6,
+    "gen_ms": 1778,
+    "gen_tok_s": 3.4,
+    "drafts_accepted": 4,
+    "drafts_total": 5,
+    "draft_rate": 80.0
+  },
+  "spin-60k": {
+    "tokens": 64,
+    "elapsed": 30.2,
+    "tok_s": 2.12,
+    "cache_hit_rate": 4.1,
+    "gen_tokens": 6,
+    "gen_ms": 1791,
+    "gen_tok_s": 3.3,
+    "drafts_accepted": 4,
+    "drafts_total": 5,
+    "draft_rate": 80.0
+  },
+  "adapt-4-8": {
+    "tokens": 64,
+    "elapsed": 30.19,
+    "tok_s": 2.12,
+    "cache_hit_rate": 6.1,
+    "gen_tokens": 6,
+    "gen_ms": 1815,
+    "gen_tok_s": 3.3,
+    "drafts_accepted": 4,
+    "drafts_total": 5,
+    "draft_rate": 80.0
+  }
+}
