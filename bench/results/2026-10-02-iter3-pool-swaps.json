@@ -1,0 +1,62 @@
+{
+  "i3-base": {
+    "tokens": 64,
+    "elapsed": 27.84,
+    "tok_s": 2.3,
+    "gen_tokens": 46,
+    "gen_ms": 9558,
+    "gen_tok_s": 4.81,
+    "drafts_accepted": 33,
+    "drafts_total": 36,
+    "draft_rate": 91.7,
+    "cache_hit_rate": 11.6
+  },
+  "i3-workers-6": {
+    "tokens": 64,
+    "elapsed": 27.8,
+    "tok_s": 2.3,
+    "gen_tokens": 46,
+    "gen_ms": 9539,
+    "gen_tok_s": 4.82,
+    "drafts_accepted": 33,
+    "drafts_total": 34,
+    "draft_rate": 97.1,
+    "cache_hit_rate": 11.5
+  },
+  "i3-workers-4": {
+    "tokens": 64,
+    "elapsed": 27.83,
+    "tok_s": 2.3,
+    "gen_tokens": 46,
+    "gen_ms": 9624,
+    "gen_tok_s": 4.78,
+    "drafts_accepted": 33,
+    "drafts_total": 36,
+    "draft_rate": 91.7,
+    "cache_hit_rate": 11.6
+  },
+  "i3-adapt-2-8": {
+    "tokens": 64,
+    "elapsed": 27.87,
+    "tok_s": 2.3,
+    "gen_tokens": 46,
+    "gen_ms": 9648,
+    "gen_tok_s": 4.77,
+    "drafts_accepted": 33,
+    "drafts_total": 35,
+    "draft_rate": 94.3,
+    "cache_hit_rate": 14.6
+  },
+  "i3-adapt-4-16": {
+    "tokens": 64,
+    "elapsed": 27.85,
+    "tok_s": 2.3,
+    "gen_tokens": 46,
+    "gen_ms": 9656,
+    "gen_tok_s": 4.76,
+    "drafts_accepted": 33,
+    "drafts_total": 35,
+    "draft_rate": 94.3,
+    "cache_hit_rate": 14.1
+  }
+}
