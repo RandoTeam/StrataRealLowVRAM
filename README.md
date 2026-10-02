@@ -7,10 +7,17 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/RandoTeam/StrataRealLowVRAM/releases"><img src="https://img.shields.io/github/v/release/RandoTeam/StrataRealLowVRAM?style=for-the-badge&color=blue" alt="GitHub Release"></a>
+  <a href="https://github.com/RandoTeam/StrataRealLowVRAM/releases"><img src="https://img.shields.io/badge/Release_Assets-Precompiled_&_Ready_to_Run-success?style=for-the-badge" alt="Release Assets"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/RandoTeam/StrataRealLowVRAM/releases"><b>📥 Download Releases</b></a> ·
   <a href="#-about-stratareallowvram">About</a> ·
   <a href="#-key-architectural-improvements">Improvements</a> ·
   <a href="#-empirical-benchmark-results">Benchmark Results</a> ·
   <a href="#-quickstart-for-4-gb-vram-setups">Quickstart</a> ·
+  <a href="docs/RELEASE_WORKFLOW.md">Release SOP</a> ·
   <a href="#-upstream-strata-readme">Original Readme</a>
 </p>
 
@@ -34,8 +41,9 @@ This repository incorporates architectural insights from community research (inc
 
 ## ⚡ Key Architectural Improvements
 
-### 1. Engine 0.1.34 Sync & MCP Server Integration
-- **Upstream v0.1.34 Core Features**: Fully merged official v0.1.34 updates, including MMQ shared memory prefill fallback (`#420`), early 1-second client disconnection / socket EOF cancellation (`#430`, `#431`), and deterministic `--pcie-frac 0` repeatability.
+### 1. Engine 0.1.35 Sync, Automated Releases & MCP Server
+- **Upstream v0.1.35 Core Features**: Fully merged official v0.1.35 updates, including Windows Working Set memory trimming via `SetProcessWorkingSetSize` (`#467`), multi-GPU prompt chunking (`#448`), JSON API resilience (`#460`), speculative `/metrics` counters (`#457`), and atomic config writes (`#459`).
+- **Standardized Release Workflow & Prebuilt Packages**: Automated release tool (`tools/package_release.py`) and established Standard Operating Procedure ([`docs/RELEASE_WORKFLOW.md`](docs/RELEASE_WORKFLOW.md)). Prebuilt ready-to-run `.zip` packages and minimal patched engine archives are automatically published to [GitHub Releases](https://github.com/RandoTeam/StrataRealLowVRAM/releases) upon empirical verification.
 - **Model Context Protocol (MCP) Server**: Official stdio MCP server (`tools/strata_mcp.py`) integrated and registered in `~/.gemini/config/mcp_config.json`, enabling AI agents (Antigravity, Claude Code, Cursor) to directly query engine status, manage model lifecycle, monitor VRAM/RAM, and execute live benchmarks.
 - **Engine Auto-Update Shield**: `setup.py` and `build-patched-engine.bat` patched to preserve custom compiled and patched local binaries, permanently preventing vanilla upstream releases from wiping custom WDDM patches.
 
