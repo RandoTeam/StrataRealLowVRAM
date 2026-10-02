@@ -1,0 +1,62 @@
+{
+  "i1-mtp-t4": {
+    "tokens": 64,
+    "elapsed": 27.82,
+    "tok_s": 2.3,
+    "gen_tokens": 46,
+    "gen_ms": 9539,
+    "gen_tok_s": 4.82,
+    "drafts_accepted": 33,
+    "drafts_total": 35,
+    "draft_rate": 94.3,
+    "cache_hit_rate": 11.1
+  },
+  "i1-mtp-t6": {
+    "tokens": 64,
+    "elapsed": 28.92,
+    "tok_s": 2.21,
+    "gen_tokens": 46,
+    "gen_ms": 10759,
+    "gen_tok_s": 4.28,
+    "drafts_accepted": 35,
+    "drafts_total": 40,
+    "draft_rate": 87.5,
+    "cache_hit_rate": 10.7
+  },
+  "i1-mtp-t8": {
+    "tokens": 64,
+    "elapsed": 29.97,
+    "tok_s": 2.14,
+    "gen_tokens": 46,
+    "gen_ms": 11726,
+    "gen_tok_s": 3.92,
+    "drafts_accepted": 34,
+    "drafts_total": 40,
+    "draft_rate": 85.0,
+    "cache_hit_rate": 9.9
+  },
+  "i1-mtp-t8-p55": {
+    "tokens": 64,
+    "elapsed": 32.25,
+    "tok_s": 1.98,
+    "gen_tokens": 46,
+    "gen_ms": 14063,
+    "gen_tok_s": 3.27,
+    "drafts_accepted": 33,
+    "drafts_total": 55,
+    "draft_rate": 60.0,
+    "cache_hit_rate": 8.6
+  },
+  "i1-mtp-t8-p70": {
+    "tokens": 64,
+    "elapsed": 31.58,
+    "tok_s": 2.03,
+    "gen_tokens": 46,
+    "gen_ms": 13292,
+    "gen_tok_s": 3.46,
+    "drafts_accepted": 33,
+    "drafts_total": 48,
+    "draft_rate": 68.8,
+    "cache_hit_rate": 10.3
+  }
+}

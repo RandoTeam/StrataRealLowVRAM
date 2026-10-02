@@ -274,25 +274,28 @@ def main():
             "arg:--adapt-swaps": "8",
             "env:STRATA_IQ_MT_MIN": "1",
         },
-        "p2-cache650": {
-            "arg:--expert-cache": "650",
-            "arg:--adapt-every": "4",
-            "arg:--adapt-swaps": "8",
+        # Iteration 1: MTP Max-T Scaling
+        "i1-mtp-t4": {},  # uses strata-q2_0.json current settings (cache 650, adapt 4/8, mtp-max-t 4)
+        "i1-mtp-t6": {
+            "arg:--mtp-max-t": "6",
         },
-        "p2-ultimate": {
-            "arg:--expert-cache": "600",
-            "arg:--adapt-every": "4",
-            "arg:--adapt-swaps": "8",
-            "arg:--spec": "10",
-            "arg:--spec-min-p": "0.60",
-            "env:STRATA_IQ_MT_MIN": "1",
+        "i1-mtp-t8": {
+            "arg:--mtp-max-t": "8",
+        },
+        "i1-mtp-t8-p55": {
+            "arg:--mtp-max-t": "8",
+            "arg:--spec-min-p": "0.55",
+        },
+        "i1-mtp-t8-p70": {
+            "arg:--mtp-max-t": "8",
+            "arg:--spec-min-p": "0.70",
         },
     }
 
     # Filter variants
     if args.variants != "all":
         selected = [v.strip() for v in args.variants.split(",")]
-        if "baseline" not in selected and "p2-baseline" not in selected:
+        if "baseline" not in selected and "p2-baseline" not in selected and "i1-mtp-t4" not in selected:
             selected.insert(0, "baseline")
         variants = {k: v for k, v in variants.items() if k in selected}
 
@@ -341,13 +344,13 @@ def main():
     baseline_tps = None
     for name, r in results.items():
         tps = r.get("gen_tok_s", r.get("tok_s", 0))
-        if name in ("baseline", "p2-baseline") and baseline_tps is None:
+        if name in ("baseline", "p2-baseline", "i1-mtp-t4") and baseline_tps is None:
             baseline_tps = tps
         tokens = r.get("gen_tokens", r.get("tokens", "?"))
         draft = r.get("draft_rate", "?")
         cache = r.get("cache_hit_rate", "?")
         delta = ""
-        if baseline_tps and tps and baseline_tps > 0 and name not in ("baseline", "p2-baseline"):
+        if baseline_tps and tps and baseline_tps > 0 and name not in ("baseline", "p2-baseline", "i1-mtp-t4"):
             pct = (tps - baseline_tps) / baseline_tps * 100
             delta = f" ({pct:+.1f}%)"
         print(f"{name:<25} {str(tps) + delta:>8} {str(tokens):>8} {str(draft):>8} {str(cache):>8}")
