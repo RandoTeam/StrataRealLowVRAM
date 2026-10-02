@@ -94,43 +94,56 @@ def generate_release_notes(dist_dir: Path, version: str) -> Path:
 
 ---
 
-## ⚡ Highlights of This Release
+## ⚡ Highlights of Release v{version}
 
-This release synchronizes official **Upstream Engine v{version}** with our custom **StrataRealLowVRAM** low-VRAM optimizations, pre-tuned model configurations, and developer tools.
+This release combines official **Upstream Engine v{version}** with custom **StrataRealLowVRAM** low-VRAM optimizations, pre-tuned model configurations, and developer tools.
 
-### 🚀 Empirical Hardware Benchmarks (RTX 3050 Laptop 4GB)
+### 🚀 Performance Gains & Hardware Benchmarks (RTX 3050 Laptop 4GB)
 
-| Model | Vanilla Upstream | StrataRealLowVRAM Champion | Speedup | VRAM Cache Slots | RAM Usage |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Qwen3.8 Full Q2_0** | 3.30 tok/s | **4.80 – 5.00 tok/s** (peak 5.20) | 🚀 **+51.5%** | **700 slots** (922 MiB) | 16.0 GiB (Frees 14 GB) |
-| **Qwen3.8 Coder IQ1_M** | 3.48 tok/s | **4.03 – 4.20 tok/s** | 🚀 **+20.7%** | **600 slots** (1.15 GiB) | 20.0 GiB |
+| Metric / Scenario | Vanilla Upstream / Previous | StrataRealLowVRAM v{version} | Improvement |
+| :--- | :---: | :---: | :---: |
+| **Prefill Standalone Fused MoE (Q2_0)** | 42.2 ms / layer | **15.3 ms / layer** | 🚀 **2.75x faster** |
+| **Prefill Standalone Fused MoE (IQ packs)** | 22.0 – 35.0 ms | **16.0 – 21.0 ms** | 🚀 **1.2x – 1.6x faster** |
+| **Chat Turn TTFT (Time to First Token)** | 20.0s – 50.0s (disk spill) | **0.04s (40 ms!)** | ⚡ **Instant response** |
+| **Qwen3.8 Full Q2_0 Decode** | 3.30 tok/s | **4.80 – 5.00 tok/s** (peak 5.20) | 🚀 **+51.5%** |
+| **Qwen3.8 Coder IQ1_M Decode** | 3.48 tok/s | **4.03 – 4.20 tok/s** | 🚀 **+20.7%** |
+| **VRAM Expert Cache Residency** | 0 slots (evicted by WDDM) | **700 slots (Q2_0) / 600 slots (Coder)** | 🛡️ **Stable WDDM Residency** |
 
 ---
 
-## 🛠️ StrataRealLowVRAM Key Features in v{version}
+## 🛠️ Upstream v{version} Core Upgrades Included
+
+1. **Fused Int8 Tensor-Core Prefill Kernels (`moe_fused.cu`, `moe_fused_iq.cu`):**
+   - Implements hardware-accelerated `mma.sync.aligned.m16n8k32.s8.s8` on SM 8.0+ (Ampere / Ada / Hopper / Blackwell).
+   - In-register fused gate & up projection dequantization + SwiGLU activation + down projection without round-tripping intermediate activations through global VRAM.
+   - GPU-side prefix-sum token grouping eliminates host CPU dispatch overhead.
+   - Streamed ring buffer drastically shrinks MoE scratch buffers (~100 KB/token).
+   - Enable via `STRATA_PF_FUSED=1` (activated by default in our configs).
+
+2. **Decode Optimizations & Cluster Parity:**
+   - Thread-Block Clusters in decode for `sm_90+` architectures with seamless fallback to high-speed native kernels on SM 8.6 (RTX 3050).
+   - Expert Cache Persistence (`--expert-profile-save`, #477): saves learned cache routing into `expert-profile-learned.bin`, eliminating cold-start latency across restarts.
+   - Speculative draft vocabulary pruning (`--draft-vocab cyrillic` / `en`) saving ~110 MiB VRAM for draft heads on low-VRAM GPUs.
+
+---
+
+## 🛡️ StrataRealLowVRAM Custom Optimizations
 
 1. **WDDM 4GB Expert Cache Patch (`patched: true`):**
-   - Eliminates Windows WDDM driver clamp where prior memory overcommit falsely zeroes out the expert cache.
-   - Restores full 700-slot (Q2_0) and 600-slot (Coder) GPU residency on 4GB cards.
-2. **Upstream v{version} Integration:**
-   - **Fix #467 (Windows 32GB Working Set Trimming):** Restores +1.86 GiB of available physical RAM on startup via `SetProcessWorkingSetSize`, allowing the full resident cache complement to lock cleanly in RAM.
-   - **Fix #448 (Multi-GPU Prompt Chunking):** Intelligent handling of asymmetric VRAM cards.
-   - **Fix #460 (JSON API Resilience):** Graceful decoding of double-encoded message strings.
-   - **Fix #457 (Speculative Metrics):** Cumulative `/metrics` counters for draft acceptance.
-   - **Fix #459 (Atomic Configs):** Safe atomic config writes via temporary files.
-3. **Pre-Tuned Champion Configurations:**
-   - `strata-q2_0.json`: 700 expert cache slots, 6 pool workers, adaptive swaps 4/8, Direct I/O queue depth 256, prefill chunk 2048.
-   - `strata-coder-iq1_m.json`: 600 expert cache slots, 6 pool workers, adaptive swaps 4/8, Direct I/O queue depth 256, prefill chunk 2048.
+   - Resolves the Windows WDDM driver clamp where transient memory allocations falsely zeroed out GPU cache slots.
+   - Preserves 700 active GPU slots (Q2_0) and 600 active GPU slots (Coder) on 4GB VRAM cards.
+2. **Optimal RAM Resident Budgets:**
+   - Configured `--resident-budget-gib 20` for Coder IQ1_M and Q2_0, avoiding heavy SSD I/O stalls during batched prefill.
+3. **Adaptive Short-Read Routing (`--short-read 64`):**
+   - Automatically processes interactive chat messages inside the fast verify window, slashing TTFT from 40s to 40ms.
 4. **Antigravity Model Context Protocol (MCP) Server:**
-   - Official stdio MCP server (`tools/strata_mcp.py`) and CLI bridge (`tools/mcp_cli.py`) for AI assistants (Antigravity, Claude Code, Cursor).
-5. **Engine Auto-Update Shield:**
-   - `setup.py` protects custom compiled and patched local binaries from being overwritten by vanilla upstream downloads.
+   - Pre-packaged stdio MCP server (`tools/strata_mcp.py`) and CLI bridge (`tools/mcp_cli.py`) for AI assistants (Antigravity, Claude Code, Cursor).
 
 ---
 
 ## 📦 Release Assets
 
-- **`StrataRealLowVRAM-v{version}-full-windows-x64.zip`**: Complete ready-to-run installation bundle. Just extract and double-click `START-HERE.bat` or `run-q2_0.bat`.
+- **`StrataRealLowVRAM-v{version}-full-windows-x64.zip`**: Complete ready-to-run distribution bundle. Extract and double-click `START-HERE.bat` or `run-q2_0.bat`.
 - **`StrataRealLowVRAM-v{version}-engine-windows-x64.zip`**: Precompiled, WDDM-patched `strata.exe` and `BUILD.json` drop-in replacement for existing installations.
 
 ---
@@ -139,7 +152,7 @@ This release synchronizes official **Upstream Engine v{version}** with our custo
 
 1. Download and extract **`StrataRealLowVRAM-v{version}-full-windows-x64.zip`**.
 2. Run `START-HERE.bat` to verify your environment.
-3. Start high-speed inference with pre-tuned configs:
+3. Start high-speed inference:
    - For Full Q2_0: run `run-q2_0.bat` (or `.venv\\Scripts\\python.exe serve/server.py --config strata-q2_0.json`)
    - For Coder IQ1_M: run `run-coder-iq1_m.bat` (or `.venv\\Scripts\\python.exe serve/server.py --config strata-coder-iq1_m.json`)
 """

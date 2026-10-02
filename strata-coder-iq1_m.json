@@ -55,7 +55,7 @@
   "--pcie-frac",
   "0",
   "--short-read",
-  "16",
+  "64",
   "--resident-budget-gib",
   "20"
  ],
@@ -89,7 +89,8 @@
   "STRATA_ARENA_LOCK": "0",
   "STRATA_ARENA_PIN_GIB": "2",
   "STRATA_RESIDENT_HEADROOM_GIB": "1.5",
-  "STRATA_MMVQ_FAST": "1"
+  "STRATA_MMVQ_FAST": "1",
+  "STRATA_PF_FUSED": "1"
  },
  "reasoning_budget_tokens": 40
 }
