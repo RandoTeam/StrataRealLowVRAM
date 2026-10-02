@@ -62,3 +62,5 @@ rust/**/target/
 .vscode/
 
 /.rocm-win/
+/scratch/
+bench/*.json
