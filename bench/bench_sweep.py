@@ -14,7 +14,7 @@ VENV_PYTHON = os.path.join(ROOT, ".venv", "Scripts", "python.exe")
 SERVER_SCRIPT = os.path.join(ROOT, "serve", "server.py")
 
 
-def wait_for_server(port, timeout=180):
+def wait_for_server(port, timeout=360):
     """Wait until the server is accepting HTTP connections."""
     start = time.time()
     while time.time() - start < timeout:
@@ -344,12 +344,15 @@ def main():
             "arg:--spec": "8",
             "arg:--spec-min-p": "0.65",
         },
+        # Engine 0.1.35 Verification
+        "v135-q2_0": {},
+        "v135-coder": {},
     }
 
     # Filter variants
     if args.variants != "all":
         selected = [v.strip() for v in args.variants.split(",")]
-        if "baseline" not in selected and "p2-baseline" not in selected and "i1-mtp-t4" not in selected and "i2-cache650" not in selected and "i3-base" not in selected and "i4-base" not in selected and "coder-baseline" not in selected:
+        if "baseline" not in selected and "p2-baseline" not in selected and "i1-mtp-t4" not in selected and "i2-cache650" not in selected and "i3-base" not in selected and "i4-base" not in selected and "coder-baseline" not in selected and "v135-q2_0" not in selected and "v135-coder" not in selected:
             selected.insert(0, "baseline")
         variants = {k: v for k, v in variants.items() if k in selected}
 

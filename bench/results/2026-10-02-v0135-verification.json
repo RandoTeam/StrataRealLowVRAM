@@ -1,0 +1,14 @@
+{
+  "v135-coder": {
+    "tokens": 64,
+    "elapsed": 32.26,
+    "tok_s": 1.98,
+    "gen_tokens": 46,
+    "gen_ms": 11407,
+    "gen_tok_s": 4.03,
+    "drafts_accepted": 33,
+    "drafts_total": 39,
+    "draft_rate": 84.6,
+    "cache_hit_rate": 17.8
+  }
+}

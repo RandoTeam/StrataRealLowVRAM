@@ -2,7 +2,7 @@
 
 <p align="center">
   <b>Extreme Low-VRAM & Mobile GPU Optimization Edition of Strata</b><br>
-  Running 125B MoE (Coder IQ1_M & Full Q2_0) on <b>4 GB VRAM</b> (RTX 3050 Laptop) + <b>32 GB DDR4</b> on Windows 11 · <b>Engine 0.1.34</b><br>
+  Running 125B MoE (Coder IQ1_M & Full Q2_0) on <b>4 GB VRAM</b> (RTX 3050 Laptop) + <b>32 GB DDR4</b> on Windows 11 · <b>Engine 0.1.35</b><br>
   <i>DeepSeek Harness Integration · Windows WDDM Sub-Millisecond Tuning · Antigravity MCP Integration</i>
 </p>
 
@@ -53,10 +53,10 @@ This repository incorporates architectural insights from community research (inc
 - **Reasoning Preservation (`preserve_thinking: False`)**: Maintained proper template rendering and tool call stream contracts without breaking long reasoning chains.
 
 ### 5. Dual-Model Empirical Verification & Developer Co-Existence (Coder IQ1_M & Full Q2_0)
-Both 125B MoE model variants are empirically verified and benchmarked back-to-back under **Engine 0.1.34** on mobile hardware:
+Both 125B MoE model variants are empirically verified and benchmarked back-to-back under **Engine 0.1.35** on mobile hardware:
 - **Coder IQ1_M (`strata-coder-iq1_m.json`)**:
   - **Memory Allocation**: 20.00 GiB resident RAM budget (`VirtualLock`), **600 GPU expert slots** (1.15 GiB VRAM cache).
-  - **Generation Performance**: **3.95–3.99 tok/s** decode rate (+14.7% over vanilla 3.48 tok/s), **7.50 tok/s** prompt reuse.
+  - **Generation Performance**: **3.95–4.03 tok/s** decode rate (+15.8% over vanilla 3.48 tok/s), **7.50 tok/s** prompt reuse.
   - **Speculative Verification**: **84.6%–88.9%** MTP draft acceptance rate (`--spec 8 --mtp-max-t 4 --spec-min-p 0.65 --adapt-every 4 --adapt-swaps 8 --pool-workers 6 --ple-inflight 256 --prefill 2048`).
   - **Best Use Case**: Pure algorithmic reasoning, coding assistant, and deep research tasks.
 - **Full Q2_0 (`strata-q2_0.json`)**:
