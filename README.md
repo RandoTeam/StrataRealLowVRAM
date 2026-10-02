@@ -2,8 +2,8 @@
 
 <p align="center">
   <b>Extreme Low-VRAM & Mobile GPU Optimization Edition of Strata</b><br>
-  Running 125B MoE (Coder IQ1_M & Full Q2_0) on <b>4 GB VRAM</b> (RTX 3050 Laptop) + <b>32 GB DDR4</b> on Windows 11 · <b>Engine 0.1.33</b><br>
-  <i>DeepSeek Harness Integration · Windows WDDM Sub-Millisecond Tuning · Empirical Architecture Tournaments</i>
+  Running 125B MoE (Coder IQ1_M & Full Q2_0) on <b>4 GB VRAM</b> (RTX 3050 Laptop) + <b>32 GB DDR4</b> on Windows 11 · <b>Engine 0.1.34</b><br>
+  <i>DeepSeek Harness Integration · Windows WDDM Sub-Millisecond Tuning · Antigravity MCP Integration</i>
 </p>
 
 <p align="center">
@@ -34,12 +34,13 @@ This repository incorporates architectural insights from community research (inc
 
 ## ⚡ Key Architectural Improvements
 
-### 1. Native High-Performance Rust Gateway (`strata-gateway.exe`)
-- **Zero-Overhead Async I/O**: Standalone native binary written in Rust (`axum` + `tokio`). Replaces Python `serve/server.py`, completely eliminating Python GIL contention, reducing per-token delivery latency by 15–35 ms and saving ~120 MB of system RAM.
-- **Native FIFO & Direct Subprocess Streaming**: Directly streams token output from `strata.exe` stdin/stdout pipes into SSE HTTP responses with sub-millisecond dispatch.
+### 1. Engine 0.1.34 Sync & MCP Server Integration
+- **Upstream v0.1.34 Core Features**: Fully merged official v0.1.34 updates, including MMQ shared memory prefill fallback (`#420`), early 1-second client disconnection / socket EOF cancellation (`#430`, `#431`), and deterministic `--pcie-frac 0` repeatability.
+- **Model Context Protocol (MCP) Server**: Official stdio MCP server (`tools/strata_mcp.py`) integrated and registered in `~/.gemini/config/mcp_config.json`, enabling AI agents (Antigravity, Claude Code, Cursor) to directly query engine status, manage model lifecycle, monitor VRAM/RAM, and execute live benchmarks.
+- **Engine Auto-Update Shield**: `setup.py` and `build-patched-engine.bat` patched to preserve custom compiled and patched local binaries, permanently preventing vanilla upstream releases from wiping custom WDDM patches.
 
 ### 2. Windows WDDM 4GB Expert Cache Fix
-- **Overcoming the WDDM Zero-Byte Clamp**: Under Windows WDDM, prior weight allocations exceed physical 4 GB VRAM into virtual paging, causing `cudaMemGetInfo` to report 0 free bytes. In vanilla Strata 0.1.31, this forcibly zeroes out the expert cache and crashes speculative verification.
+- **Overcoming the WDDM Zero-Byte Clamp**: Under Windows WDDM, prior weight allocations exceed physical 4 GB VRAM into virtual paging, causing `cudaMemGetInfo` to report 0 free bytes. In vanilla Strata 0.1.31–0.1.34, this forcibly zeroes out the expert cache and crashes speculative verification.
 - **Surgical WDDM Patch (`patches/0001-wddm-expert-cache-4gb.patch`)**: Permits explicit non-auto expert cache allocations under WDDM, restoring the full 426-slot VRAM expert tier and enabling speculative decoding on 4 GB mobile GPUs.
 
 ### 3. Windows WDDM & OS Latency Tuning
@@ -52,7 +53,7 @@ This repository incorporates architectural insights from community research (inc
 - **Reasoning Preservation (`preserve_thinking: False`)**: Maintained proper template rendering and tool call stream contracts without breaking long reasoning chains.
 
 ### 5. Dual-Model Empirical Verification & Developer Co-Existence (Coder IQ1_M & Full Q2_0)
-Both 125B MoE model variants are empirically verified and benchmarked back-to-back under **Engine 0.1.33** on mobile hardware:
+Both 125B MoE model variants are empirically verified and benchmarked back-to-back under **Engine 0.1.34** on mobile hardware:
 - **Coder IQ1_M (`strata-coder-iq1_m.json`)**:
   - **Memory Allocation**: 20.00 GiB resident RAM budget (`VirtualLock`), 643 GPU expert slots. 90% of model experts held in RAM.
   - **Generation Performance**: **3.30–3.42 tok/s** decode rate, **7.49 tok/s** prompt reuse.
