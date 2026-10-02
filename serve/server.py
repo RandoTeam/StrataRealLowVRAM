@@ -2160,6 +2160,7 @@ def make_handler(svc: Service):
             req = svc.with_shared(req, "openai")
             messages, tools, kw = openai_to_messages(req)
             fast_title = _fast_session_title(messages)
+            cancel = threading.Event()
             if fast_title is not None:
                 ids, thinking, max_new, run = [], False, 16, _fast_title_run(fast_title)
                 validator = None
