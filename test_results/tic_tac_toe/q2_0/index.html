@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Крестики-Нолики — Qwen3.8 Full Q2_0 Edition</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --border: #334155;
+            --text: #e2e8f0;
+            --accent: #38bdf8;
+            --accent-hover: #0ea5e9;
+            --x-color: #f472b6;
+            --o-color: #818cf8;
+            --win-bg: rgba(59, 130, 246, 0.25);
+            --win-border: #60a5fa;
+            --muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: radial-gradient(circle at center, #1e293b 0%, #0a0f1d 100%);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: var(--accent);
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .header p {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .container {
+            max-width: 440px;
+            width: 100%;
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .controls button {
+            flex: 1;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .controls button.active {
+            background: var(--accent);
+            color: #0f172a;
+            border-color: var(--accent);
+            font-weight: 700;
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            background: #0f172a;
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .score-col {
+            text-align: center;
+        }
+
+        .score-col .lbl {
+            font-size: 0.75rem;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .score-col .num {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+
+        .score-col.x .num { color: var(--x-color); }
+        .score-col.o .num { color: var(--o-color); }
+        .score-col.draw .num { color: var(--muted); }
+
+        .status {
+            text-align: center;
+            font-size: 1.05rem;
+            margin-bottom: 16px;
+            color: var(--text);
+            font-weight: 600;
+            height: 26px;
+        }
+
+        .status span.x { color: var(--x-color); }
+        .status span.o { color: var(--o-color); }
+        .status span.win { color: #facc15; }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+            aspect-ratio: 1;
+        }
+
+        .cell {
+            aspect-ratio: 1;
+            background: #0f172a;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.8rem;
+            font-weight: 800;
+            transition: all 0.15s ease;
+        }
+
+        .cell:hover:not(.taken) {
+            border-color: var(--accent);
+            background: #152238;
+        }
+
+        .cell.x { color: var(--x-color); text-shadow: 0 0 12px rgba(244, 114, 182, 0.4); }
+        .cell.o { color: var(--o-color); text-shadow: 0 0 12px rgba(129, 140, 248, 0.4); }
+
+        .cell.winning {
+            background: var(--win-bg) !important;
+            border-color: var(--win-border) !important;
+            color: #60a5fa !important;
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { transform: scale(0.98); }
+            to { transform: scale(1.02); }
+        }
+
+        .bottom-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            flex: 1;
+            background: var(--accent);
+            color: #0f172a;
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .action-btn.secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .action-btn.secondary:hover {
+            background: #334155;
+        }
+
+        .footer {
+            margin-top: 14px;
+            font-size: 0.75rem;
+            color: var(--muted);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>КРЕСТИКИ-НОЛИКИ</h1>
+        <p>Qwen3.8 Full Q2_0 Benchmark Model (64K Context)</p>
+    </div>
+
+    <div class="container">
+        <div class="controls">
+            <button id="btn-mode-ai" class="active">Против ИИ</button>
+            <button id="btn-mode-pvp">2 Игрока</button>
+            <button id="btn-diff">Сложность: Норма</button>
+        </div>
+
+        <div class="scoreboard">
+            <div class="score-col x">
+                <div class="lbl">Игрок (X)</div>
+                <div class="num" id="sc-x">0</div>
+            </div>
+            <div class="score-col draw">
+                <div class="lbl">Ничьи</div>
+                <div class="num" id="sc-d">0</div>
+            </div>
+            <div class="score-col o">
+                <div class="lbl" id="lbl-o">ИИ (O)</div>
+                <div class="num" id="sc-o">0</div>
+            </div>
+        </div>
+
+        <div class="status" id="status-line">Ход игрока <span class="x">X</span></div>
+
+        <div class="board" id="board">
+            <div class="cell" data-i="0"></div>
+            <div class="cell" data-i="1"></div>
+            <div class="cell" data-i="2"></div>
+            <div class="cell" data-i="3"></div>
+            <div class="cell" data-i="4"></div>
+            <div class="cell" data-i="5"></div>
+            <div class="cell" data-i="6"></div>
+            <div class="cell" data-i="7"></div>
+            <div class="cell" data-i="8"></div>
+        </div>
+
+        <div class="bottom-actions">
+            <button class="action-btn" id="btn-restart">Новая игра</button>
+            <button class="action-btn secondary" id="btn-clear-score">Сброс счета</button>
+        </div>
+    </div>
+
+    <div class="footer">
+        Strata Real Low VRAM Engine v0.1.38 • 32GB RAM / RTX 3050 Laptop
+    </div>
+
+    <script>
+        const LINES = [
+            [0,1,2],[3,4,5],[6,7,8],
+            [0,3,6],[1,4,7],[2,5,8],
+            [0,4,8],[2,4,6]
+        ];
+
+        let grid = Array(9).fill('');
+        let turn = 'X';
+        let over = false;
+        let isAi = true;
+        let hardMode = false;
+        let score = { x: 0, o: 0, d: 0 };
+
+        const cells = document.querySelectorAll('.cell');
+        const statusEl = document.getElementById('status-line');
+        const scX = document.getElementById('sc-x');
+        const scO = document.getElementById('sc-o');
+        const scD = document.getElementById('sc-d');
+        const lblO = document.getElementById('lbl-o');
+        const btnModeAi = document.getElementById('btn-mode-ai');
+        const btnModePvp = document.getElementById('btn-mode-pvp');
+        const btnDiff = document.getElementById('btn-diff');
+        const btnRestart = document.getElementById('btn-restart');
+        const btnClearScore = document.getElementById('btn-clear-score');
+
+        function evaluate(b) {
+            for (let [x, y, z] of LINES) {
+                if (b[x] && b[x] === b[y] && b[x] === b[z]) return { winner: b[x], line: [x, y, z] };
+            }
+            if (b.every(c => c !== '')) return { winner: 'draw', line: [] };
+            return null;
+        }
+
+        function clickCell(e) {
+            const idx = parseInt(e.target.dataset.i);
+            if (grid[idx] !== '' || over) return;
+
+            commitMove(idx, turn);
+            const res = evaluate(grid);
+            if (res) { finish(res); return; }
+
+            turn = (turn === 'X') ? 'O' : 'X';
+            refreshStatus();
+
+            if (isAi && turn === 'O' && !over) {
+                setTimeout(aiTurn, 220);
+            }
+        }
+
+        function commitMove(i, p) {
+            grid[i] = p;
+            cells[i].textContent = p;
+            cells[i].classList.add('taken', p.toLowerCase());
+        }
+
+        function aiTurn() {
+            if (over) return;
+
+            // Hard mode: Minimax
+            if (hardMode) {
+                let bestScore = -Infinity;
+                let move = -1;
+                for (let i = 0; i < 9; i++) {
+                    if (grid[i] === '') {
+                        grid[i] = 'O';
+                        let s = minimax(grid, 0, false);
+                        grid[i] = '';
+                        if (s > bestScore) { bestScore = s; move = i; }
+                    }
+                }
+                if (move !== -1) {
+                    commitMove(move, 'O');
+                    postAiCheck();
+                    return;
+                }
+            }
+
+            // Normal mode: Rule-based
+            for (let i = 0; i < 9; i++) {
+                if (grid[i] === '') {
+                    grid[i] = 'O';
+                    if (evaluate(grid)?.winner === 'O') {
+                        grid[i] = ''; commitMove(i, 'O'); postAiCheck(); return;
+                    }
+                    grid[i] = '';
+                }
+            }
+            for (let i = 0; i < 9; i++) {
+                if (grid[i] === '') {
+                    grid[i] = 'X';
+                    if (evaluate(grid)?.winner === 'X') {
+                        grid[i] = ''; commitMove(i, 'O'); postAiCheck(); return;
+                    }
+                    grid[i] = '';
+                }
+            }
+            if (grid[4] === '') { commitMove(4, 'O'); postAiCheck(); return; }
+
+            let open = grid.map((v, idx) => v === '' ? idx : null).filter(v => v !== null);
+            if (open.length > 0) {
+                let rand = open[Math.floor(Math.random() * open.length)];
+                commitMove(rand, 'O');
+                postAiCheck();
+            }
+        }
+
+        function minimax(b, depth, isMax) {
+            let res = evaluate(b);
+            if (res) {
+                if (res.winner === 'O') return 10 - depth;
+                if (res.winner === 'X') return depth - 10;
+                return 0;
+            }
+            if (isMax) {
+                let maxEval = -Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (b[i] === '') {
+                        b[i] = 'O';
+                        maxEval = Math.max(maxEval, minimax(b, depth + 1, false));
+                        b[i] = '';
+                    }
+                }
+                return maxEval;
+            } else {
+                let minEval = Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (b[i] === '') {
+                        b[i] = 'X';
+                        minEval = Math.min(minEval, minimax(b, depth + 1, true));
+                        b[i] = '';
+                    }
+                }
+                return minEval;
+            }
+        }
+
+        function postAiCheck() {
+            let res = evaluate(grid);
+            if (res) finish(res);
+            else { turn = 'X'; refreshStatus(); }
+        }
+
+        function finish(res) {
+            over = true;
+            if (res.winner === 'draw') {
+                statusEl.innerHTML = '<span class="win">Ничья!</span>';
+                score.d++;
+                scD.textContent = score.d;
+            } else {
+                res.line.forEach(i => cells[i].classList.add('winning'));
+                let title = (res.winner === 'X') ? 'Победа X!' : (isAi ? 'ИИ победил!' : 'Победа O!');
+                statusEl.innerHTML = `<span class="win">${title} 🎉</span>`;
+                if (res.winner === 'X') { score.x++; scX.textContent = score.x; }
+                else { score.o++; scO.textContent = score.o; }
+            }
+        }
+
+        function refreshStatus() {
+            if (over) return;
+            statusEl.innerHTML = `Ход: <span class="${turn.toLowerCase()}">${turn}</span>`;
+        }
+
+        function reset() {
+            grid = Array(9).fill('');
+            over = false;
+            turn = 'X';
+            cells.forEach(c => { c.textContent = ''; c.className = 'cell'; });
+            refreshStatus();
+        }
+
+        cells.forEach(c => c.addEventListener('click', clickCell));
+        btnRestart.addEventListener('click', reset);
+        btnClearScore.addEventListener('click', () => {
+            score = { x: 0, o: 0, d: 0 };
+            scX.textContent = '0'; scO.textContent = '0'; scD.textContent = '0';
+            reset();
+        });
+
+        btnModeAi.addEventListener('click', () => {
+            isAi = true;
+            btnModeAi.classList.add('active');
+            btnModePvp.classList.remove('active');
+            lblO.textContent = 'ИИ (O)';
+            reset();
+        });
+
+        btnModePvp.addEventListener('click', () => {
+            isAi = false;
+            btnModePvp.classList.add('active');
+            btnModeAi.classList.remove('active');
+            lblO.textContent = 'Игрок 2 (O)';
+            reset();
+        });
+
+        btnDiff.addEventListener('click', () => {
+            hardMode = !hardMode;
+            btnDiff.textContent = hardMode ? 'Сложность: Эксперт' : 'Сложность: Норма';
+            reset();
+        });
+
+        refreshStatus();
+    </script>
+</body>
+</html>

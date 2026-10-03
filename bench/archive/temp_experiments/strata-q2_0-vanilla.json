@@ -1,0 +1,47 @@
+{
+ "exe": "C:\\Users\\Ilia V\\Documents\\antigravity\\calm-noether\\Strata\\engine\\strata.exe",
+ "args": [
+  "--pack",
+  "C:\\Users\\Ilia V\\Documents\\antigravity\\calm-noether\\Strata-data\\packs\\q2_0",
+  "--native",
+  "C:\\Users\\Ilia V\\Documents\\antigravity\\calm-noether\\Strata-data\\models\\Q2_0\\Qwen3.8-Flash-Next-GSQ-RCO-Q2_0-00001-of-00002.gguf",
+  "--ple-gguf",
+  "C:\\Users\\Ilia V\\Documents\\antigravity\\calm-noether\\Strata-data\\models\\Q2_0\\Qwen3.8-Flash-Next-GSQ-RCO-Q2_0-00002-of-00002.gguf",
+  "--expert-profile",
+  "C:\\Users\\Ilia V\\Documents\\antigravity\\calm-noether\\Strata\\data\\expert-profile.bin",
+  "--expert-cache",
+  "auto",
+  "--prefill",
+  "1024",
+  "--spec",
+  "4",
+  "--mtp",
+  "C:\\Users\\Ilia V\\Documents\\antigravity\\calm-noether\\Strata-data\\mtp\\rt",
+  "--max-context",
+  "65536",
+  "--kv",
+  "q4_0"
+ ],
+ "cwd": "C:\\Users\\Ilia V\\Documents\\antigravity\\calm-noether\\Strata",
+ "tokenizer": "C:\\Users\\Ilia V\\Documents\\antigravity\\calm-noether\\Strata-data\\packs\\q2_0\\tokenizer",
+ "model_name": "qwen3.8-flash-next-q2_0",
+ "log": "C:\\Users\\Ilia V\\Documents\\antigravity\\calm-noether\\Strata\\strata-q2_0-vanilla.log",
+ "lib_dirs": [
+  "C:\\Python312\\Lib\\site-packages\\nvidia\\cu13\\bin\\x86_64",
+  "C:\\Users\\Ilia V\\Documents\\antigravity\\calm-noether\\Strata\\.venv\\Lib\\site-packages\\nvidia\\cu13\\bin\\x86_64"
+ ],
+ "port": 8080,
+ "gpu": 0,
+ "gpus_asked": true,
+ "fit_max_tokens": true,
+ "sampling": {
+  "temperature": 0.6,
+  "top_p": 0.95,
+  "top_k": 20,
+  "min_p": 0.05,
+  "presence_penalty": 0.2,
+  "repetition_penalty": 1.05,
+  "penalty_last_n": 256
+ },
+ "env": {}
+}
