@@ -1,0 +1,6 @@
+#pragma once
+
+#define STRATA_VERSION_MAJOR 0
+#define STRATA_VERSION_MINOR 1
+#define STRATA_VERSION_PATCH 39
+#define STRATA_VERSION "0.1.39"

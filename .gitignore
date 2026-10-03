@@ -47,7 +47,7 @@ build-vision.bat
 # setup.py outputs (engine, downloads) and release builds
 /engine/
 /build-release*/
-/dist/
+/dist/*.zip
 *.done
 rust/**/target/
 /third_party/*.zip
@@ -64,8 +64,3 @@ rust/**/target/
 /.rocm-win/
 /scratch/
 bench/*.json
-
-# Test games and model scratch outputs
-test_results/
-*qwen3.6*
-*Qwen3.6*

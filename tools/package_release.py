@@ -27,7 +27,7 @@ def get_version_info():
     if not build_json.exists():
         sys.exit("ERROR: engine/BUILD.json not found. Run build-patched-engine.bat first.")
     meta = json.loads(build_json.read_text(encoding="utf-8"))
-    version = meta.get("version", "0.1.35")
+    version = meta.get("version", "0.1.39")
     patched = meta.get("patched", False)
     return version, meta, patched
 
@@ -52,8 +52,13 @@ def build_full_zip(dist_dir: Path, version: str) -> Path:
         "README.md", "LICENSE", "START-HERE.bat", "SETUP.bat",
         "setup.py", "setup.sh", "requirements.txt", "CMakeLists.txt",
         "run-q2_0.bat", "run-coder-iq1_m.bat", "build-patched-engine.bat",
+        "start_qwen36_llama.bat", "start_qwen36_llama.ps1",
         "strata-q2_0.json", "strata-coder-iq1_m.json", "chat.py",
-        "engine/strata.exe", "engine/BUILD.json"
+        "engine/strata.exe", "engine/BUILD.json",
+        "bench/test_all_three_models.py", "bench/test_prefill_speed.py",
+        "bench/test_ram_headroom.py", "bench/test_qwen36_speed.py",
+        "docs/PREFILL_AND_RAM_AUDIT.md", "docs/QWEN3.6-35B-A3B-ANALYSIS.md",
+        "include/strata/version.hpp",
     ]
     
     include_dirs = ["serve", "tools", "data", "docs", "patches"]
@@ -61,10 +66,13 @@ def build_full_zip(dist_dir: Path, version: str) -> Path:
     exclude_dirs = {"__pycache__", ".venv", "build", "dist", ".git", ".github", "scratch"}
 
     with zipfile.ZipFile(out_path, "w", compression=zipfile.ZIP_DEFLATED) as z:
+        written = set()
         for f in include_files:
             fp = ROOT / f
             if fp.exists():
-                z.write(fp, f)
+                arc_name = f.replace("\\", "/")
+                z.write(fp, arc_name)
+                written.add(arc_name)
         
         for d in include_dirs:
             dp = ROOT / d
@@ -77,16 +85,21 @@ def build_full_zip(dist_dir: Path, version: str) -> Path:
                     if ext in exclude_exts:
                         continue
                     full_fp = Path(root) / file
-                    arc_path = full_fp.relative_to(ROOT)
-                    z.write(full_fp, str(arc_path))
+                    arc_path = str(full_fp.relative_to(ROOT)).replace("\\", "/")
+                    if arc_path not in written:
+                        z.write(full_fp, arc_path)
+                        written.add(arc_path)
 
     print(f"    -> Size: {out_path.stat().st_size / (1024*1024):.2f} MB")
     return out_path
 
 
 def generate_release_notes(dist_dir: Path, version: str) -> Path:
-    """Generate comprehensive Markdown release notes."""
+    """Generate comprehensive Markdown release notes if not already present."""
     notes_path = dist_dir / f"RELEASE_NOTES_v{version}.md"
+    if notes_path.exists():
+        print(f"[*] Preserving existing release notes: {notes_path.name}")
+        return notes_path
     content = f"""# StrataRealLowVRAM v{version} — Extreme Low-VRAM & Mobile GPU Edition
 
 > **Empirically verified on NVIDIA GeForce RTX 3050 Laptop (4 GB GDDR6) + AMD Ryzen 5 5500U (Zen 2 AVX-2) + 32 GB DDR4 on Windows 11.**  
@@ -180,7 +193,7 @@ def publish_release(version: str, notes_path: Path, assets: list[Path]):
     """Publish the release on GitHub using gh CLI."""
     repo = "RandoTeam/StrataRealLowVRAM"
     tag = f"v{version}"
-    title = f"StrataRealLowVRAM v{version} — Extreme Low-VRAM Edition (4GB VRAM)"
+    title = f"Strata Real Low-VRAM v{version} - Turbo Prefill & 3-Model Support"
     
     print(f"[*] Publishing release {tag} to {repo}...")
     
