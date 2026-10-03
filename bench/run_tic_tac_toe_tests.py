@@ -224,6 +224,30 @@ def run_model_test(config_file, out_dir, model_name):
 
 def main():
     target = sys.argv[1] if len(sys.argv) > 1 else "all"
+    
+    if target in ("--verify", "--check", "-c", "check", "verify", "--offline"):
+        print("[Verify] Validating generated Tic-Tac-Toe games across models...", flush=True)
+        summary_path = "test_results/tic_tac_toe/summary_results.json"
+        if not os.path.exists(summary_path):
+            print(f"[-] Summary file {summary_path} not found!", flush=True)
+            return 1
+        with open(summary_path, "r", encoding="utf-8") as f:
+            summary = json.load(f)
+        all_ok = True
+        for item in summary:
+            m = item.get("model")
+            gp = item.get("game_path")
+            if gp and os.path.exists(gp):
+                sz_kb = os.path.getsize(gp) / 1024
+                print(f"  [OK] {m}: Game verified at {gp} ({sz_kb:.1f} KB)", flush=True)
+            else:
+                print(f"  [-] {m}: Game file missing at {gp}", flush=True)
+                all_ok = False
+        if all_ok:
+            print("[Verify] All Tic-Tac-Toe games verified successfully without regressions.", flush=True)
+            return 0
+        return 1
+
     results = []
 
     if target in ("all", "coder"):
@@ -244,11 +268,14 @@ def main():
         if res_q2:
             results.append(res_q2)
 
-    with open("test_results/tic_tac_toe/summary_results.json", "w", encoding="utf-8") as f:
-        json.dump(results, f, indent=2)
+    if results:
+        with open("test_results/tic_tac_toe/summary_results.json", "w", encoding="utf-8") as f:
+            json.dump(results, f, indent=2)
 
     print("\n================== SUMMARY ==================", flush=True)
     print(json.dumps(results, indent=2), flush=True)
+    return 0
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
+

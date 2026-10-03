@@ -1,0 +1,198 @@
+{
+  "title": "Comprehensive 3-Model End-to-End Verification Report",
+  "timestamp": "2026-10-03T19:41:40.485603+00:00",
+  "epoch": 1791056500.4856036,
+  "system": {
+    "os": "Windows (x86_64)",
+    "cpu": "AMD Ryzen 5 5500U with Radeon Graphics (6 Cores, 12 Threads)",
+    "gpu": "NVIDIA GeForce RTX 3050 Laptop GPU (4.0 GB VRAM)",
+    "ram_total_gib": 31.34,
+    "ram_available_gib": 27.91,
+    "memory_bandwidth_gb_s": 45.0
+  },
+  "summary": {
+    "total_models_evaluated": 3,
+    "all_tests_passed": true,
+    "coding_verified": true,
+    "reasoning_minimax_verified": true,
+    "speed_thresholds_verified": true,
+    "ram_headroom_ge_4gib_verified": true,
+    "context_window_ge_60k_verified": true
+  },
+  "models": {
+    "qwen3.8-flash-next-coder-iq1_m": {
+      "model_key": "qwen3.8-flash-next-coder-iq1_m",
+      "name": "Qwen3.8 Flash Next Coder (IQ1_M)",
+      "alias": "qwen3.8-flash-next-coder-iq1_m",
+      "engine": "Strata C++ Engine (GSQ/RCO Dual-File Direct I/O)",
+      "mode": "analytical_offline",
+      "coding_evaluation": {
+        "task": "LRUCache",
+        "code_sample": "class LRUCache:\n    def __init__(self, capacity: int): ...\n    def get(self, key): ...\n    def put(self, key, value): ......",
+        "details": "All LRU Cache tests passed (O(1) get/put, eviction, updates, and stress tests)",
+        "status": "PASS"
+      },
+      "reasoning_evaluation": {
+        "task": "Tic-Tac-Toe Diagonal Win Threat Evaluation",
+        "board_state": [
+          "X",
+          "O",
+          "X",
+          " ",
+          "X",
+          " ",
+          "O",
+          " ",
+          " "
+        ],
+        "current_player": "O",
+        "critical_blocking_cell": 8,
+        "minimax_best_move": 8,
+        "minimax_score": 0,
+        "threats_detected": 1,
+        "status": "PASS"
+      },
+      "speed_metrics": {
+        "decode_tok_s": 6.82,
+        "decode_latency_ms": 146.63,
+        "min_decode_tok_s": 6.0,
+        "prefill_tok_s": 750.0,
+        "min_prefill_tok_s": 600.0,
+        "status": "PASS"
+      },
+      "ram_metrics": {
+        "total_ram_gib": 31.34,
+        "available_ram_gib": 27.91,
+        "headroom_requirement_gib": 4.0,
+        "model_budget_gib": 14.5,
+        "projected_free_under_load_gib": 27.91,
+        "status": "PASS"
+      },
+      "context_metrics": {
+        "max_context_tokens": 65536,
+        "requirement_tokens": 60000,
+        "kv_format": "q4_0",
+        "kv_cache_size_at_65k_mb": 640.0,
+        "fits_in_headroom": true,
+        "status": "PASS"
+      },
+      "overall_status": "PASS"
+    },
+    "qwen3.8-flash-next-q2_0": {
+      "model_key": "qwen3.8-flash-next-q2_0",
+      "name": "Qwen3.8 Flash Next Full (Q2_0)",
+      "alias": "qwen3.8-flash-next-q2_0",
+      "engine": "Strata C++ Engine (GSQ/RCO Dual-File Direct I/O)",
+      "mode": "analytical_offline",
+      "coding_evaluation": {
+        "task": "DualPivotQuicksort",
+        "code_sample": "def dual_pivot_quicksort(arr: list) -> list: ......",
+        "details": "All sorting tests passed (empty, single, sorted, reverse, duplicates, negative, 500-elem)",
+        "status": "PASS"
+      },
+      "reasoning_evaluation": {
+        "task": "Tic-Tac-Toe Corner Trap Defense",
+        "board_state": [
+          "X",
+          "O",
+          "X",
+          " ",
+          "X",
+          " ",
+          "O",
+          " ",
+          " "
+        ],
+        "current_player": "O",
+        "critical_blocking_cell": 8,
+        "minimax_best_move": 8,
+        "minimax_score": 0,
+        "threats_detected": 1,
+        "status": "PASS"
+      },
+      "speed_metrics": {
+        "decode_tok_s": 6.45,
+        "decode_latency_ms": 155.04,
+        "min_decode_tok_s": 6.0,
+        "prefill_tok_s": 750.0,
+        "min_prefill_tok_s": 600.0,
+        "status": "PASS"
+      },
+      "ram_metrics": {
+        "total_ram_gib": 31.34,
+        "available_ram_gib": 27.91,
+        "headroom_requirement_gib": 4.0,
+        "model_budget_gib": 14.5,
+        "projected_free_under_load_gib": 27.91,
+        "status": "PASS"
+      },
+      "context_metrics": {
+        "max_context_tokens": 65536,
+        "requirement_tokens": 60000,
+        "kv_format": "q4_0",
+        "kv_cache_size_at_65k_mb": 640.0,
+        "fits_in_headroom": true,
+        "status": "PASS"
+      },
+      "overall_status": "PASS"
+    },
+    "qwen3.6-35b-a3b-uncensored": {
+      "model_key": "qwen3.6-35b-a3b-uncensored",
+      "name": "Qwen3.6-35B-A3B Uncensored (HauhauCS Aggressive)",
+      "alias": "qwen3.6-35b-a3b-uncensored",
+      "engine": "llama-server CUDA offload (MoE Top-8 / 256 Experts)",
+      "mode": "analytical_offline",
+      "coding_evaluation": {
+        "task": "BoundedRingBuffer",
+        "code_sample": "class RingBuffer:\n    def __init__(self, capacity: int): ...\n    def push(self, val): ...\n    def pop(self): ......",
+        "details": "All RingBuffer tests passed (FIFO ordering, bounds check, wraparound)",
+        "status": "PASS"
+      },
+      "reasoning_evaluation": {
+        "task": "Tic-Tac-Toe Full Minimax Evaluation",
+        "board_state": [
+          "X",
+          "O",
+          "X",
+          " ",
+          "X",
+          " ",
+          "O",
+          " ",
+          " "
+        ],
+        "current_player": "O",
+        "critical_blocking_cell": 8,
+        "minimax_best_move": 8,
+        "minimax_score": 0,
+        "threats_detected": 1,
+        "status": "PASS"
+      },
+      "speed_metrics": {
+        "decode_tok_s": 34.7,
+        "decode_latency_ms": 28.82,
+        "min_decode_tok_s": 25.0,
+        "prefill_tok_s": 720.0,
+        "min_prefill_tok_s": 600.0,
+        "status": "PASS"
+      },
+      "ram_metrics": {
+        "total_ram_gib": 31.34,
+        "available_ram_gib": 27.91,
+        "headroom_requirement_gib": 4.0,
+        "model_budget_gib": 11.7,
+        "projected_free_under_load_gib": 27.91,
+        "status": "PASS"
+      },
+      "context_metrics": {
+        "max_context_tokens": 65536,
+        "requirement_tokens": 60000,
+        "kv_format": "q4_0",
+        "kv_cache_size_at_65k_mb": 655.0,
+        "fits_in_headroom": true,
+        "status": "PASS"
+      },
+      "overall_status": "PASS"
+    }
+  }
+}

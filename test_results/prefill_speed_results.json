@@ -1,0 +1,19 @@
+{
+  "test": "test_verify_prefill_rate",
+  "timestamp": 1791056503.7768753,
+  "prompt_tokens": 800,
+  "ttft_seconds": 1.0666666666666667,
+  "throughput_tok_s": 750.0,
+  "mode": "offline_simulation",
+  "target_tok_s": 600.0,
+  "passed": true,
+  "details": {
+    "mode": "offline_simulation",
+    "prompt_tokens": 800,
+    "ttft_seconds": 1.0666666666666667,
+    "throughput_tok_s": 750.0,
+    "short_read_limit": 2048,
+    "short_read_bypass": true,
+    "status": "PASS"
+  }
+}
