@@ -1,5 +1,5 @@
 # ============================================================
-# Strata / llama-server + DeepSeek Harness Unified Launcher
+# Strata + DeepSeek Harness Unified Launcher
 # ============================================================
 
 param(
@@ -8,38 +8,27 @@ param(
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
-$Host.UI.RawUI.WindowTitle = "Strata / llama-server + DeepSeek Harness"
+$Host.UI.RawUI.WindowTitle = "Strata + DeepSeek Harness"
 
 $strataDir = "C:\Users\Ilia V\Documents\antigravity\calm-noether\Strata"
 
 Write-Host ""
 Write-Host "  +===========================================================+" -ForegroundColor Cyan
-Write-Host "  |   Strata / llama-server + DeepSeek Harness Launcher       |" -ForegroundColor Cyan
+Write-Host "  |   Strata + DeepSeek Harness Launcher                      |" -ForegroundColor Cyan
 Write-Host "  +===========================================================+" -ForegroundColor Cyan
 Write-Host ""
 
 if (-not $Model) {
-    Write-Host "  Select model to launch:" -ForegroundColor Cyan
-    Write-Host "    [1] Qwen 3.8 Flash Next Coder (IQ1_M) - Strata (Fastest Coder, 84.2% SWE-bench)" -ForegroundColor White
-    Write-Host "    [2] Qwen 3.8 Flash Next Full (Q2_0)    - Strata (Full Reasoning, 91.9% LCB)" -ForegroundColor White
-    Write-Host "    [3] Qwen 3.6 35B A3B Uncensored        - HauhauCS Aggressive via llama-server (25-32 tok/s)" -ForegroundColor White
+    Write-Host "  Select Strata model to launch:" -ForegroundColor Cyan
+    Write-Host "    [1] Qwen 3.8 Flash Next Coder (IQ1_M) - Fast, Deep Coding (84.2% SWE-bench)" -ForegroundColor White
+    Write-Host "    [2] Qwen 3.8 Flash Next Full (Q2_0)    - Full Precision Reasoning (91.9% LCB)" -ForegroundColor White
     Write-Host ""
-    $choice = Read-Host "  Enter choice [1-3] (Default: 1)"
+    $choice = Read-Host "  Enter choice [1-2] (Default: 1)"
     if (-not $choice) { $choice = "1" }
     $Model = $choice
 }
 
-$isQwen36 = $false
-if ($Model -eq "3" -or $Model -match "35b" -or $Model -match "qwen36" -or $Model -match "uncensored") {
-    $isQwen36 = $true
-    $modelTitle = "Qwen 3.6 35B A3B Uncensored (HauhauCS Aggressive via llama-server)"
-    $serverBat = "$strataDir\start_qwen36_llama.bat"
-    $healthUrl = "http://127.0.0.1:8081/health"
-    $healthFallbackUrl = "http://127.0.0.1:8081/v1/models"
-    $processName = "llama-server"
-    $ramNote = "11.7 GB into RAM/VRAM"
-    $port = 8081
-} elseif ($Model -eq "2" -or $Model -match "q2" -or $Model -match "full") {
+if ($Model -eq "2" -or $Model -match "q2" -or $Model -match "full") {
     $modelTitle = "Qwen 3.8 Flash Next Full (Q2_0)"
     $serverBat = "$strataDir\run-q2_0.bat"
     $healthUrl = "http://127.0.0.1:8080/health"

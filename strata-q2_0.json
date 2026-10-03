@@ -67,8 +67,7 @@
  "aliases": [
   "default",
   "qwen3.8-flash-next-coder-iq1_m",
-  "qwen3.8-flash-next-q2_0",
-  "qwen3.6-35b-a3b-uncensored"
+  "qwen3.8-flash-next-q2_0"
  ],
  "log": "C:\\Users\\Ilia V\\Documents\\antigravity\\calm-noether\\Strata\\strata-q2_0-our.log",
  "lib_dirs": [

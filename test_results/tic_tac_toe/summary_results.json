@@ -36,24 +36,5 @@
     "game_size_kb": 3.3,
     "expert_cache_hits": 4310,
     "expert_cache_lookups": 5340
-  },
-  {
-    "model": "Qwen3.6-35B-A3B-Uncensored",
-    "config": "start_qwen36_llama.ps1",
-    "initial_ram_gb": 28.02,
-    "ready_ram_gb": 16.32,
-    "peak_free_ram_gb": 15.67,
-    "prompt_tokens": 800,
-    "prompt_ms": 1111.1,
-    "prefill_tok_s": 720.0,
-    "ttft_s": 0.028,
-    "output_tokens": 985,
-    "decode_ms": 28386.1,
-    "decode_tok_s": 34.7,
-    "total_time_s": 29.5,
-    "game_path": "test_results/tic_tac_toe/qwen3.6_35b\\index.html",
-    "game_size_kb": 8.5,
-    "expert_cache_hits": 7880,
-    "expert_cache_lookups": 7880
   }
 ]

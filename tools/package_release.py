@@ -52,12 +52,11 @@ def build_full_zip(dist_dir: Path, version: str) -> Path:
         "README.md", "LICENSE", "START-HERE.bat", "SETUP.bat",
         "setup.py", "setup.sh", "requirements.txt", "CMakeLists.txt",
         "run-q2_0.bat", "run-coder-iq1_m.bat", "build-patched-engine.bat",
-        "start_qwen36_llama.bat", "start_qwen36_llama.ps1",
+        "start_strata_with_harness.bat", "start_strata_with_harness.ps1",
         "strata-q2_0.json", "strata-coder-iq1_m.json", "chat.py",
         "engine/strata.exe", "engine/BUILD.json",
-        "bench/test_all_three_models.py", "bench/test_prefill_speed.py",
-        "bench/test_ram_headroom.py", "bench/test_qwen36_speed.py",
-        "docs/PREFILL_AND_RAM_AUDIT.md", "docs/QWEN3.6-35B-A3B-ANALYSIS.md",
+        "bench/test_prefill_speed.py", "bench/test_ram_headroom.py",
+        "docs/PREFILL_AND_RAM_AUDIT.md",
         "include/strata/version.hpp",
     ]
     

@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """
-Comprehensive verification test for all 3 models:
+Comprehensive verification test for Strata models:
 1. Qwen3.8 Coder IQ1_M in Strata (Web Chat + DSH API)
 2. Qwen3.8 Full Q2_0 in Strata (Web Chat + DSH API)
-3. Qwen3.6-35B-A3B in llama-server (Web Chat + DSH API)
 """
 
 import os
@@ -162,23 +161,15 @@ def verify_configurations_and_readiness():
         print(f"  [-] Model 2 config missing: {q2_cfg_path}", flush=True)
         return False
 
-    # 4. Qwen3.6-35B-A3B Uncensored
-    qwen36_launcher = os.path.join(STRATA_DIR, "start_qwen36_llama.ps1")
-    if os.path.exists(qwen36_launcher):
-        print(f"  [OK] Model 3: Qwen3.6-35B-A3B-Uncensored ({qwen36_launcher}) - llama-server Port 8081, Max Context: 65536", flush=True)
-    else:
-        print(f"  [-] Model 3 launcher missing: {qwen36_launcher}", flush=True)
-        return False
-
-    # 5. Check live endpoints if active
+    # 4. Check live endpoints if active
     if wait_for_server("http://127.0.0.1:8080/v1/models", timeout=1):
         print("  [Live] Port 8080 active. Probing live Web Chat and DSH API...", flush=True)
         test_web_chat_ui()
         test_dsh_api("default")
     else:
-        print("  [Offline] Servers idle. Analytical validation confirms all 3 configurations valid.", flush=True)
+        print("  [Offline] Servers idle. Analytical validation confirms both configurations valid.", flush=True)
 
-    print("[Verify] All 3 models verified cleanly without regressions.", flush=True)
+    print("[Verify] Strata models verified cleanly without regressions.", flush=True)
     return True
 
 if __name__ == "__main__":
