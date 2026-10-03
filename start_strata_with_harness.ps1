@@ -1,19 +1,29 @@
 # ============================================================
-# Strata (Qwen3.8 Coder IQ1_M) + DeepSeek Harness Launcher
+# Strata (Qwen3.8 Coder / Q2_0) + DeepSeek Harness Launcher
 # ============================================================
+
+param(
+    [string]$Model = "coder"
+)
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 $Host.UI.RawUI.WindowTitle = "Strata + DeepSeek Harness"
 
-Write-Host ""
-Write-Host "  +======================================================+" -ForegroundColor Cyan
-Write-Host "  |   Strata (Qwen3.8 Coder) + DeepSeek Harness          |" -ForegroundColor Cyan
-Write-Host "  +======================================================+" -ForegroundColor Cyan
-Write-Host ""
+$strataDir = $PSScriptRoot
+if ($Model -match "q2") {
+    $modelTitle = "Qwen3.8 Full Q2_0"
+    $strataBat = "$strataDir\run-q2_0.bat"
+} else {
+    $modelTitle = "Qwen3.8 Coder IQ1_M"
+    $strataBat = "$strataDir\run-coder-iq1_m.bat"
+}
 
-$strataDir = "C:\Users\Ilia V\Documents\antigravity\calm-noether\Strata"
-$strataBat = "$strataDir\run-coder-iq1_m.bat"
+Write-Host ""
+Write-Host "  +======================================================+" -ForegroundColor Cyan
+Write-Host "  |   Strata ($modelTitle) + DeepSeek Harness       |" -ForegroundColor Cyan
+Write-Host "  +======================================================+" -ForegroundColor Cyan
+Write-Host ""
 
 function Test-HttpPort($url) {
     try {
@@ -32,13 +42,13 @@ if (-not $strataReady) {
     if (-not $runningStrata) {
         Write-Host "        Compacting RAM and freeing standby cache for 2 MB Large Pages..." -ForegroundColor Cyan
         & powershell.exe -ExecutionPolicy Bypass -File "$strataDir\tools\optimize_memory.ps1"
-        Write-Host "        Starting Strata server in a new window..." -ForegroundColor Green
+        Write-Host "        Starting Strata server ($modelTitle) in a new window..." -ForegroundColor Green
         Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$strataBat`"" -WorkingDirectory $strataDir
     } else {
         Write-Host "        Strata process is already loading weights..." -ForegroundColor Yellow
     }
 
-    Write-Host "        Waiting for Strata to finish loading 23.4 GB into RAM/VRAM..." -ForegroundColor DarkGray
+    Write-Host "        Waiting for Strata to finish loading weights into RAM/VRAM..." -ForegroundColor DarkGray
     $elapsed = 0
     while (-not $strataReady -and $elapsed -lt 300) {
         Start-Sleep -Seconds 2

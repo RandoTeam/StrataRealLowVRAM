@@ -62,13 +62,10 @@ rust/**/target/
 .vscode/
 
 /.rocm-win/
+/scratch/
 bench/*.json
 
-# test results & benchmarks
+# Test games and model scratch outputs
 test_results/
-
-# model files & weights
-*.gguf
-*.bin
-/Strata-data/
-*qwen3.6*.gguf
+*qwen3.6*
+*Qwen3.6*
