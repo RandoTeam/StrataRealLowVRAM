@@ -29,7 +29,7 @@
   "6",
   "--expert-cache-cpu-order",
   "--prefill",
-  "2048",
+  "auto",
   "--spec",
   "8",
   "--mtp-max-t",
