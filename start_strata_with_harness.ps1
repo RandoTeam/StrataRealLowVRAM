@@ -1,29 +1,61 @@
 # ============================================================
-# Strata (Qwen3.8 Coder / Q2_0) + DeepSeek Harness Launcher
+# Strata / llama-server + DeepSeek Harness Unified Launcher
 # ============================================================
 
 param(
-    [string]$Model = "coder"
+    [string]$Model = ""
 )
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
-$Host.UI.RawUI.WindowTitle = "Strata + DeepSeek Harness"
+$Host.UI.RawUI.WindowTitle = "Strata / llama-server + DeepSeek Harness"
 
-$strataDir = $PSScriptRoot
-if ($Model -match "q2") {
-    $modelTitle = "Qwen3.8 Full Q2_0"
-    $strataBat = "$strataDir\run-q2_0.bat"
-} else {
-    $modelTitle = "Qwen3.8 Coder IQ1_M"
-    $strataBat = "$strataDir\run-coder-iq1_m.bat"
+$strataDir = "C:\Users\Ilia V\Documents\antigravity\calm-noether\Strata"
+
+Write-Host ""
+Write-Host "  +===========================================================+" -ForegroundColor Cyan
+Write-Host "  |   Strata / llama-server + DeepSeek Harness Launcher       |" -ForegroundColor Cyan
+Write-Host "  +===========================================================+" -ForegroundColor Cyan
+Write-Host ""
+
+if (-not $Model) {
+    Write-Host "  Select model to launch:" -ForegroundColor Cyan
+    Write-Host "    [1] Qwen 3.8 Flash Next Coder (IQ1_M) - Strata (Fastest Coder, 84.2% SWE-bench)" -ForegroundColor White
+    Write-Host "    [2] Qwen 3.8 Flash Next Full (Q2_0)    - Strata (Full Reasoning, 91.9% LCB)" -ForegroundColor White
+    Write-Host "    [3] Qwen 3.6 35B A3B Uncensored        - HauhauCS Aggressive via llama-server (25-32 tok/s)" -ForegroundColor White
+    Write-Host ""
+    $choice = Read-Host "  Enter choice [1-3] (Default: 1)"
+    if (-not $choice) { $choice = "1" }
+    $Model = $choice
 }
 
-Write-Host ""
-Write-Host "  +======================================================+" -ForegroundColor Cyan
-Write-Host "  |   Strata ($modelTitle) + DeepSeek Harness       |" -ForegroundColor Cyan
-Write-Host "  +======================================================+" -ForegroundColor Cyan
-Write-Host ""
+$isQwen36 = $false
+if ($Model -eq "3" -or $Model -match "35b" -or $Model -match "qwen36" -or $Model -match "uncensored") {
+    $isQwen36 = $true
+    $modelTitle = "Qwen 3.6 35B A3B Uncensored (HauhauCS Aggressive via llama-server)"
+    $serverBat = "$strataDir\start_qwen36_llama.bat"
+    $healthUrl = "http://127.0.0.1:8081/health"
+    $healthFallbackUrl = "http://127.0.0.1:8081/v1/models"
+    $processName = "llama-server"
+    $ramNote = "11.7 GB into RAM/VRAM"
+    $port = 8081
+} elseif ($Model -eq "2" -or $Model -match "q2" -or $Model -match "full") {
+    $modelTitle = "Qwen 3.8 Flash Next Full (Q2_0)"
+    $serverBat = "$strataDir\run-q2_0.bat"
+    $healthUrl = "http://127.0.0.1:8080/health"
+    $healthFallbackUrl = "http://127.0.0.1:8080/v1/models"
+    $processName = "strata"
+    $ramNote = "27.8 GB into RAM/VRAM"
+    $port = 8080
+} else {
+    $modelTitle = "Qwen 3.8 Flash Next Coder (IQ1_M)"
+    $serverBat = "$strataDir\run-coder-iq1_m.bat"
+    $healthUrl = "http://127.0.0.1:8080/health"
+    $healthFallbackUrl = "http://127.0.0.1:8080/v1/models"
+    $processName = "strata"
+    $ramNote = "23.4 GB into RAM/VRAM"
+    $port = 8080
+}
 
 function Test-HttpPort($url) {
     try {
@@ -34,36 +66,37 @@ function Test-HttpPort($url) {
     }
 }
 
-Write-Host "  [1/2] Checking Strata server (http://127.0.0.1:8080/health)..." -ForegroundColor Yellow
-$strataReady = Test-HttpPort "http://127.0.0.1:8080/health"
+Write-Host "  Selected: $modelTitle" -ForegroundColor Green
+Write-Host "  [1/2] Checking model server ($healthUrl)..." -ForegroundColor Yellow
+$serverReady = (Test-HttpPort $healthUrl) -or (Test-HttpPort $healthFallbackUrl)
 
-if (-not $strataReady) {
-    $runningStrata = Get-Process -Name "strata" -ErrorAction SilentlyContinue
-    if (-not $runningStrata) {
-        Write-Host "        Compacting RAM and freeing standby cache for 2 MB Large Pages..." -ForegroundColor Cyan
+if (-not $serverReady) {
+    $runningProc = Get-Process -Name $processName -ErrorAction SilentlyContinue
+    if (-not $runningProc) {
+        Write-Host "        Compacting RAM and freeing standby cache for Large Pages..." -ForegroundColor Cyan
         & powershell.exe -ExecutionPolicy Bypass -File "$strataDir\tools\optimize_memory.ps1"
-        Write-Host "        Starting Strata server ($modelTitle) in a new window..." -ForegroundColor Green
-        Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$strataBat`"" -WorkingDirectory $strataDir
+        Write-Host "        Starting $modelTitle in a new window..." -ForegroundColor Green
+        Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$serverBat`"" -WorkingDirectory $strataDir
     } else {
-        Write-Host "        Strata process is already loading weights..." -ForegroundColor Yellow
+        Write-Host "        $processName process is already loading weights..." -ForegroundColor Yellow
     }
 
-    Write-Host "        Waiting for Strata to finish loading weights into RAM/VRAM..." -ForegroundColor DarkGray
+    Write-Host "        Waiting for server to finish loading $ramNote..." -ForegroundColor DarkGray
     $elapsed = 0
-    while (-not $strataReady -and $elapsed -lt 300) {
+    while (-not $serverReady -and $elapsed -lt 300) {
         Start-Sleep -Seconds 2
         $elapsed += 2
-        $strataReady = Test-HttpPort "http://127.0.0.1:8080/health"
-        if (-not $strataReady -and ($elapsed % 10 -eq 0)) {
+        $serverReady = (Test-HttpPort $healthUrl) -or (Test-HttpPort $healthFallbackUrl)
+        if (-not $serverReady -and ($elapsed % 10 -eq 0)) {
             Write-Host "        ... still loading ($elapsed s elapsed)" -ForegroundColor DarkGray
         }
     }
 }
 
-if ($strataReady) {
-    Write-Host "        [OK] Strata is ONLINE and READY on port 8080!" -ForegroundColor Green
+if ($serverReady) {
+    Write-Host "        [OK] $modelTitle is ONLINE and READY on port $port!" -ForegroundColor Green
 } else {
-    Write-Host "        [ERROR] Strata did not respond within 300s. Check the Strata window." -ForegroundColor Red
+    Write-Host "        [ERROR] Model server did not respond within 300s. Check the server console window." -ForegroundColor Red
     Write-Host "        Press any key to exit..."
     $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
     exit 1

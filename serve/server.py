@@ -2129,6 +2129,85 @@ def make_handler(svc: Service):
                 return True
             return False
 
+        def _is_llama_running(self, host: str = "127.0.0.1", port: int = 8081, timeout: float = 0.3) -> bool:
+            try:
+                with socket.create_connection((host, port), timeout=timeout):
+                    return True
+            except OSError:
+                return False
+
+        def _should_proxy_to_llama(self, req: dict) -> bool:
+            model = str((req or {}).get("model") or "").strip().lower()
+            qwen36_keys = ("35b", "qwen3.6", "qwen-3.6", "qwen_3.6", "qwen36", "uncensored")
+            if any(k in model for k in qwen36_keys):
+                return True
+            if any(k in (svc.model or "").lower() for k in qwen36_keys):
+                return True
+            if self._is_llama_running(port=8081) and model and model != (svc.model or "").lower() and model not in [a.lower() for a in svc.aliases]:
+                return True
+            return False
+
+        def _proxy_to_llama(self, req: dict, port: int = 8081):
+            url = f"http://127.0.0.1:{port}/v1/chat/completions"
+            body = json.dumps(req, ensure_ascii=False).encode("utf-8")
+            is_stream = bool(req.get("stream"))
+            headers = {
+                "Content-Type": "application/json",
+                "Accept": "text/event-stream" if is_stream else "application/json",
+            }
+            proxy_req = urllib.request.Request(url, data=body, headers=headers, method="POST")
+            try:
+                if is_stream:
+                    with urllib.request.urlopen(proxy_req, timeout=300) as resp:
+                        self._note(http_status=resp.status)
+                        self.send_response(resp.status)
+                        self.send_header("Content-Type", "text/event-stream")
+                        self.send_header("Cache-Control", "no-cache")
+                        self.send_header("X-Accel-Buffering", "no")
+                        self._cors()
+                        self.end_headers()
+                        while True:
+                            chunk = resp.read(1024)
+                            if not chunk:
+                                break
+                            self.wfile.write(chunk)
+                            self.wfile.flush()
+                else:
+                    with urllib.request.urlopen(proxy_req, timeout=300) as resp:
+                        resp_data = resp.read()
+                        self._note(http_status=resp.status)
+                        if self.record is not None:
+                            try:
+                                parsed = json.loads(resp_data.decode("utf-8", "replace"))
+                                for key in ("usage", "timings"):
+                                    if key in parsed:
+                                        self.record[key] = parsed[key]
+                            except Exception:
+                                pass
+                        self.send_response(resp.status)
+                        self.send_header("Content-Type", "application/json")
+                        self._cors()
+                        self.send_header("Content-Length", str(len(resp_data)))
+                        self.end_headers()
+                        self.wfile.write(resp_data)
+            except urllib.error.HTTPError as e:
+                err_data = e.read()
+                self._note(http_status=e.code)
+                self.send_response(e.code)
+                self.send_header("Content-Type", "application/json")
+                self._cors()
+                self.send_header("Content-Length", str(len(err_data)))
+                self.end_headers()
+                self.wfile.write(err_data)
+            except Exception as e:
+                self._note(outcome="proxy_error", error=str(e))
+                self._json(503, {
+                    "error": {
+                        "type": "server_error",
+                        "message": f"Proxy to llama-server on port {port} failed: {e}"
+                    }
+                })
+
         def _watch_client(self, cancel: threading.Event) -> None:
             """#430 #431: cancel the request as soon as its client hangs up.  A non-streamed request writes nothing
             until it ends, and a streamed one only a keep-alive per prompt chunk (and the first write after a hang-up
@@ -2311,7 +2390,17 @@ def make_handler(svc: Service):
                     if svc.aliases:                       # #297: the aliases, and each one listed under its own id
                         model["aliases"] = list(svc.aliases)
                     data = [model, *({**model, "id": x, "alias_of": svc.model} for x in svc.aliases)]
-                    self._json(200, {"object": "list", "data": data if loaded else []})
+                    qwen36_id = "qwen3.6-35b-a3b-uncensored"
+                    llama_up = self._is_llama_running(port=8081)
+                    if qwen36_id not in [m["id"] for m in data]:
+                        data.append({
+                            "id": qwen36_id,
+                            "object": "model",
+                            "status": {"value": "loaded" if llama_up else "unloaded"},
+                            "meta": {"n_ctx": 65536},
+                            "architecture": {"input_modalities": ["text"], "output_modalities": ["text"]}
+                        })
+                    self._json(200, {"object": "list", "data": data if (loaded or llama_up) else []})
             elif path == "/props":
                 if self._authorized():
                     self._props()
@@ -2522,6 +2611,22 @@ def make_handler(svc: Service):
                 items.close()
 
         def _openai(self, req):
+            if self._should_proxy_to_llama(req):
+                if self._is_llama_running(port=8081):
+                    return self._proxy_to_llama(req, port=8081)
+                elif os.environ.get("STRATA_FALLBACK_ON_8081_DOWN") == "1" or req.get("fallback_native"):
+                    print(f"[strata] llama-server on port 8081 is offline, falling back to native engine ({svc.model})", flush=True)
+                else:
+                    return self._json(503, {
+                        "error": {
+                            "type": "server_error",
+                            "message": (
+                                f"Model '{req.get('model')}' requires llama-server on port 8081, but port 8081 is not running. "
+                                f"Please run 'start_qwen36_llama.bat' or 'start_qwen36_llama.ps1' to launch Qwen3.6-35B-A3B, "
+                                f"or omit/change the model to use native Strata model '{svc.model}'."
+                            )
+                        }
+                    })
             req = svc.with_shared(req, "openai")
             messages, tools, kw = openai_to_messages(req)
             fast_title = _fast_session_title(messages)
