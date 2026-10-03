@@ -1,33 +1,55 @@
-import os
 import sys
 import time
 import argparse
-import subprocess
 import json
+import urllib.request
+import urllib.error
+import pathlib
 
-def run_prefill_benchmark(prompt_tokens, strata_binary="strata"):
-    """
-    Simulate running a prefill benchmark. 
-    In a real system, this would call the strata binary with appropriate arguments.
-    """
+def try_live_benchmark(prompt_tokens):
+    url = 'http://127.0.0.1:8000/v1/chat/completions'
+    
+    # We create a dummy prompt of approximate size (assuming 1 token ~ 4 chars)
+    dummy_text = "test " * (prompt_tokens // 2)
+    data = json.dumps({
+        "model": "strata",
+        "messages": [{"role": "user", "content": dummy_text}],
+        "stream": False
+    }).encode('utf-8')
+    
+    req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+    
+    try:
+        start_time = time.time()
+        with urllib.request.urlopen(req, timeout=10) as response:
+            response.read()
+            end_time = time.time()
+            ttft = end_time - start_time
+            return {
+                "prompt_tokens": prompt_tokens,
+                "ttft_seconds": ttft,
+                "prefill_throughput_tok_s": prompt_tokens / ttft if ttft > 0 else 0,
+                "streaming_mode": "live",
+                "short_read_bypass": "unknown",
+                "partial_pin_active": "unknown",
+                "resident_budget_gib": "unknown"
+            }
+    except (urllib.error.URLError, ConnectionError):
+        return None
+
+def run_prefill_benchmark(prompt_tokens):
     print(f"Running prefill benchmark for {prompt_tokens} tokens...")
-    # Mocking results based on our understanding of the current degradation
-    # Upstream vs Fork degradations
-    # If prompt is small (< 64), it might use fast path if --short-read is 64.
-    # Otherwise, it uses slow streaming if STRATA_PREFILL_STREAM_MIN=32 is hit.
     
-    start_time = time.time()
-    
-    # We'll just output some mock metrics that reflect the issue.
-    # Our fork gets ~13.4 tok/s on large prompts (e.g. 1000+)
-    # Stock strata gets ~572-1290 tok/s.
-    
+    live_res = try_live_benchmark(prompt_tokens)
+    if live_res:
+        print(" Live endpoint reachable. Using live metrics.")
+        return live_res
+        
+    print(" Endpoint unreachable. Using offline simulation.")
     ttft = prompt_tokens / 13.4
     throughput = 13.4
     
-    end_time = time.time()
-    
-    result = {
+    return {
         "prompt_tokens": prompt_tokens,
         "ttft_seconds": ttft,
         "prefill_throughput_tok_s": throughput,
@@ -36,8 +58,6 @@ def run_prefill_benchmark(prompt_tokens, strata_binary="strata"):
         "partial_pin_active": True,
         "resident_budget_gib": 20
     }
-    
-    return result
 
 def main():
     parser = argparse.ArgumentParser(description="Prefill diagnostics for Strata")
@@ -59,8 +79,12 @@ def main():
         print(f"  Mode: {r['streaming_mode']} (Bypass: {r['short_read_bypass']})")
         print("-" * 25)
         
-    with open("prefill_diagnostics_results.json", "w") as f:
+    out_dir = pathlib.Path("test_results")
+    out_dir.mkdir(exist_ok=True)
+    out_file = out_dir / "prefill_diagnostics_results.json"
+    with open(out_file, "w") as f:
         json.dump(results, f, indent=2)
+    print(f"Results saved to {out_file}")
 
 if __name__ == "__main__":
     main()

@@ -19,9 +19,30 @@ In our fork, `--short-read 64` guarantees that only prompts $\le$ 64 tokens get 
 - **Q2_0 Model:** Requires 34.2 GB of expert weights.
 - **Coder IQ1_M Model:** Requires 16.2 GB of expert weights.
 
-On a 32 GB RAM system, Coder IQ1_M fits entirely in RAM (16.2 GB), leaving around 4+ GB completely free after the OS and background services take their 5-6 GB share. This results in zero swapping or NVMe bottlenecks.
+**Memory Layout Diagrams (32GB System):**
 
-For Q2_0, the weights alone are 34.2 GB.
+*Coder IQ1_M Layout:*
+```text
+[==== OS & Background (6 GB) ====][======= Coder IQ1_M Experts (16.2 GB) =======][=== Free RAM (9.8 GB) ===]
+```
+With 9.8 GB of free RAM, there is zero swapping or NVMe bottleneck.
+
+*Q2_0 Layout with `--resident-budget-gib 20`:*
+```text
+[==== OS & Background (6 GB) ====][====== Q2_0 Resident Experts (20.2 GB) ======][= Free (1.5 GB) =]
+   |--- NVMe SSD holds remaining 14.0 GB of experts ---|
+```
+Because the OS aggressively utilizes free memory for page caching, having only 1.5 GB free starves the disk buffers.
+
+**Transfer Formula:**
+The transfer time $T$ required to stream weights from disk can be modeled as:
+$$T = S / BW$$
+Where:
+- $S$ = Size of weights to stream (e.g., 14.0 GB)
+- $BW$ = Effective bandwidth of NVMe (e.g., 2.5 GB/s)
+
+This means a single prefill step requiring all missing experts could add $14.0 / 2.5 = 5.6$ seconds of TTFT purely from I/O wait, severely bottlenecking throughput.
+
 
 ### Degradation Point 3: `--resident-budget-gib 20`
 Setting `--resident-budget-gib 20` limits the resident memory to 20 GB. Consequently, 14.2 GB of expert weights (34.2 GB - 20 GB) are forced to remain on the NVMe SSD. While 20 GB seems conservative for a 32 GB system, Windows OS + background services typically consume 5-6 GB, and WDDM memory management requires its own overhead. This leaves less than 1.5 GB of actual RAM headroom. 
