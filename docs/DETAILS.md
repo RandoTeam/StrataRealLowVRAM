@@ -405,7 +405,8 @@ server, three server options (all off by default; also as keys in `strata-<model
 | `--min-free-vram-mib 11000` | `"min_free_vram_mib": 11000` | load an unloaded model only when that much VRAM is free (it waits up to 15 s for memory being given back), else answer **503** "the GPU is in use by another program" instead of starting into what a game left (with several GPUs it checks the first one) |
 | `--before-load "cmd"` | `"before_load": "cmd"` or `["cmd", "arg"]` | a command run before the model is loaded again, e.g. one that unloads another server's model |
 
-`POST /unload` unloads it now (`409` while a request is running) and `POST /load` loads it ahead of a request;
+`POST /unload` unloads it now (`409` while a request is running) and `POST /load` loads it ahead of a request (both
+with `Content-Type: application/json`, e.g. `curl -X POST -H "Content-Type: application/json" localhost:8080/unload`);
 `/health` says `"loaded"`, `/v1/models` lists it as `unloaded` (like llama.cpp's router), `/props` sets
 `is_sleeping` and the Monitor shows the state. Unloading ends the engine process - and the image encoder, when images
 are on; it is started again first, as at a start - so their VRAM and RAM go straight back. The model files stay in
@@ -482,6 +483,40 @@ print(r.choices[0].message.content)
   15 s, and `GET /status` says what it is doing (`reading the prompt`, `answering`, tokens so far). Closing the
   connection or pressing stop in your app really stops the model, so the next request starts at once.
 - **Chat apps.** Any app with an "OpenAI-compatible" provider works: base URL `http://127.0.0.1:8080/v1`, any API key.
+- **OpenCode** (#543). A starting point for `opencode.jsonc` (in your project, or `~/.config/opencode/`); the field
+  names are OpenCode's, so check its config docs if your version differs:
+
+  ```jsonc
+  {
+    "$schema": "https://opencode.ai/config.json",
+    "provider": {
+      "strata": {
+        "npm": "@ai-sdk/openai-compatible",
+        "name": "Strata (local)",
+        "options": { "baseURL": "http://127.0.0.1:8080/v1", "apiKey": "none" },  // or your api_key
+        "models": {
+          "strata": {
+            "name": "Qwen3.8-Flash-Next (Strata)",
+            // context: what you chose in setup; output: what one reply may use (prompt + output must fit)
+            "limit": { "context": 262144, "output": 32768 },
+            "options": { "reasoningEffort": "high" },                  // sent as reasoning_effort
+            "variants": {                                              // switch between them in OpenCode
+              "low": { "reasoningEffort": "low" },
+              "medium": { "reasoningEffort": "medium" },
+              "none": { "reasoningEffort": "none" }
+            }
+          }
+        }
+      }
+    },
+    "model": "strata/strata"
+  }
+  ```
+
+  Set `limit.context` to the context you chose in setup: OpenCode compacts the conversation before it gets there.
+  Keep `limit.output` well under it: a request whose prompt plus `max_tokens` runs past the context is refused (see
+  **Context** below), or add `"fit_max_tokens": true` to `strata-<model>.json`. For a hard cap on the thinking, add
+  `"reasoning_budget_tokens": N` to `strata-<model>.json` (see above).
 - **Claude Code** (Strata 0.1.17 or newer): set `ANTHROPIC_BASE_URL=http://127.0.0.1:8080` and
   `ANTHROPIC_MODEL` to a Claude model name it knows (it refuses names it doesn't; Strata ignores the name), plus any
   `ANTHROPIC_AUTH_TOKEN` (or your `api_key`, if you set one).
@@ -505,9 +540,30 @@ print(r.choices[0].message.content)
   clients then send it as their API key. Streamed answers carry `X-Accel-Buffering: no`, so nginx-style proxies pass
   each token on at once. The web app's settings and MCP tools only answer Strata's own page: when you open it through
   a proxy or tunnel whose address differs, add that address, e.g. `"trusted_origins": ["https://strata.example.com"]`.
+  With the key set, any `Host` name reaches the server (see Host names below).
 - **From web apps in a browser (CORS).** Off by default. `"cors_origins": ["https://chat.example.com"]` lets pages of
   those origins call `/v1/*` from the browser (Open WebUI's direct connections, browser extensions); `["*"]` lets any
   page do it - only sensible with an API key. It never opens `/settings`, `/unload` or the MCP tools.
+- **Host names (DNS rebinding).** A web page of another site can point its own name at `127.0.0.1` and then reach
+  this server as if it were its own, so without an API key the server answers only requests whose `Host` is a name
+  it knows (with a key the check is off: such a page cannot send the key, and tunnels and proxies that pass their
+  own name on keep working):
+  `localhost` (and `*.localhost`), any IP address (`127.0.0.1`, `[::1]`, `192.168.x.x`, ...), the address it
+  listens on and, when it listens beyond this PC (`0.0.0.0` or a LAN address), this PC's name (`mypc`, `mypc.local`)
+  and `host.docker.internal`; any port. Others get **403** naming the setting, and the server window prints one line
+  for each. Reach it under another name (a reverse proxy that keeps the name, a tunnel, a DNS name on your network,
+  another container's name for it)? Add the name: `"allowed_hosts": ["strata.example.com"]` in
+  `strata-<model>.json` or `STRATA_ALLOWED_HOSTS=strata.example.com` (comma-separated); `".example.com"` allows that
+  name and every name below it, and `["*"]` turns the check off (so does setting `api_key`). The hosts of
+  `trusted_origins` count as allowed. Requests without a `Host` header (HTTP/1.0 clients) pass.
+- **Web pages without an API key.** Without `api_key`, a `POST` to `/v1/*` that carries an `Origin` header (a
+  browser page sent it) is answered only for Strata's own page, pages on `localhost` or an allowed host name (any
+  port), the origins in `trusted_origins` or `cors_origins`, and browser extensions and desktop apps
+  (`chrome-extension://`, `moz-extension://`, `app://`: no web site can send those), and only with a JSON body; any
+  other page, and `Origin: null`, gets **403**. Clients that send no `Origin` (curl, the OpenAI and Anthropic SDKs,
+  other servers) are not affected. With
+  an API key, the key decides. `POST /unload` and `POST /load` take `Content-Type: application/json` from Strata's
+  own page (or no `Origin`), like `/settings`.
 
 **Conversation cache.** A request that continues a chat reads only the part after what the engine already holds: the
 live session, or one of the checkpoints it keeps in RAM (up to 6, ~118 MB each, taken at the start of each new
@@ -816,6 +872,7 @@ the document, +0.4% on the chat. Details: `bench/results/2026-09-27-esp/`.
 | Pictures are slow (10-30 s) | The encoder runs on the CPU: run setup again with `--vision gpu` (needs ~1.4 GB of VRAM). |
 | A request never finishes: "reading the prompt", GPU "100%" at low power | The GPU ran out of VRAM (engines before 0.1.9 could end with ~30 MiB free at large contexts). Run `START-HERE.bat` once to get engine 0.1.9 or newer; the log then says `... MiB of VRAM free with everything loaded` (a few hundred) and names the `--vram-reserve-mib` to add if it is low. |
 | Generation stops mid-answer, GPU "100%", one CPU core busy | Fixed in engine 0.1.12 (issue #29, a race in the CPU expert pool on big-VRAM cards). Since then a request that stops moving ends with an error instead of hanging (after 2 minutes; 1 minute from 0.1.13): the log says `no progress for ... s ... (issue #29)` with where it stopped, and the next request starts the engine again. If you see that line, please open an issue with it. Engine 0.1.13 adds a stall report under it (what every expert-pool thread and the GPU handshake were doing, memory and page faults) and, on Windows, a `strata-stall-<pid>.dmp` file with every thread's stack: attach both. (`STRATA_WATCHDOG_S` sets the time in seconds; 0 turns it off.) Engine 0.1.14 fixes the stall those reports found (issue #31: with the IQ packs the host could wait forever inside the NVIDIA driver while copying experts in a verify window; the experts are now copied by a GPU kernel, `--pcie-mode dma` restores the old way). |
+| `the engine said nothing for ... s during the request` or `... did not finish the request after it was stopped (STOP)` | Issue #481: the engine and the server lost step (the engine waits for its next command, the server for the request's end; GPU at 0 %, nothing in the log). The server ends the engine after 300 s without a line from it during a request (while a prompt is read: each chunk may take three times the previous one's time, the first one up to its tokens at 50 tok/s more), the request ends with an error and the next request starts the engine again. `"engine_silence_s": 600` in `strata-<model>.json` sets the time (0 = wait forever, as before). If you see it, please add the end of the engine log to #481. |
 | `out of memory: cudaFuncSetAttribute` in the log (IQ3_XXS, long prompt) | Fixed in engine 0.1.15: CUDA loaded a kernel's code when it was first needed, and mid-prompt there was no VRAM left for it. Run `START-HERE.bat` (Windows) or `./setup.sh` (Linux) once to update. |
 | Anything else | The engine log is `strata-<model>.log` in this folder. |
 
