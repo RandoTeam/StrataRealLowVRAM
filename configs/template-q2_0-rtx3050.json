@@ -1,14 +1,14 @@
 {
-  "comment": "Optimized configuration for Qwen 3.8 Flash Next Coder IQ1_M on RTX 3050 Laptop (4GB VRAM) + 32GB RAM (Windows 11)",
+  "comment": "Optimized configuration for Qwen 3.8 Flash Next Q2_0 on RTX 3050 Laptop (4GB VRAM) + 32GB RAM (Windows 11)",
   "exe": "engine/strata.exe",
   "args": [
-    "--pack", "data/packs/coder-iq1_m",
-    "--native", "data/models/coder-IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00001-of-00002.gguf",
-    "--ple-gguf", "data/models/coder-IQ1_M/Qwen3.8-Flash-Next-GSQ-RCO-IQ1_M-00002-of-00002.gguf",
+    "--pack", "data/packs/q2_0",
+    "--native", "data/models/Q2_0/Qwen3.8-Flash-Next-GSQ-RCO-Q2_0-00001-of-00002.gguf",
+    "--ple-gguf", "data/models/Q2_0/Qwen3.8-Flash-Next-GSQ-RCO-Q2_0-00002-of-00002.gguf",
     "--ple-io", "direct",
     "--ple-row-cache", "2097152",
     "--ple-inflight", "128",
-    "--expert-profile", "data/expert-profile-coder.bin",
+    "--expert-profile", "data/expert-profile.bin",
     "--expert-cache", "500",
     "--vram-reserve-mib", "180",
     "--kv-resident", "20480",
@@ -33,7 +33,7 @@
     "--resident-budget-gib", "14.5",
     "--adapt-decay", "0.7"
   ],
-  "model_name": "qwen3.8-flash-next-coder-iq1_m",
+  "model_name": "qwen3.8-flash-next-q2_0",
   "aliases": [
     "default",
     "qwen3.8-flash-next-coder-iq1_m",
