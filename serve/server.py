@@ -77,6 +77,8 @@ ENGINE_SILENCE_S = 300.0
 PP_CHUNK_MAX = 32768
 PP_FLOOR_TOK_S = 50.0
 PP_SLACK = 3.0
+os.environ.setdefault("STRATA_RESIDENT_HEADROOM_GIB", "4.5")
+
 
 
 # ------------------------------------------------------------------------------------------------ engines
@@ -292,6 +294,73 @@ def narrate_start(log_path: str, offset: int, args: list, done: threading.Event,
             print(f"[strata] still starting ({time.time() - t0:.0f} s) - please wait ...", flush=True)
 
 
+def get_system_ram_gib() -> float:
+    """Read system total physical memory using ctypes (GlobalMemoryStatusEx) or psutil."""
+    if os.name == "nt":
+        try:
+            class MEMORYSTATUSEX(ctypes.Structure):
+                _fields_ = [
+                    ("dwLength", ctypes.c_ulong),
+                    ("dwMemoryLoad", ctypes.c_ulong),
+                    ("ullTotalPhys", ctypes.c_ulonglong),
+                    ("ullAvailPhys", ctypes.c_ulonglong),
+                    ("ullTotalPageFile", ctypes.c_ulonglong),
+                    ("ullAvailPageFile", ctypes.c_ulonglong),
+                    ("ullTotalVirtual", ctypes.c_ulonglong),
+                    ("ullAvailVirtual", ctypes.c_ulonglong),
+                    ("sullAvailExtendedVirtual", ctypes.c_ulonglong),
+                ]
+            stat = MEMORYSTATUSEX()
+            stat.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
+            if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat)):
+                return stat.ullTotalPhys / (1024 ** 3)
+        except Exception:
+            pass
+    try:
+        import psutil
+        return psutil.virtual_memory().total / (1024 ** 3)
+    except Exception:
+        pass
+    try:
+        return os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") / (1024 ** 3)
+    except Exception:
+        pass
+    return 32.0
+
+
+def apply_ram_safeguard(args: list[str]) -> list[str]:
+    """Dynamic RAM safeguard: guarantees >= 4.0 GiB free physical RAM headroom."""
+    headroom_str = os.environ.setdefault("STRATA_RESIDENT_HEADROOM_GIB", "4.5")
+    try:
+        headroom_gib = float(os.environ.get("STRATA_RESIDENT_HEADROOM_GIB", headroom_str))
+    except ValueError:
+        headroom_gib = 4.5
+    total_ram_gib = get_system_ram_gib()
+    safe_resident = max(8.0, total_ram_gib - 6.0)
+
+    args = list(args)
+    for i, arg in enumerate(args):
+        if arg == "--resident-budget-gib" and i + 1 < len(args):
+            try:
+                val = float(args[i + 1])
+                if (total_ram_gib - val < headroom_gib) or (val > safe_resident):
+                    args[i + 1] = f"{safe_resident:.1f}"
+                    print(f"[RAM Guard] Auto-clamped --resident-budget-gib to {safe_resident:.1f} GiB to guarantee >= 4.0 GiB free RAM", flush=True)
+            except ValueError:
+                pass
+            break
+        elif arg.startswith("--resident-budget-gib="):
+            try:
+                val = float(arg.split("=", 1)[1])
+                if (total_ram_gib - val < headroom_gib) or (val > safe_resident):
+                    args[i] = f"--resident-budget-gib={safe_resident:.1f}"
+                    print(f"[RAM Guard] Auto-clamped --resident-budget-gib to {safe_resident:.1f} GiB to guarantee >= 4.0 GiB free RAM", flush=True)
+            except ValueError:
+                pass
+            break
+    return args
+
+
 class StrataEngine:
     """The resident engine: `strata --serve` reads `GEN <max_new> <ids>` lines and streams `T <id>` lines, then
     `DONE ...`.  Requests are serialized by the service's FIFO, so one pipe is enough.
@@ -305,6 +374,7 @@ class StrataEngine:
 
     def __init__(self, exe: str, args: list[str], cwd: str | None = None, log: str | None = None,
                  env: dict | None = None, lazy: bool = False):
+        args = apply_ram_safeguard(list(args))
         self.spawn = (exe, list(args), cwd, log, env)   # to start it again after it died (issue #27)
         paths = {k: v for k, v in zip(args, args[1:]) if k in ("--native", "--pack")}
         self.model_path = paths.get("--native") or paths.get("--pack", "pack/full")
@@ -800,7 +870,8 @@ def engine_args(cfg: dict) -> list[str]:
     # opt-in: an auto split runs on the first card alone when it holds every profiled expert and the KV
     if len(gpu_list(cfg)) > 1 and cfg.get("split_skip_if_fits") and "--split-skip-if-fits" not in args:
         args.append("--split-skip-if-fits")
-    return learned_profile_args(cfg, args)
+    return apply_ram_safeguard(learned_profile_args(cfg, args))
+
 
 
 def profile_shape(path: str) -> tuple[int, int] | None:
