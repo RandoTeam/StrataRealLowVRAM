@@ -27,7 +27,8 @@ td.log
 
 # created by setup.py on the user's machine
 /.venv/
-/build/
+/engine.0.1.38/
+build/
 /third_party/llama.cpp
 /models/
 /packs/
