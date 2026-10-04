@@ -1251,6 +1251,8 @@ if(STRATA_HIP_GFX906)
     target_compile_definitions(strata_mmq PRIVATE GGML_USE_HIP)
   endif()
   set_source_files_properties(${_strata_cu} PROPERTIES LANGUAGE HIP)
+endif()
+
 # Qwen3.6-35B-A3B engine (strata-qwen36)
 if(TARGET strata_kernels)
     add_subdirectory(src/qwen36)
