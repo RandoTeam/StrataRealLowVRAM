@@ -17,9 +17,9 @@
   "C:\\Users\\Ilia V\\Documents\\antigravity\\calm-noether\\Strata\\data\\expert-profile.bin",
   "--mmap-experts",
   "--expert-cache",
-  "260",
+  "256",
   "--vram-reserve-mib",
-  "1280",
+  "1536",
   "--kv-resident",
   "20480",
   "--adapt-every",
@@ -90,7 +90,7 @@
   "penalty_last_n": 256
  },
  "env": {
-  "STRATA_POOL_SPIN_US": "0",
+  "STRATA_POOL_SPIN_US": "50000",
   "STRATA_ARENA_LOCK": "0",
   "STRATA_ARENA_PIN_GIB": "0",
   "STRATA_RESIDENT_HEADROOM_GIB": "1.0",
