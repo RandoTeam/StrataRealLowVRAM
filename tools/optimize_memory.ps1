@@ -94,24 +94,18 @@ public class StrataMemOpt {
 $freeBeforeGB = [math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1MB, 2)
 Write-Host "[Strata Optimizer] Free RAM before optimization: $freeBeforeGB GB"
 
-if ($freeBeforeGB -lt 4.5 -or $Force) {
-    try {
-        if (-not ([System.Management.Automation.PSTypeName]'StrataMemOpt').Type) {
-            Add-Type -TypeDefinition $code -Language CSharp -ErrorAction Stop
-        }
-        [StrataMemOpt]::Purge()
-        [System.GC]::Collect()
-        [System.GC]::WaitForPendingFinalizers()
-        $freeAfterGB = [math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1MB, 2)
-        Write-Host "[Strata Optimizer] Memory compacted: $freeAfterGB GB physical RAM now free & contiguous (freed $([math]::Round($freeAfterGB - $freeBeforeGB, 2)) GB)." -ForegroundColor Green
-        Write-Host "[Strata Optimizer] Free RAM after optimization: $freeAfterGB GB"
-    } catch {
-        Write-Host "[Strata Optimizer] Notice: $($_.Exception.Message)" -ForegroundColor DarkGray
-        $freeAfterGB = [math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1MB, 2)
-        Write-Host "[Strata Optimizer] Free RAM after optimization: $freeAfterGB GB"
+try {
+    if (-not ([System.Management.Automation.PSTypeName]'StrataMemOpt').Type) {
+        Add-Type -TypeDefinition $code -Language CSharp -ErrorAction Stop
     }
-} else {
-    Write-Host "[Strata Optimizer] Free RAM ($freeBeforeGB GB) already >= 4.5 GB threshold; standby list trimming skipped." -ForegroundColor Green
-    Write-Host "[Strata Optimizer] Free RAM after optimization: $freeBeforeGB GB"
+    [StrataMemOpt]::Purge()
+    [System.GC]::Collect()
+    [System.GC]::WaitForPendingFinalizers()
+    $freeAfterGB = [math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1MB, 2)
+    Write-Host "[Strata Optimizer] Memory compacted: $freeAfterGB GB physical RAM now free & contiguous (freed $([math]::Round($freeAfterGB - $freeBeforeGB, 2)) GB)." -ForegroundColor Green
+    Write-Host "[Strata Optimizer] Free RAM after optimization: $freeAfterGB GB"
+} catch {
+    Write-Host "[Strata Optimizer] Notice: $($_.Exception.Message)" -ForegroundColor DarkGray
+    $freeAfterGB = [math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1MB, 2)
+    Write-Host "[Strata Optimizer] Free RAM after optimization: $freeAfterGB GB"
 }
-

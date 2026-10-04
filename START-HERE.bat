@@ -1,8 +1,7 @@
 @echo off
-rem Strata for Windows: the first run installs everything and starts the model; later runs just start it.
-rem Needs only an NVIDIA or AMD graphics driver. Python is installed for your user account if it is missing (no admin needed).
+rem Strata for Windows: unified high-performance model runner with 64K context
 setlocal
-title Strata
+title Strata LLM Runner
 cd /d "%~dp0"
 if exist ".venv\Scripts\python.exe" goto run
 
@@ -37,12 +36,53 @@ pause
 exit /b 1
 
 :run
+if "%~1"=="--setup" goto run_setup
+if "%~1"=="--help" goto run_setup
+if "%~1"=="--check" goto run_setup
+
+set "CHOICE=%~1"
+if "%CHOICE%"=="1" goto start_coder
+if "%CHOICE%"=="2" goto start_q20
+
+echo.
+echo ====================================================================
+echo   STRATA ENGINE RUNNER - 64K CONTEXT ^& 10-15+ TOK/S ACCELERATION
+echo ====================================================================
+echo   Select model to run:
+echo.
+echo     [1] Qwen 3.8 Flash Next Coder (IQ1_M) - 64K Context (Fast Coding)
+echo     [2] Qwen 3.8 Flash Next Full (Q2_0)    - 64K Context (Full Reasoning)
+echo     [S] Advanced Strata Setup / Re-download
+echo.
+set /p "CHOICE=  Enter choice [1-2, default: 2]: "
+if "%CHOICE%"=="" set "CHOICE=2"
+if /i "%CHOICE%"=="s" goto run_setup
+if "%CHOICE%"=="1" goto start_coder
+if "%CHOICE%"=="2" goto start_q20
+goto start_q20
+
+:start_coder
+echo.
+echo  Starting Qwen 3.8 Flash Next Coder (IQ1_M) with 64K Context...
+powershell -ExecutionPolicy Bypass -File "tools\optimize_memory.ps1"
+".venv\Scripts\python.exe" "serve\server.py" --engine strata --config "strata-coder-iq1_m.json" --port 8080 --open
+if errorlevel 1 pause
+exit /b
+
+:start_q20
+echo.
+echo  Starting Qwen 3.8 Flash Next Full (Q2_0) with 64K Context...
+powershell -ExecutionPolicy Bypass -File "tools\optimize_memory.ps1"
+".venv\Scripts\python.exe" "serve\server.py" --engine strata --config "strata-q2_0.json" --port 8080 --open
+if errorlevel 1 pause
+exit /b
+
+:run_setup
 ".venv\Scripts\python.exe" setup.py %*
 if errorlevel 1 pause
 exit /b
 
 :findpy
-rem the py launcher first, then python on PATH (not the Microsoft Store stub), then the usual per-user folders
 set "PY="
 py -3 -c "import sys; sys.exit(0 if sys.version_info >= (3, 10) and sys.maxsize > 2**32 else 1)" >nul 2>nul
 if not errorlevel 1 set "PY=py -3" & goto :eof
