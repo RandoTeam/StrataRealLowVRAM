@@ -2,7 +2,7 @@
  "exe": "engine/strata-qwen36.exe",
  "args": [
   "--native",
-  "C:\\VietnAi\\qwen3.6\\models\\Ornith-1.5-35B-A3B-AD-Q4_K-IQ4_XS.gguf",
+  "models/Ornith-1.5-35B-A3B-AD-Q4_K-IQ4_XS.gguf",
   "--max-context",
   "131072",
   "--kv",

@@ -2,7 +2,7 @@
  "exe": "engine/strata-qwen36.exe",
  "args": [
   "--native",
-  "C:\\VietnAi\\qwen3.6\\models\\Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf",
+  "models/Qwen3.6-35B-A3B-UDT-Q4_K_XL_MTP.gguf",
   "--max-context",
   "131072",
   "--kv",
