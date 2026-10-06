@@ -10,6 +10,7 @@ bench/micro/*.dll
 bench/micro/*.txt
 *.log
 build*/
+tools/*.exe
 pack/
 logs/
 __pycache__/
