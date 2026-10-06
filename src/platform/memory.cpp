@@ -8,6 +8,9 @@
 #include <dxgi1_4.h>
 #include <cstring>
 #else
+#include <algorithm>
+#include <cstdlib>
+#include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #endif
@@ -242,6 +245,10 @@ uint64_t resident_headroom_bytes() {
     }
     return 4ull << 30;
 }
+
+bool read_ahead_enabled() { return false; }
+void advise_willneed(const void*, uint64_t) {}
+void advise_willneed(int, uint64_t, uint64_t) {}
 #else
 LockResult lock_resident(void* p, uint64_t bytes) {
     LockResult r;
@@ -279,6 +286,33 @@ uint64_t resident_headroom_bytes() {
         return (uint64_t) (std::atof(v) * 1073741824.0);
     }
     return 4ull << 30;
+}
+
+namespace {
+constexpr uint64_t kAdviseStep = 128ull << 10;
+}
+
+bool read_ahead_enabled() {
+    static const bool on = [] {
+        const char* v = std::getenv("STRATA_READ_AHEAD");
+        return v == nullptr || std::atoi(v) != 0;
+    }();
+    return on;
+}
+
+void advise_willneed(const void* p, uint64_t bytes) {
+    if (p == nullptr || bytes == 0 || !read_ahead_enabled()) return;
+    const long ps = sysconf(_SC_PAGE_SIZE);
+    const uintptr_t pg = ps > 0 ? (uintptr_t) ps : 4096, end = (uintptr_t) p + bytes;
+    for (uintptr_t a = (uintptr_t) p & ~(pg - 1); a < end; a += kAdviseStep)
+        (void) madvise((void*) a, (size_t) std::min<uintptr_t>(kAdviseStep, end - a), MADV_WILLNEED);
+}
+
+void advise_willneed(int fd, uint64_t offset, uint64_t bytes) {
+    if (fd < 0 || !read_ahead_enabled()) return;
+    for (uint64_t at = 0; at < bytes; at += kAdviseStep)
+        (void) posix_fadvise(fd, (off_t) (offset + at), (off_t) std::min(kAdviseStep, bytes - at), POSIX_FADV_WILLNEED);
+}
 }
 #endif
 

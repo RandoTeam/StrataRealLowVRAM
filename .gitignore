@@ -63,8 +63,11 @@ rust/**/target/
 *.secret
 *.key
 *.pem
-.idea/
+
+# IDEs
 .vscode/
+.idea/
+.cursor/
 
 /.ccache/
 /.rocm-win/
