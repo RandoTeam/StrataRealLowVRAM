@@ -53,6 +53,8 @@ T* dalloc(size_t n) {
 
 const char* name_of(int t) {
     switch (t) {
+        case 12: return "Q4_K";
+        case 14: return "Q6_K";
         case 16: return "IQ2_XXS";
         case 17: return "IQ2_XS";
         case 18: return "IQ3_XXS";
@@ -79,6 +81,16 @@ std::vector<uint8_t> random_rows(int t, int64_t rows, int64_t n, std::mt19937& r
             // sign and the exponent's top bits: 0x1 / 0x2 (or 0x9 / 0xA) keeps it in 2^-11 .. 2^-3
             const uint8_t nib = (uint8_t) ((sgn(rng) == 0 ? 0x8 : 0x0) | (1 + (byte(rng) & 1)));
             w[o + 55] = (uint8_t) ((w[o + 55] & 0x0F) | (nib << 4));
+        } else if (t == 12) {
+            // block_q4_K: dm is half2 at bytes 0..3 (d and dmin)
+            const uint16_t hd = (uint16_t) ((ex(rng) << 10) | man(rng));
+            const uint16_t hm = (uint16_t) ((ex(rng) << 10) | man(rng));
+            std::memcpy(&w[o], &hd, 2);
+            std::memcpy(&w[o + 2], &hm, 2);
+        } else if (t == 14) {
+            // block_q6_K: d is ggml_half at offset 208
+            const uint16_t hd = (uint16_t) ((ex(rng) << 10) | man(rng));
+            std::memcpy(&w[o + 208], &hd, 2);
         } else {
             const uint16_t h = (uint16_t) ((sgn(rng) == 0 ? 0x8000 : 0) | (ex(rng) << 10) | man(rng));   // 2^-13 .. 2^-6
             std::memcpy(&w[o], &h, 2);
@@ -405,6 +417,17 @@ int main(int argc, char** argv) {
     for (int gu : {16, 17, 18, 21, 22, 23, 29, 42}) {
         for (int dt : {20, 42}) check_grouped(gu, dt, 2560, 640, s, rng);   // the model's shape
         check_grouped(gu, 23, 1024, 512, s, rng);                           // IQ4_XS down needs n_ff % 256 == 0
+    }
+    // Mixed-quant expert pairs: (gt=12 Q4_K, dt=14 Q6_K), (gt=23 IQ4_XS, dt=12 Q4_K), etc.
+    const int64_t H_test = 2560, FF_test = 512;
+    if (!k::native_expert_supported(12, 14, H_test, FF_test)) { std::printf("FAIL: native_expert_supported(12, 14)\n"); ++g_fail; }
+    if (!k::native_expert_supported(23, 12, H_test, FF_test)) { std::printf("FAIL: native_expert_supported(23, 12)\n"); ++g_fail; }
+    if (!k::native_expert_supported(12, 12, H_test, FF_test)) { std::printf("FAIL: native_expert_supported(12, 12)\n"); ++g_fail; }
+    if (!k::native_expert_supported(14, 14, H_test, FF_test)) { std::printf("FAIL: native_expert_supported(14, 14)\n"); ++g_fail; }
+    for (int gu : {12, 23, 14}) {
+        for (int dt : {12, 14}) {
+            check_grouped(gu, dt, H_test, FF_test, s, rng);
+        }
     }
     check_q8_1_finite(s, rng);
     if (do_bench) bench(s, rng);
