@@ -4,6 +4,9 @@ import argparse
 import sys
 import time
 from pathlib import Path
+import os
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
+
 from huggingface_hub import hf_hub_download
 
 
@@ -12,7 +15,7 @@ def download_model(repo_id: str, filename: str, target_dir: str) -> Path:
     target_path.mkdir(parents=True, exist_ok=True)
 
     print("=" * 68)
-    print(f"  STRATA BF16 MODEL DOWNLOADER")
+    print(f"  STRATA BF16 MODEL DOWNLOADER (ACCELERATED VIA HF_TRANSFER)")
     print("=" * 68)
     print(f"  Repository:  {repo_id}")
     print(f"  Filename:    {filename}")
@@ -24,8 +27,6 @@ def download_model(repo_id: str, filename: str, target_dir: str) -> Path:
         repo_id=repo_id,
         filename=filename,
         local_dir=str(target_path),
-        local_dir_use_symlinks=False,
-        resume_download=True,
     )
     elapsed = time.time() - t0
     size_gib = Path(file_path).stat().st_size / (1024**3)
