@@ -4180,7 +4180,6 @@ def make_handler(svc: Service):
                 complete = False
             finally:
                 self.connection.settimeout(timeout)
-                self.body_read = True                    # nothing left for the drain to wait for (#594)
             if not complete:
                 self._json(400, {"error": {"message": "incomplete control request body"}})
             return complete
