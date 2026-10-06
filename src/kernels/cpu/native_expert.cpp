@@ -7,6 +7,7 @@
 #include "strata/kernels/cpu/iq_avx2.hpp"
 #include "strata/kernels/cpu/kq_avx2.hpp"
 #include "strata/kernels/cpu/expert_layout.hpp"
+#include "strata/kernels/iq_kernels.hpp"
 
 #include "ggml.h"
 #include "ggml-cpu.h"
@@ -30,10 +31,46 @@ void init_once() {
 bool native_experts_available() noexcept { return true; }
 
 bool native_fmt(int gu_type, int d_type, int64_t n_embd, int64_t n_ff, NativeFmt& f, std::string& err) {
+    if (gu_type == 34 || d_type == 34 || strata::kernels::native_expert_supported(gu_type, d_type, n_embd, n_ff)) {
+        if (gu_type == 34 || d_type == 34) {
+            auto L_gpu = strata::kernels::native_expert_layout(gu_type, d_type, n_embd, n_ff);
+            f.gu_type = gu_type;
+            f.d_type = d_type;
+            f.gu_act = 9; // Q8_1
+            f.d_act = 9;  // Q8_1
+            f.n_embd = n_embd;
+            f.n_ff = n_ff;
+            f.gu_row = L_gpu.gu_row;
+            f.d_row = L_gpu.d_row;
+            f.up_off = L_gpu.up_off;
+            f.down_off = L_gpu.down_off;
+            f.bytes = L_gpu.bytes;
+            f.act_bytes = (size_t)(n_embd / 32) * 36;
+            f.h_bytes = (size_t)(n_ff / 32) * 36;
+            return true;
+        }
+    }
     init_once();
     const ggml_type_traits_cpu* tg = traits(gu_type);
     const ggml_type_traits_cpu* td = traits(d_type);
     if (tg == nullptr || tg->vec_dot == nullptr || td == nullptr || td->vec_dot == nullptr) {
+        if (strata::kernels::native_expert_supported(gu_type, d_type, n_embd, n_ff)) {
+            auto L_gpu = strata::kernels::native_expert_layout(gu_type, d_type, n_embd, n_ff);
+            f.gu_type = gu_type;
+            f.d_type = d_type;
+            f.gu_act = 9; // Q8_1
+            f.d_act = 9;  // Q8_1
+            f.n_embd = n_embd;
+            f.n_ff = n_ff;
+            f.gu_row = L_gpu.gu_row;
+            f.d_row = L_gpu.d_row;
+            f.up_off = L_gpu.up_off;
+            f.down_off = L_gpu.down_off;
+            f.bytes = L_gpu.bytes;
+            f.act_bytes = (size_t)(n_embd / 32) * 36;
+            f.h_bytes = (size_t)(n_ff / 32) * 36;
+            return true;
+        }
         err = "native experts: ggml-cpu has no dot product for type " + std::to_string(tg && tg->vec_dot ? d_type : gu_type);
         return false;
     }

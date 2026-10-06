@@ -1,5 +1,6 @@
 // src/kernels/cpu/expert_layout.cpp - plan v0.3 P6: the per-layer expert table.  See the header.
 #include "strata/kernels/cpu/expert_layout.hpp"
+#include "strata/kernels/iq_kernels.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -281,7 +282,27 @@ bool expert_layout_load(const std::string& pack_dir, int64_t n_layers, int64_t n
             return false;
         }
         NativeFmt f;
-        if (!native_fmt((int) gt, (int) dt, H, FF, f, err)) return false;
+        if (!native_fmt((int) gt, (int) dt, H, FF, f, err)) {
+            if (strata::kernels::native_expert_supported((int) gt, (int) dt, H, FF)) {
+                auto L_gpu = strata::kernels::native_expert_layout((int) gt, (int) dt, H, FF);
+                f.gu_type = (int) gt;
+                f.d_type = (int) dt;
+                f.gu_act = 9;
+                f.d_act = 9;
+                f.n_embd = H;
+                f.n_ff = FF;
+                f.gu_row = L_gpu.gu_row;
+                f.d_row = L_gpu.d_row;
+                f.up_off = L_gpu.up_off;
+                f.down_off = L_gpu.down_off;
+                f.bytes = L_gpu.bytes;
+                f.act_bytes = (size_t)(H / 32) * 36;
+                f.h_bytes = (size_t)(FF / 32) * 36;
+                err.clear();
+            } else {
+                return false;
+            }
+        }
         if (f.bytes != blob) {
             err = "native_experts.txt: layer " + std::to_string(l) + " blob is " + std::to_string(blob) +
                   " B but its formats make " + std::to_string(f.bytes);

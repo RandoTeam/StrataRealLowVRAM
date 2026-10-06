@@ -12,6 +12,19 @@
 
 namespace strata::kernels {
 
+constexpr int GGML_TYPE_TQ1_0 = 34;
+
+// block_tq1_0: 54 bytes per 256 weights (1.6875 bpw)
+// 48 bytes qs for 240 trits (5 per byte in base-3), 4 bytes qh for 16 trits (4 per byte), 2 bytes fp16 scale d.
+#pragma pack(push, 1)
+struct block_tq1_0 {
+    uint8_t qs[48];
+    uint8_t qh[4];
+    uint16_t d;
+};
+#pragma pack(pop)
+static_assert(sizeof(block_tq1_0) == 54, "wrong tq1_0 block size");
+
 /// ggml type ids handled here.
 bool iq_supported(int ggml_type) noexcept;
 /// The token-embedding types iq_embed_rows and iq_dequant_f32 read: the i-quants above and BF16 (30).

@@ -68,6 +68,56 @@ __device__ __forceinline__ int2 get_int_from_table_16(const int& q4, const int8_
 }
 #define ggml_cuda_dp4a(a, b, c) STRATA_DP4A((a), (b), (c))
 
+// TQ1_0 trit unpacking without division (GGML Type 34)
+__device__ __forceinline__ int tq1_0_trit(uint32_t qbyte, uint32_t t) {
+    constexpr uint64_t POW3_PACKED = 0xF3511B090301ULL;
+    const uint32_t p3 = (POW3_PACKED >> (t * 8)) & 0xFF;
+    const uint32_t q = (qbyte * p3) & 0xFF;
+    return (int)((q * 3) >> 8) - 1; // Returns -1, 0, or +1
+}
+
+__device__ __forceinline__ void unpack_tq1_0_chunk_weights(const block_tq1_0* bq, int iqs, int w_pack[8]) {
+    int8_t w[32];
+    if (iqs < 5) {
+#pragma unroll
+        for (int m = 0; m < 32; ++m) {
+            w[m] = (int8_t) tq1_0_trit(bq->qs[m], iqs);
+        }
+    } else if (iqs == 5) {
+#pragma unroll
+        for (int m = 0; m < 16; ++m) {
+            w[m]      = (int8_t) tq1_0_trit(bq->qs[32 + m], 0);
+            w[16 + m] = (int8_t) tq1_0_trit(bq->qs[32 + m], 1);
+        }
+    } else if (iqs == 6) {
+#pragma unroll
+        for (int m = 0; m < 16; ++m) {
+            w[m]      = (int8_t) tq1_0_trit(bq->qs[32 + m], 2);
+            w[16 + m] = (int8_t) tq1_0_trit(bq->qs[32 + m], 3);
+        }
+    } else { // iqs == 7
+#pragma unroll
+        for (int m = 0; m < 16; ++m) {
+            w[m] = (int8_t) tq1_0_trit(bq->qs[32 + m], 4);
+        }
+#pragma unroll
+        for (int n = 0; n < 4; ++n) {
+#pragma unroll
+            for (int j = 0; j < 4; ++j) {
+                w[16 + n * 4 + j] = (int8_t) tq1_0_trit(bq->qh[j], n);
+            }
+        }
+    }
+#pragma unroll
+    for (int j = 0; j < 8; ++j) {
+        const uint32_t w0 = (uint8_t) w[4 * j + 0];
+        const uint32_t w1 = (uint8_t) w[4 * j + 1];
+        const uint32_t w2 = (uint8_t) w[4 * j + 2];
+        const uint32_t w3 = (uint8_t) w[4 * j + 3];
+        w_pack[j] = (int) (w0 | (w1 << 8) | (w2 << 16) | (w3 << 24));
+    }
+}
+
 // ---------------------------------------------------------------- the dot products (vecdotq.cuh)
 __device__ __forceinline__ float vec_dot_q2_0_q8_1(const void* __restrict__ vbq, const block_q8_1* __restrict__ bq8_1,
                                                    const int& kbx, const int& iqs) {
@@ -521,6 +571,22 @@ __device__ __forceinline__ float vec_dot_q8_0_q8_1(const void* __restrict__ vbq,
     return d8_0 * d8_1 * ((float) sumi);
 }
 
+__device__ __forceinline__ float vec_dot_tq1_0_q8_1(const void* __restrict__ vbq, const block_q8_1* __restrict__ bq8_1,
+                                                    const int& kbx, const int& iqs) {
+    const block_tq1_0* bq = (const block_tq1_0*) vbq + kbx;
+    int w_pack[8];
+    unpack_tq1_0_chunk_weights(bq, iqs, w_pack);
+    const int* q8 = (const int*) bq8_1[iqs].qs;
+    int sumi = 0;
+#pragma unroll
+    for (int j = 0; j < 8; ++j) {
+        sumi = ggml_cuda_dp4a(w_pack[j], q8[j], sumi);
+    }
+    const float d8 = __low2float(bq8_1[iqs].ds);
+    const float dw = __half2float(__ushort_as_half(bq->d));
+    return dw * d8 * (float) sumi;
+}
+
 // ---------------------------------------------------------------- the formats
 // qk = values per block, ipb = dot calls per block (qi / vdr), step = the iqs stride between calls.
 template<int TY> struct Fmt;
@@ -554,12 +620,14 @@ template<> struct Fmt<6> { static constexpr int qk = 32, ipb = QI5_0 / VDR_Q5_0,
     __device__ static float dot(const void* v, const block_q8_1* y, int kbx, int iqs) { return vec_dot_q5_0_q8_1(v, y, kbx, iqs); } };
 template<> struct Fmt<8> { static constexpr int qk = 32, ipb = QI8_0 / VDR_Q8_0, step = VDR_Q8_0;
     __device__ static float dot(const void* v, const block_q8_1* y, int kbx, int iqs) { return vec_dot_q8_0_q8_1(v, y, kbx, iqs); } };
+template<> struct Fmt<34> { static constexpr int qk = 256, ipb = 8, step = 1;
+    __device__ static float dot(const void* v, const block_q8_1* y, int kbx, int iqs) { return vec_dot_tq1_0_q8_1(v, y, kbx, iqs); } };
 
 // The formats of each role, one list each so a type cannot be in one switch and missing from another.  Every
 // entry is a kernel template for each CUDA architecture of the build, hence two lists rather than one.
-#define STRATA_GU_FMTS(X) X(16) X(17) X(18) X(20) X(21) X(22) X(23) X(29) X(42) X(12) X(13) X(14) X(6) X(8)
-#define STRATA_D_FMTS(X) X(20) X(23) X(42) X(7) X(6) X(8) X(12) X(14)
-#define STRATA_MMVQ_FMTS(X) X(16) X(17) X(18) X(20) X(21) X(22) X(23) X(29) X(42) X(12) X(13) X(14) X(7) X(6) X(8)
+#define STRATA_GU_FMTS(X) X(16) X(17) X(18) X(20) X(21) X(22) X(23) X(29) X(42) X(12) X(13) X(14) X(6) X(8) X(34)
+#define STRATA_D_FMTS(X) X(20) X(23) X(42) X(7) X(6) X(8) X(12) X(14) X(34)
+#define STRATA_MMVQ_FMTS(X) X(16) X(17) X(18) X(20) X(21) X(22) X(23) X(29) X(42) X(12) X(13) X(14) X(7) X(6) X(8) X(34)
 
 __device__ __forceinline__ float warp_sum(float v) {
 #pragma unroll
@@ -993,6 +1061,32 @@ template<> struct Split<14> {   // Q6_K
             sumf += d8 * (ggml_cuda_dp4a(w.vi[i], u, 0) * w.sc[i]);
         }
         return w.d * sumf;
+    }
+};
+
+template<> inline constexpr bool kSplit<34> = true;
+template<> struct Split<34> {   // TQ1_0
+    struct W {
+        int w_pack[8];
+        float dw;
+    };
+    template<bool STAGE_GRID = false>
+    __device__ static W load(const void* __restrict__ vbq, int kbx, int iqs, const uint32_t* __restrict__ = nullptr) {
+        const block_tq1_0* bq = (const block_tq1_0*) vbq + kbx;
+        W r;
+        unpack_tq1_0_chunk_weights(bq, iqs, r.w_pack);
+        r.dw = __half2float(__ushort_as_half(bq->d));
+        return r;
+    }
+    __device__ static float apply(const W& r, const block_q8_1* __restrict__ bq8_1, int iqs) {
+        const int* q8 = (const int*) bq8_1[iqs].qs;
+        int sumi = 0;
+#pragma unroll
+        for (int j = 0; j < 8; ++j) {
+            sumi = ggml_cuda_dp4a(r.w_pack[j], q8[j], sumi);
+        }
+        const float d8 = __low2float(bq8_1[iqs].ds);
+        return r.dw * d8 * (float) sumi;
     }
 };
 
@@ -1788,6 +1882,32 @@ __device__ void dq_bf16(const void* vx, int64_t ibs, dst_t* yy, int tid) {
     for (int j = 0; j < 8; ++j) yy[tid * 8 + j] = cvt<dst_t>(__uint_as_float((uint32_t) x[j] << 16));
 }
 
+template<typename dst_t>
+__device__ void dq_tq1_0(const void* vx, int64_t ibs, dst_t* yy, int tid) {
+    const block_tq1_0* x = (const block_tq1_0*) vx + ibs;
+    const float d = __half2float(__ushort_as_half(x->d));
+#pragma unroll
+    for (int c = 0; c < 8; ++c) {
+        int w = 0;
+        if (c < 5) {
+            w = tq1_0_trit(x->qs[tid], c);
+        } else if (c == 5) {
+            w = (tid < 16) ? tq1_0_trit(x->qs[32 + tid], 0) : tq1_0_trit(x->qs[32 + (tid - 16)], 1);
+        } else if (c == 6) {
+            w = (tid < 16) ? tq1_0_trit(x->qs[32 + tid], 2) : tq1_0_trit(x->qs[32 + (tid - 16)], 3);
+        } else { // c == 7
+            if (tid < 16) {
+                w = tq1_0_trit(x->qs[32 + tid], 4);
+            } else {
+                const int n = (tid - 16) / 4;
+                const int j = (tid - 16) % 4;
+                w = tq1_0_trit(x->qh[j], n);
+            }
+        }
+        yy[c * 32 + tid] = cvt<dst_t>(d * (float) w);
+    }
+}
+
 // Every type below must also be in is_iq() (BF16: embed_type_supported): the host entry points refuse the others,
 // so the default is unreachable.
 template<typename dst_t>
@@ -1810,6 +1930,7 @@ __device__ __forceinline__ void dq_dispatch(int ty, const void* vx, int64_t ibs,
         case 6: dq_q5_0(vx, ibs, y, tid); break;
         case 8: dq_q8_0(vx, ibs, y, tid); break;
         case 30: dq_bf16(vx, ibs, y, tid); break;
+        case 34: dq_tq1_0(vx, ibs, y, tid); break;
         default: break;
     }
 }
@@ -1832,7 +1953,7 @@ __global__ void dequant_gu_kernel(int ty, const void* __restrict__ gate, const v
 // the types dq_dispatch dequantizes
 bool is_iq(int t) {
     return t == 16 || t == 17 || t == 18 || t == 20 || t == 21 || t == 22 || t == 23 || t == 29 || t == 42 || t == 11 ||
-           t == 12 || t == 13 || t == 14 || t == 7 || t == 6 || t == 8;
+           t == 12 || t == 13 || t == 14 || t == 7 || t == 6 || t == 8 || t == 34;
 }
 // values per block of the types the grouped expert kernels take (0 = none)
 int gu_qk(int t) {
@@ -1948,6 +2069,7 @@ size_t iq_row_bytes(int t, int64_t n) noexcept {
         case 6: return (size_t) (n / 32) * sizeof(block_q5_0);
         case 8: return (size_t) (n / 32) * sizeof(block_q8_0);
         case 30: return (size_t) n * 2;   // BF16: the token embedding only (iq_embed_rows, iq_dequant_f32)
+        case 34: return (size_t) (n / 256) * sizeof(block_tq1_0);
         default: return 0;
     }
 }

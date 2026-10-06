@@ -63,6 +63,7 @@ const char* name_of(int t) {
         case 22: return "IQ2_S";
         case 23: return "IQ4_XS";
         case 29: return "IQ1_M";
+        case 34: return "TQ1_0";
         case 42: return "Q2_0";
         default: return "?";
     }
@@ -91,6 +92,10 @@ std::vector<uint8_t> random_rows(int t, int64_t rows, int64_t n, std::mt19937& r
             // block_q6_K: d is ggml_half at offset 208
             const uint16_t hd = (uint16_t) ((ex(rng) << 10) | man(rng));
             std::memcpy(&w[o + 208], &hd, 2);
+        } else if (t == 34) {
+            // block_tq1_0: d is uint16_t (fp16) at byte offset 52 (after 48B qs and 4B qh)
+            const uint16_t h = (uint16_t) ((sgn(rng) == 0 ? 0x8000 : 0) | (ex(rng) << 10) | man(rng));
+            std::memcpy(&w[o + 52], &h, 2);
         } else {
             const uint16_t h = (uint16_t) ((sgn(rng) == 0 ? 0x8000 : 0) | (ex(rng) << 10) | man(rng));   // 2^-13 .. 2^-6
             std::memcpy(&w[o], &h, 2);
@@ -410,13 +415,14 @@ int main(int argc, char** argv) {
     cudaStream_t s;
     ck(cudaStreamCreate(&s), "stream");
     std::mt19937 rng(18);
-    for (int t : {16, 17, 18, 20, 21, 22, 23, 29, 42}) {
+    for (int t : {16, 17, 18, 20, 21, 22, 23, 29, 42, 34}) {
         check_mmvq(t, 2560, 67, s, rng);   // the model's n_embd; 67 rows: a partial block of 4 rows
         check_mmvq(t, 1024, 5, s, rng);
     }
-    for (int gu : {16, 17, 18, 21, 22, 23, 29, 42}) {
+    for (int gu : {16, 17, 18, 21, 22, 23, 29, 42, 34}) {
         for (int dt : {20, 42}) check_grouped(gu, dt, 2560, 640, s, rng);   // the model's shape
         check_grouped(gu, 23, 1024, 512, s, rng);                           // IQ4_XS down needs n_ff % 256 == 0
+        check_grouped(gu, 34, 1024, 512, s, rng);                           // TQ1_0 down needs n_ff % 256 == 0
     }
     // Mixed-quant expert pairs: (gt=12 Q4_K, dt=14 Q6_K), (gt=23 IQ4_XS, dt=12 Q4_K), etc.
     const int64_t H_test = 2560, FF_test = 512;
