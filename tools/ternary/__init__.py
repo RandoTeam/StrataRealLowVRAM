@@ -1,7 +1,8 @@
 """Ternary quantization pipeline tools for Strata.
 
 Includes Fast Walsh-Hadamard Transform (FWHT), Randomized Hadamard Transform (RHT),
-and outlier suppression utilities.
+outlier suppression utilities, 1.58-bit trit sampling / TQ1_0 packing, and
+activation-aware / MoE-router-weighted calibration.
 """
 
 from .hadamard import (
@@ -44,6 +45,28 @@ from .trit_sampler import (
     unpack_5_trits,
     unpack_tq1_0,
 )
+from .activation_calibrator import (
+    ActivationCalibrator,
+    ActivationHessian,
+    CalibratedTritResult,
+    CalibrationConfig,
+    MoEModelProfile,
+    MODEL_PROFILES,
+    MODEL_ALIASES,
+    RouterGatingResult,
+    SyntheticCalibrationGenerator,
+    SyntheticDataset,
+    compute_activation_hessian,
+    compute_expert_hessians,
+    compute_router_gates,
+    detect_outlier_channels,
+    get_model_profile,
+    update_activation_hessian,
+    weighted_optimal_scale,
+    weighted_quantize_block,
+    weighted_quantize_full_hessian,
+    weighted_reconstruction_error,
+)
 
 __all__ = [
     "fwht",
@@ -82,4 +105,24 @@ __all__ = [
     "unpack_5_trits",
     "pack_4_trits_qh",
     "unpack_4_trits_qh",
+    "ActivationCalibrator",
+    "ActivationHessian",
+    "CalibratedTritResult",
+    "CalibrationConfig",
+    "MoEModelProfile",
+    "MODEL_PROFILES",
+    "MODEL_ALIASES",
+    "RouterGatingResult",
+    "SyntheticCalibrationGenerator",
+    "SyntheticDataset",
+    "compute_activation_hessian",
+    "compute_expert_hessians",
+    "compute_router_gates",
+    "detect_outlier_channels",
+    "get_model_profile",
+    "update_activation_hessian",
+    "weighted_optimal_scale",
+    "weighted_quantize_block",
+    "weighted_quantize_full_hessian",
+    "weighted_reconstruction_error",
 ]
