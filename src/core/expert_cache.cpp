@@ -17,6 +17,13 @@
 #include <filesystem>
 #include <utility>
 #include <cstring>
+#include <cstdlib>
+
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#endif
 
 namespace strata::core {
 
@@ -435,6 +442,37 @@ bool ExpertCache::open(int64_t n_slots, int64_t n_layers, int64_t n_expert, int6
             return false;
         }
     }
+#else
+    // Windows WDDM & RAM Headroom Guardian:
+    // Under WDDM, GPU allocations can spill into shared system RAM. To avoid freezing Windows into
+    // swap/pagefile thrashing, poll available physical RAM via GlobalMemoryStatusEx and ensure the
+    // configured safety headroom (STRATA_RESIDENT_HEADROOM_GIB) remains intact.
+    MEMORYSTATUSEX ms{};
+    ms.dwLength = sizeof ms;
+    if (GlobalMemoryStatusEx(&ms)) {
+        const uint64_t avail_ram = (uint64_t) ms.ullAvailPhys;
+        const uint64_t headroom = headroom_bytes();
+        if (avail_ram <= headroom) {
+            char buf[320];
+            std::snprintf(buf, sizeof buf,
+                          "ExpertCache: refusing allocation: available physical RAM (%.2f GiB) is at or below "
+                          "headroom threshold (%.2f GiB). Free memory or adjust STRATA_RESIDENT_HEADROOM_GIB.",
+                          (double) avail_ram / 1073741824.0, (double) headroom / 1073741824.0);
+            err = buf;
+            return false;
+        }
+        if (avail_ram < headroom + want) {
+            char buf[320];
+            std::snprintf(buf, sizeof buf,
+                          "ExpertCache: %lld slots x %lld B = %.2f GiB, but only %.2f GiB of physical RAM is safely "
+                          "available (headroom %.2f GiB). Lower --expert-cache to prevent swap thrashing.",
+                          (long long) n_slots, (long long) blob_bytes, (double) want / 1073741824.0,
+                          (double) (avail_ram > headroom ? avail_ram - headroom : 0) / 1073741824.0,
+                          (double) headroom / 1073741824.0);
+            err = buf;
+            return false;
+        }
+    }
 #endif
 
     if (seg_req_ > 0) {   // #533: --vram-elastic: physical segments behind one address range (zeroed below)
@@ -470,6 +508,9 @@ bool ExpertCache::open(int64_t n_slots, int64_t n_layers, int64_t n_expert, int6
     next_free_ = 0;
     fills_ = 0;
     admitted_ = 0;
+    slot_pair_.assign((size_t) n_slots, -1);
+    slot_tick_.assign((size_t) n_slots, 0);
+    access_counter_ = 0;
     // R4.2g: each layer starts at the bottom of its own range.  Built here rather than lazily so `admit`
     // stays allocation-free on the token path.
     layer_next_.assign((size_t) (n_layers > 0 ? n_layers : 0), 0);
@@ -503,6 +544,9 @@ bool ExpertCache::open_sized(const std::vector<int64_t>& slot_bytes, int64_t n_l
         return false;
     }
 #endif
+    slot_pair_.assign((size_t) slots_, -1);
+    slot_tick_.assign((size_t) slots_, 0);
+    access_counter_ = 0;
     // #369: each layer's cursor at the bottom of its own range, as open() seeds it - open() above ran on byte-sized
     // "slots", so its seeds are not slot indices
     layer_next_.assign((size_t) (n_layers > 0 ? n_layers : 0), 0);
@@ -536,6 +580,9 @@ void ExpertCache::close() {
     next_free_ = 0;
     fills_ = 0;
     admitted_ = 0;
+    slot_pair_.clear();
+    slot_tick_.clear();
+    access_counter_ = 0;
     layer_next_.clear();
 }
 
@@ -552,13 +599,21 @@ void ExpertCache::layer_slot_range(int64_t layer, int64_t& lo, int64_t& hi) cons
 
 int32_t ExpertCache::slot_of(int64_t layer, int64_t expert) const {
     if (layer < 0 || layer >= n_layers_ || expert < 0 || expert >= n_expert_) return kNotResident;
-    return residency_[(size_t) (layer * n_expert_ + expert)];
+    const int32_t s = residency_[(size_t) (layer * n_expert_ + expert)];
+    if (s != kNotResident) {
+        const_cast<ExpertCache*>(this)->touch_slot(s);
+    }
+    return s;
 }
 
 int32_t ExpertCache::admit(int64_t layer, int64_t expert) {
     if (layer < 0 || layer >= n_layers_ || expert < 0 || expert >= n_expert_) return kNotResident;
     const size_t at = (size_t) (layer * n_expert_ + expert);
-    if (residency_[at] != kNotResident) return residency_[at];
+    if (residency_[at] != kNotResident) {
+        touch_slot(residency_[at]);
+        return residency_[at];
+    }
+    enforce_headroom_guardian();
     // R4.2g: THE PER-LAYER PATH.  Same "no eviction" rule, but the ceiling is this layer's own range rather
     // than one counter shared by all 48 - which is what confined the measured hit rate to 2.97%.
     if (per_layer_) {
@@ -566,13 +621,23 @@ int32_t ExpertCache::admit(int64_t layer, int64_t expert) {
         int64_t lo = 0, hi = 0;
         layer_slot_range(layer, lo, hi);
         if ((int64_t) layer_next_[(size_t) layer] >= hi) return kNotResident;   // this layer's quota is full
-        residency_[at] = layer_next_[(size_t) layer]++;
+        int32_t s = layer_next_[(size_t) layer]++;
+        residency_[at] = s;
+        if ((size_t) s < slot_pair_.size()) {
+            slot_pair_[(size_t) s] = layer * n_expert_ + expert;
+            slot_tick_[(size_t) s] = ++access_counter_;
+        }
         ++admitted_;
         return residency_[at];
     }
     if (next_free_ >= slots_) return kNotResident;   // full: no eviction, deliberately - see the header
-    residency_[at] = (int32_t) next_free_;
-    return (int32_t) next_free_++;
+    int32_t s = (int32_t) next_free_++;
+    residency_[at] = s;
+    if ((size_t) s < slot_pair_.size()) {
+        slot_pair_[(size_t) s] = layer * n_expert_ + expert;
+        slot_tick_[(size_t) s] = ++access_counter_;
+    }
+    return s;
 }
 
 uint8_t* ExpertCache::device_slot(int32_t slot) {
@@ -605,6 +670,7 @@ bool ExpertCache::fill_slot(int32_t slot, const uint8_t* host_blob, void* stream
         err = std::string("ExpertCache::fill_slot: ") + cudaGetErrorString(e);
         return false;
     }
+    touch_slot(slot);
     ++fills_;
     return true;
 }
@@ -636,6 +702,7 @@ bool ExpertCache::fill_slot_blocking(int32_t slot, const uint8_t* host_blob, std
         err = std::string("ExpertCache::fill_slot_blocking: ") + cudaGetErrorString(e);
         return false;
     }
+    touch_slot(slot);
     ++fills_;
     return true;
 }
@@ -653,6 +720,7 @@ bool ExpertCache::fill_slot_queued(int32_t slot, const uint8_t* host_blob, std::
         err = std::string("ExpertCache::fill_slot_queued: ") + cudaGetErrorString(e);
         return false;
     }
+    touch_slot(slot);
     ++fills_;
     return true;
 }
@@ -693,6 +761,210 @@ bool ExpertCache::verify_slot(int32_t slot, const uint8_t* host_blob, std::strin
         return false;
     }
     return true;
+}
+
+void ExpertCache::touch_slot(int32_t slot) {
+    if (slot >= 0 && (size_t) slot < slot_tick_.size()) {
+        slot_tick_[(size_t) slot] = ++access_counter_;
+    }
+}
+
+uint64_t ExpertCache::headroom_bytes() {
+    const char* v = std::getenv("STRATA_RESIDENT_HEADROOM_GIB");
+    if (v != nullptr) {
+        double d = std::atof(v);
+        if (d >= 0.0) {
+            return (uint64_t) (d * 1073741824.0);
+        }
+    }
+    return 4ull << 30;
+}
+
+bool ExpertCache::poll_memory_headroom(uint64_t* out_avail) {
+#if defined(_WIN32)
+    MEMORYSTATUSEX ms{};
+    ms.dwLength = sizeof ms;
+    if (GlobalMemoryStatusEx(&ms)) {
+        if (out_avail) *out_avail = (uint64_t) ms.ullAvailPhys;
+        return (uint64_t) ms.ullAvailPhys >= headroom_bytes();
+    }
+#endif
+    if (out_avail) *out_avail = 0;
+    return true;
+}
+
+int32_t ExpertCache::yield_cold_slots(int64_t count) {
+    if (count <= 0 || slots_ <= 0) return 0;
+    int32_t yielded = 0;
+
+    std::vector<std::pair<uint64_t, int32_t>> candidates;
+    for (size_t s = 0; s < slot_pair_.size(); ++s) {
+        if (slot_pair_[s] >= 0) {
+            candidates.push_back({slot_tick_[s], (int32_t) s});
+        }
+    }
+    std::sort(candidates.begin(), candidates.end());
+
+    for (const auto& cand : candidates) {
+        if (yielded >= count) break;
+        int32_t s = cand.second;
+        int64_t pair = slot_pair_[(size_t) s];
+        if (pair >= 0 && (size_t) pair < residency_.size()) {
+            residency_[(size_t) pair] = kNotResident;
+            slot_pair_[(size_t) s] = -1;
+            slot_tick_[(size_t) s] = 0;
+
+            uint8_t* dst = device_slot(s);
+            if (dst != nullptr) {
+                const int64_t sz = !off_.empty() && (size_t) s + 1 < off_.size()
+                                       ? (int64_t) (off_[(size_t) s + 1] - off_[(size_t) s])
+                                       : blob_;
+                if (sz > 0) {
+                    (void) cudaMemsetAsync(dst, 0, (size_t) sz, (cudaStream_t) 0);
+                }
+            }
+            ++yielded;
+        }
+    }
+    if (yielded > 0) {
+        (void) cudaStreamSynchronize((cudaStream_t) 0);
+        if (admitted_ >= yielded) admitted_ -= yielded;
+    }
+    return yielded;
+}
+
+int32_t ExpertCache::enforce_headroom_guardian() {
+#if defined(_WIN32)
+    uint64_t avail = 0;
+    if (!poll_memory_headroom(&avail)) {
+        const uint64_t hr = headroom_bytes();
+        const uint64_t deficit = hr > avail ? hr - avail : 0;
+        const int64_t b = blob_ > 0 ? blob_ : 1;
+        int64_t count = (int64_t) ((deficit + (uint64_t) b - 1) / (uint64_t) b);
+        if (count <= 0) count = 1;
+        int32_t yielded = yield_cold_slots(count);
+        if (yielded > 0) {
+            std::fprintf(stderr,
+                         "[ExpertCache WDDM Guardian] Physical RAM low (%.2f GiB < %.2f GiB headroom). "
+                         "Gracefully yielded %d cold slots to protect system paging.\n",
+                         (double) avail / 1073741824.0, (double) hr / 1073741824.0, (int) yielded);
+        }
+        return yielded;
+    }
+#endif
+    return 0;
+}
+
+bool ExpertCache::expand_working_set_quota(size_t needed_bytes, size_t margin) {
+#if defined(_WIN32)
+    HANDLE proc = GetCurrentProcess();
+    SIZE_T cur_min = 0, cur_max = 0;
+    DWORD flags = 0;
+    if (!GetProcessWorkingSetSizeEx(proc, &cur_min, &cur_max, &flags)) {
+        cur_min = 0;
+        cur_max = 0;
+    }
+    SIZE_T target_min = cur_min + (SIZE_T) needed_bytes + (SIZE_T) margin;
+    SIZE_T target_max = cur_max > target_min + (SIZE_T) margin ? cur_max : target_min + (SIZE_T) margin;
+
+    // 1. Try with disabled hard limits (soft limits)
+    if (SetProcessWorkingSetSizeEx(proc, target_min, target_max,
+                                   QUOTA_LIMITS_HARDWS_MIN_DISABLE | QUOTA_LIMITS_HARDWS_MAX_DISABLE)) {
+        return true;
+    }
+    // 2. Try SetProcessWorkingSetSizeEx without flags
+    if (SetProcessWorkingSetSizeEx(proc, target_min, target_max, 0)) {
+        return true;
+    }
+    // 3. Fallback to basic SetProcessWorkingSetSize
+    if (SetProcessWorkingSetSize(proc, target_min, target_max)) {
+        return true;
+    }
+    return false;
+#else
+    (void) needed_bytes;
+    (void) margin;
+    return true;
+#endif
+}
+
+bool ExpertCache::lock_host_region(void* ptr, size_t bytes, std::string& note) {
+    if (ptr == nullptr || bytes == 0) {
+        note = "nothing to lock";
+        return true;
+    }
+#if defined(_WIN32)
+    uint64_t avail = 0;
+    if (!poll_memory_headroom(&avail)) {
+        note = "refused: available physical RAM below headroom threshold";
+        return false;
+    }
+    const uint64_t headroom = headroom_bytes();
+    if (avail < headroom + bytes) {
+        note = "refused: locking " + std::to_string(bytes >> 20) + " MiB would breach headroom threshold";
+        return false;
+    }
+
+    expand_working_set_quota(bytes);
+
+    const size_t chunk = 1ull << 30; // 1 GiB chunks
+    uint8_t* base = (uint8_t*) ptr;
+    size_t locked = 0;
+    for (size_t off = 0; off < bytes; off += chunk) {
+        const size_t n = bytes - off < chunk ? bytes - off : chunk;
+        if (!VirtualLock(base + off, n)) {
+            const DWORD err = GetLastError();
+            if (err == ERROR_WORKING_SET_QUOTA) { // 1453
+                expand_working_set_quota(n, (size_t) 1024 << 20);
+                if (VirtualLock(base + off, n)) {
+                    locked += n;
+                    continue;
+                }
+                // Subdivide into smaller sub-chunks to satisfy Windows working set quota increments
+                bool sub_ok = true;
+                const size_t sub_chunk = 64ull << 20; // 64 MiB
+                for (size_t sub_off = 0; sub_off < n; sub_off += sub_chunk) {
+                    const size_t sn = n - sub_off < sub_chunk ? n - sub_off : sub_chunk;
+                    if (!VirtualLock(base + off + sub_off, sn)) {
+                        if (GetLastError() == ERROR_WORKING_SET_QUOTA) {
+                            expand_working_set_quota(sn, (size_t) 128 << 20);
+                            if (VirtualLock(base + off + sub_off, sn)) {
+                                locked += sn;
+                                continue;
+                            }
+                        }
+                        sub_ok = false;
+                        break;
+                    }
+                    locked += sn;
+                }
+                if (sub_ok) {
+                    continue;
+                }
+            }
+            note = "VirtualLock failed at " + std::to_string(locked >> 20) + " MiB with error " + std::to_string(err);
+            return locked > 0;
+        }
+        locked += n;
+    }
+    note = "locked " + std::to_string(locked >> 20) + " MiB via VirtualLock";
+    return true;
+#else
+    (void) ptr;
+    (void) bytes;
+    note = "VirtualLock is Windows-only";
+    return true;
+#endif
+}
+
+void ExpertCache::unlock_host_region(void* ptr, size_t bytes) {
+    if (ptr == nullptr || bytes == 0) return;
+#if defined(_WIN32)
+    const size_t chunk = 1ull << 30;
+    for (size_t off = 0; off < bytes; off += chunk) {
+        VirtualUnlock((uint8_t*) ptr + off, bytes - off < chunk ? bytes - off : chunk);
+    }
+#endif
 }
 
 }  // namespace strata::core

@@ -127,9 +127,11 @@ def main():
     total_ram_gb = round(total_ram_gib, 2)
     avail_ram_gb = round(avail_ram_gib, 2)
 
+    req_headroom_gib = float(os.environ.get("STRATA_RESIDENT_HEADROOM_GIB", "4.0"))
+
     print(f"Total Physical RAM:      {total_ram_gb:.2f} GiB")
     print(f"Available Physical RAM:  {avail_ram_gb:.2f} GiB")
-    print(f"Headroom Requirement:   >= 4.00 GiB")
+    print(f"Headroom Requirement:   >= {req_headroom_gib:.2f} GiB")
 
     processes = find_model_processes()
     if processes:
@@ -142,16 +144,16 @@ def main():
     projection = project_memory_at_60k(avail_ram_gib, processes)
     print(f"Projected Free RAM at 60k Context: {projection['projected_free_at_60k_gib']:.2f} GiB")
 
-    passed = avail_ram_gb >= 4.0
+    passed = avail_ram_gb >= req_headroom_gib
     if processes:
-        passed = passed and (projection["projected_free_at_60k_gib"] >= 4.0)
+        passed = passed and (projection["projected_free_at_60k_gib"] >= req_headroom_gib)
 
     report = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "total_ram_gib": total_ram_gb,
         "available_ram_gib": avail_ram_gb,
-        "required_headroom_gib": 4.0,
-        "headroom_met": avail_ram_gb >= 4.0,
+        "required_headroom_gib": req_headroom_gib,
+        "headroom_met": avail_ram_gb >= req_headroom_gib,
         "processes_detected": processes,
         "projection_at_60k": projection,
         "status": "PASS" if passed else "FAIL",
@@ -165,16 +167,16 @@ def main():
 
     print(f"\nReport written to: {out_file}")
 
-    assert avail_ram_gb >= 4.0, (
-        f"Available physical RAM ({avail_ram_gb:.2f} GiB) is below required 4.00 GiB threshold!"
+    assert avail_ram_gb >= req_headroom_gib, (
+        f"Available physical RAM ({avail_ram_gb:.2f} GiB) is below required {req_headroom_gib:.2f} GiB threshold!"
     )
     if processes:
-        assert projection["projected_free_at_60k_gib"] >= 4.0, (
+        assert projection["projected_free_at_60k_gib"] >= req_headroom_gib, (
             f"Projected free RAM at 60k context ({projection['projected_free_at_60k_gib']:.2f} GiB) "
-            f"is below 4.00 GiB threshold!"
+            f"is below {req_headroom_gib:.2f} GiB threshold!"
         )
 
-    print("\n[SUCCESS] RAM Headroom Verification PASSED (>= 4.0 GiB available).")
+    print(f"\n[SUCCESS] RAM Headroom Verification PASSED (>= {req_headroom_gib:.2f} GiB available).")
     return 0
 
 

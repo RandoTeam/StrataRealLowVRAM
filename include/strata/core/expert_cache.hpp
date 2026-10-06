@@ -138,8 +138,13 @@ public:
     /// Publish a same-layer replacement after its slot copy has completed.
     void replace(int64_t layer, int32_t old_expert, int32_t new_expert) {
         auto& old = residency_[(size_t) layer * n_expert_ + old_expert];
+        int32_t slot = old;
         residency_[(size_t) layer * n_expert_ + new_expert] = old;
         old = kNotResident;
+        if (slot >= 0 && (size_t) slot < slot_pair_.size()) {
+            slot_pair_[(size_t) slot] = layer * n_expert_ + new_expert;
+            slot_tick_[(size_t) slot] = ++access_counter_;
+        }
     }
 
     /// **R4.2g: GIVE EACH LAYER ITS OWN SLOTS.  ROUND 328 MEASURED WHY THE GLOBAL FORM CANNOT WORK.**
@@ -192,6 +197,35 @@ public:
     /// Slots filled so far, for the startup report.
     int64_t fills() const { return fills_; }
 
+    /// Configured safety headroom in bytes from STRATA_RESIDENT_HEADROOM_GIB (default 4.0 GiB).
+    static uint64_t headroom_bytes();
+
+    /// Polls available physical memory via GlobalMemoryStatusEx (Windows).
+    /// Returns true if available RAM is >= headroom_bytes(), false if under memory pressure.
+    static bool poll_memory_headroom(uint64_t* out_avail = nullptr);
+
+    /// Gracefully yields/unpins up to `count` cold slots from the cache when memory is tight.
+    /// Returns the number of slots yielded.
+    int32_t yield_cold_slots(int64_t count = 1);
+
+    /// Dynamic guardian: polls GlobalMemoryStatusEx on Windows and if free RAM < headroom,
+    /// gracefully yields cold slots to keep physical RAM above the paging threshold.
+    /// Returns the number of slots yielded.
+    int32_t enforce_headroom_guardian();
+
+    /// Marks slot as actively touched/used (hot) for LRU tracking.
+    void touch_slot(int32_t slot);
+
+    /// Expands working set quota via SetProcessWorkingSetSize(GetCurrentProcess(), min_ws, max_ws)
+    /// before any VirtualLock operations to prevent ERROR_WORKING_SET_QUOTA (1453).
+    static bool expand_working_set_quota(size_t needed_bytes, size_t margin = 512ull << 20);
+
+    /// Locks host memory region into physical RAM with working set expansion and headroom check.
+    static bool lock_host_region(void* ptr, size_t bytes, std::string& note);
+
+    /// Unlocks host memory region previously locked by lock_host_region.
+    static void unlock_host_region(void* ptr, size_t bytes);
+
 private:
 #if defined(STRATA_USE_HIP)
     bool ensure_blocking_staging(std::size_t bytes, std::string& err);
@@ -222,6 +256,9 @@ private:
     std::vector<int32_t> layer_next_;   ///< [n_layers] -> that layer's next free slot
     std::vector<uint64_t> off_;         ///< plan v0.3 P6: slot offsets (slots + 1 entries) when sized
     int64_t admitted_ = 0;
+    std::vector<int64_t> slot_pair_;   ///< slot -> (layer * n_expert + expert), or -1 if empty
+    std::vector<uint64_t> slot_tick_;  ///< slot -> last access tick for LRU/cold-slot tracking
+    uint64_t access_counter_ = 0;
 };
 
 }  // namespace strata::core

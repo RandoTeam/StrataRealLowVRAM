@@ -139,13 +139,13 @@ template<> struct Split<34> { ... };
 - Модифицировать: `tools/optimize_memory.ps1`
 - Тест: `bench/test_ram_headroom.py`
 
-- [ ] **Шаг 1: Добавить динамический вызов `GlobalMemoryStatusEx` в цикл управления экспертами**
+- [x] **Шаг 1: Добавить динамический вызов `GlobalMemoryStatusEx` в цикл управления экспертами**
   При падении свободного объема системного ОЗУ ниже `STRATA_RESIDENT_HEADROOM_GIB` автоматически сбрасывать неактивные эксперты из кэша.
-- [ ] **Шаг 2: Оптимизировать `VirtualLock` под лимиты Windows Working Set**
+- [x] **Шаг 2: Оптимизировать `VirtualLock` под лимиты Windows Working Set**
   Вызывать `SetProcessWorkingSetSize` перед блокировкой страниц в физической памяти, предотвращая отказ ОС в выделении.
-- [ ] **Шаг 3: Протестировать с помощью `bench/test_ram_headroom.py`**
+- [x] **Шаг 3: Протестировать с помощью `bench/test_ram_headroom.py`**
   Убедиться, что процесс стабильно удерживает рабочий набор без подкачки на диск.
-- [ ] **Шаг 4: Фиксация изменений в git**
+- [x] **Шаг 4: Фиксация изменений в git**
   `git commit -am "perf: dynamic WDDM 4GB VRAM and Windows VirtualLock memory guardian"`
 
 ---

@@ -67,6 +67,7 @@ public class StrataMemOpt {
         EnablePrivilege("SeProfileSingleProcessPrivilege");
         EnablePrivilege("SeLockMemoryPrivilege");
         EnablePrivilege("SeDebugPrivilege");
+        EnablePrivilege("SeIncreaseWorkingSetPrivilege");
 
         // 1. Trim background working sets
         foreach (Process p in Process.GetProcesses()) {
@@ -94,6 +95,9 @@ public class StrataMemOpt {
 $freeBeforeGB = [math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1MB, 2)
 Write-Host "[Strata Optimizer] Free RAM before optimization: $freeBeforeGB GB"
 
+$headroomEnv = $env:STRATA_RESIDENT_HEADROOM_GIB
+$headroomGB = if ($headroomEnv) { [double]$headroomEnv } else { 4.0 }
+
 try {
     if (-not ([System.Management.Automation.PSTypeName]'StrataMemOpt').Type) {
         Add-Type -TypeDefinition $code -Language CSharp -ErrorAction Stop
@@ -104,6 +108,11 @@ try {
     $freeAfterGB = [math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1MB, 2)
     Write-Host "[Strata Optimizer] Memory compacted: $freeAfterGB GB physical RAM now free & contiguous (freed $([math]::Round($freeAfterGB - $freeBeforeGB, 2)) GB)." -ForegroundColor Green
     Write-Host "[Strata Optimizer] Free RAM after optimization: $freeAfterGB GB"
+    if ($freeAfterGB -ge $headroomGB) {
+        Write-Host "[Strata Optimizer] Physical RAM headroom >= $headroomGB GB verified ($freeAfterGB GB free)." -ForegroundColor Green
+    } else {
+        Write-Host "[Strata Optimizer] Warning: Free RAM ($freeAfterGB GB) below headroom threshold ($headroomGB GB)." -ForegroundColor Yellow
+    }
 } catch {
     Write-Host "[Strata Optimizer] Notice: $($_.Exception.Message)" -ForegroundColor DarkGray
     $freeAfterGB = [math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1MB, 2)
