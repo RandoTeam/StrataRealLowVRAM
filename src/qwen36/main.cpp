@@ -23,10 +23,12 @@
 #include <sstream>
 #include <string>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 #include "qwen36_model.hpp"
 #include "sampler.hpp"
+#include "strata/spec/suffix_drafter.hpp"
 
 namespace {
 
@@ -81,7 +83,7 @@ Args parse_args(int argc, char** argv) {
         else if (k == "--ckpt-max") a.ckpt_max = std::atoi(val().c_str());
         else if (k == "--ckpt-every") a.ckpt_every = std::max(256, std::atoi(val().c_str()));
         else if (k == "--mtp") a.mtp = true;
-        else if (k == "--mtp-k") a.mtp_k = std::atoi(val().c_str());
+        else if (k == "--mtp-k" || k == "--spec-k" || k == "--draft-k") a.mtp_k = std::atoi(val().c_str());
         else if (k == "--mtp-variant") a.mtp_variant = std::atoi(val().c_str());
         else if (k == "--selftest-mtp") { a.probe_gen = std::atoi(val().c_str()); a.probe_prompt = val(); a.mtp = true; }
         // anything else is a Strata flag this engine does not need: ignored
@@ -114,13 +116,147 @@ void reader(Commands* c) {
 
 void emit(const std::string& s) { std::fwrite(s.data(), 1, s.size(), stdout); std::fputc('\n', stdout); std::fflush(stdout); }
 
+// ------------------------------------------------------------------------------------------------ NGram Drafter
+struct NGramDrafter {
+    struct Entry {
+        int32_t best_tok{-1};
+        uint16_t best_cnt{0};
+        uint16_t total_cnt{0};
+        struct Cand { int32_t tok; uint16_t count; };
+        Cand cands[4]{};
+        uint8_t n_cands{0};
+
+        void add(int32_t tok) {
+            ++total_cnt;
+            for (uint8_t i = 0; i < n_cands; ++i) {
+                if (cands[i].tok == tok) {
+                    ++cands[i].count;
+                    if (cands[i].count > best_cnt) {
+                        best_cnt = cands[i].count;
+                        best_tok = tok;
+                    }
+                    return;
+                }
+            }
+            if (n_cands < 4) {
+                cands[n_cands++] = {tok, 1};
+                if (best_tok < 0 || 1 > best_cnt) {
+                    best_cnt = 1;
+                    best_tok = tok;
+                }
+            } else {
+                uint8_t min_idx = 0;
+                for (uint8_t i = 1; i < 4; ++i) {
+                    if (cands[i].count < cands[min_idx].count) min_idx = i;
+                }
+                cands[min_idx] = {tok, 1};
+            }
+        }
+    };
+
+    int32_t prev1{-1};
+    int32_t prev2{-1};
+    std::unordered_map<int32_t, Entry> bi;
+    std::unordered_map<uint64_t, Entry> tri;
+
+    void reset() {
+        bi.clear();
+        tri.clear();
+        prev1 = -1;
+        prev2 = -1;
+    }
+
+    void append(const int32_t* tokens, size_t n) {
+        for (size_t i = 0; i < n; ++i) push(tokens[i]);
+    }
+
+    void push(int32_t tok) {
+        if (prev1 >= 0) {
+            bi[prev1].add(tok);
+            if (prev2 >= 0) {
+                uint64_t k = (static_cast<uint64_t>(static_cast<uint32_t>(prev2)) << 32) |
+                             static_cast<uint64_t>(static_cast<uint32_t>(prev1));
+                tri[k].add(tok);
+            }
+        }
+        prev2 = prev1;
+        prev1 = tok;
+    }
+
+    void extend(std::vector<int>& drafts, int tok, const std::vector<int>& hist, int k_want) const {
+        if ((int)drafts.size() >= k_want) return;
+        int32_t c1 = drafts.empty() ? tok : drafts.back();
+        int32_t c2 = -1;
+        if (drafts.size() >= 2) {
+            c2 = drafts[drafts.size() - 2];
+        } else if (drafts.size() == 1) {
+            c2 = tok;
+        } else if (hist.size() >= 2) {
+            c2 = hist[hist.size() - 2];
+        }
+        while ((int)drafts.size() < k_want) {
+            int32_t next = -1;
+            if (c2 >= 0) {
+                uint64_t key = (static_cast<uint64_t>(static_cast<uint32_t>(c2)) << 32) |
+                               static_cast<uint64_t>(static_cast<uint32_t>(c1));
+                auto it = tri.find(key);
+                if (it != tri.end() && it->second.best_cnt >= 1) {
+                    next = it->second.best_tok;
+                }
+            }
+            if (next < 0) {
+                auto it = bi.find(c1);
+                if (it != bi.end() && it->second.best_cnt >= 1) {
+                    next = it->second.best_tok;
+                }
+            }
+            if (next < 0) break;
+            drafts.push_back(next);
+            c2 = c1;
+            c1 = next;
+        }
+    }
+};
+
+// ------------------------------------------------------------------------------------------------ Prompt Lookup Drafter
+struct PromptLookupDrafter {
+    static void propose(std::vector<int>& drafts, int tok, const std::vector<int>& hist, int k_want) {
+        if ((int)drafts.size() >= k_want || hist.size() < 4) return;
+        const int n = (int)hist.size();
+        const int t1 = hist[n - 3];
+        const int t2 = hist[n - 2];
+        const int t3 = tok;
+        for (int i = n - 5; i >= 0; --i) {
+            if (hist[i] == t1 && hist[i + 1] == t2 && hist[i + 2] == t3) {
+                for (int j = i + 3; j < n && (int)drafts.size() < k_want; ++j) {
+                    drafts.push_back(hist[j]);
+                }
+                if (!drafts.empty()) return;
+            }
+        }
+        for (int i = n - 4; i >= 0; --i) {
+            if (hist[i] == t2 && hist[i + 1] == t3) {
+                for (int j = i + 2; j < n && (int)drafts.size() < k_want; ++j) {
+                    drafts.push_back(hist[j]);
+                }
+                if (!drafts.empty()) return;
+            }
+        }
+    }
+};
+
 // ------------------------------------------------------------------------------------------------ one request
 struct Engine {
     q36::Model& model;
     std::set<int> eos;
     std::vector<int> cached;  // tokens whose effect is in the model's state (prompt + generated, minus the last sample)
-    int mtp_k = 3;
+    int mtp_k = 4;
     int ckpt_every = 8192;
+    strata::spec::SuffixDrafter sfx;
+    NGramDrafter ngram;
+
+    Engine(q36::Model& m, std::set<int> e, std::vector<int> c, int k, int ckpt)
+        : model(m), eos(std::move(e)), cached(std::move(c)), mtp_k(k), ckpt_every(ckpt), sfx(3, 32, 1u << 19) {}
 
     void run(const std::string& line) {
         std::vector<std::string> f;
@@ -151,6 +287,10 @@ struct Engine {
         const int n = (int)prompt.size();
         if (n == 0) { emit("ERR empty prompt"); return; }
         if (n + 1 > model.max_ctx()) { emit("ERR prompt is longer than the context"); return; }
+        sfx.reset();
+        sfx.append(reinterpret_cast<const int32_t*>(prompt.data()), prompt.size());
+        ngram.reset();
+        ngram.append(reinterpret_cast<const int32_t*>(prompt.data()), prompt.size());
         g_stop = false;
 
         // Reuse only when the new prompt EXTENDS what is already computed: the GDN state cannot be rewound.
@@ -208,12 +348,14 @@ struct Engine {
             q36::Sampler sampler(sp);
             std::vector<int> hist = prompt;
             std::vector<float> lg;
-            const bool spec = model.mtp_enabled();
+            const bool spec = (mtp_k > 0);
             // emits one token; true when generation must end
             auto push = [&](int tok) {
                 emit("T " + std::to_string(tok));
                 ++gen;
                 hist.push_back(tok);
+                sfx.append(static_cast<int32_t>(tok));
+                ngram.push(static_cast<int32_t>(tok));
                 if (eos.count(tok)) { finish = "stop"; return true; }
                 if (gen >= max_new) { finish = "length"; return true; }
                 if (g_stop) { finish = "stop"; return true; }
@@ -225,7 +367,27 @@ struct Engine {
                 bool done = push(tok);
                 while (!done) {
                     if (model.pos() >= model.max_ctx()) { finish = "length"; break; }
-                    if (!spec) {
+                    std::vector<int> drafts;
+                    if (spec) {
+                        const int k_want = std::min(mtp_k, max_new - gen);
+                        if (k_want > 0 && model.mtp_enabled()) {
+                            model.mtp_draft(tok, k_want, drafts);
+                        }
+                        if (drafts.empty() && k_want > 0) {
+                            PromptLookupDrafter::propose(drafts, tok, hist, k_want);
+                        }
+                        if (drafts.empty() && k_want > 0) {
+                            std::vector<int32_t> sfx_buf(k_want);
+                            int n_sfx = sfx.propose(k_want, sfx_buf.data());
+                            if (n_sfx > 0) {
+                                drafts.assign(sfx_buf.begin(), sfx_buf.begin() + n_sfx);
+                            }
+                        }
+                        if (k_want > 0) {
+                            ngram.extend(drafts, tok, hist, k_want);
+                        }
+                    }
+                    if (drafts.empty()) {
                         model.forward(tok, true);
                         cached.push_back(tok);
                         lg = model.logits();
@@ -234,8 +396,6 @@ struct Engine {
                         continue;
                     }
                     // speculative round: tok is sampled and emitted but not yet fed to the model
-                    std::vector<int> drafts;
-                    model.mtp_draft(tok, std::min(mtp_k, max_new - gen), drafts);
                     std::vector<int> vt;
                     vt.push_back(tok);
                     vt.insert(vt.end(), drafts.begin(), drafts.end());

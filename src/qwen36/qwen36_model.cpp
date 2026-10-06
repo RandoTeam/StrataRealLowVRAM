@@ -15,6 +15,14 @@
 #include "strata/kernels/native_gdn_preprocess.hpp"
 #include "strata/kernels/native_mmvq.hpp"
 
+#include "strata/platform/memory.hpp"
+
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#endif
+
 namespace K = strata::kernels;
 
 namespace q36 {
@@ -129,7 +137,37 @@ struct Model::Impl {
         std::vector<int> cnt, off, cur;
     } bb;
 
-    Impl(const std::string& path, const Config& cfg, size_t& vr, int mc) : gg(strata::GgufModel::open(path)), c(cfg), vram(vr), max_ctx(mc) {}
+    // Strata Host RAM Expert Arena (VirtualLock)
+    void* host_expert_arena_ = nullptr;
+    size_t host_expert_bytes_ = 0;
+    size_t host_expert_offset_ = 0;
+    bool use_host_experts_ = false;
+    char* d_expert_slots_ = nullptr;
+    size_t d_slot_bytes_ = 0;
+    int n_device_slots_ = 256;
+    unsigned long long* h_grp_ptr_ = nullptr;
+    char *d_stage_gate_ = nullptr, *d_stage_up_ = nullptr, *d_stage_down_ = nullptr;
+    size_t stage_g_stride_ = 0, stage_u_stride_ = 0, stage_d_stride_ = 0;
+    int n_stage_slots_ = 192;
+    int n_cache_slots_ = 192;
+    int slots_per_layer_ = 10;
+    std::vector<int> slot_layer_;
+    std::vector<int> slot_expert_;
+    std::vector<uint64_t> slot_tick_;
+    std::vector<bool> slot_pinned_;
+    uint64_t cache_tick_ = 0;
+    std::vector<std::vector<int>> expert_to_slot_;
+    size_t cache_hits_ = 0;
+    size_t cache_misses_ = 0;
+
+    Impl(const std::string& path, const Config& cfg, size_t& vr, int mc)
+        : gg(strata::GgufModel::open(path)), c(cfg), vram(vr), max_ctx(mc) {
+        size_t free_vram = 0, total_vram = 0;
+        cudaMemGetInfo(&free_vram, &total_vram);
+        if (total_vram < 16ULL * 1024 * 1024 * 1024 || std::getenv("STRATA_HOST_EXPERTS")) {
+            use_host_experts_ = true;
+        }
+    }
 
     void* dalloc(size_t bytes) {
         void* p = nullptr;
@@ -178,6 +216,39 @@ struct Model::Impl {
         return m;
     }
 
+    Mat mat_host(const std::string& name) {
+        const strata::TensorInfo& t = need(gg, name);
+        if (t.shape.size() < 2 || t.shape.size() > 3) throw std::runtime_error("unexpected tensor rank: " + name);
+        Mat m;
+        m.type = (int)t.type;
+        m.n_in = (int)t.shape[0];
+        m.n_out = (int)t.shape[1];
+        m.n_expert = t.shape.size() == 3 ? (int)t.shape[2] : 1;
+        if (is_float_type(m.type)) {
+            m.expert_stride = (size_t)m.n_in * m.n_out * float_bytes(m.type);
+        } else {
+            if (!K::native_mmvq_supported(m.type))
+                throw std::runtime_error(std::string("tensor ") + name + " has type " + t.type_name() +
+                                         ", which the native GEMV does not support");
+            int be = 0, bb = 0;
+            strata::block_geometry(t.type, be, bb);
+            if (m.n_in % be) throw std::runtime_error("row length not a multiple of the quant block: " + name);
+            m.expert_stride = K::native_mmvq_weight_bytes(m.type, m.n_in, m.n_out);
+        }
+        const uint64_t bytes = strata::tensor_payload_bytes(t);
+        if (bytes != m.expert_stride * (uint64_t)m.n_expert)
+            throw std::runtime_error("tensor size does not match its shape/type: " + name);
+        if (host_expert_arena_ && host_expert_offset_ + bytes <= host_expert_bytes_) {
+            char* dst = static_cast<char*>(host_expert_arena_) + host_expert_offset_;
+            std::memcpy(dst, host_ptr(t, name), bytes);
+            host_expert_offset_ += bytes;
+            m.d = dst;
+        } else {
+            m.d = host_ptr(t, name);
+        }
+        return m;
+    }
+
     // First existing name of `names` as an F32 device vector with exactly `n` elements.
     float* vec(std::initializer_list<std::string> names, int64_t n, float add = 0.f) {
         for (const std::string& name : names) {
@@ -206,6 +277,8 @@ struct Model::Impl {
         const int gt = (int)tg.type, ut = (int)tu.type, dt = (int)td.type;
         const int n = c.n_embd, ff = c.n_ff_exp, ne = c.n_expert;
         auto note = [&](const char* why) {
+            std::fprintf(stderr, "[qwen36] layer %d load_grouped note: %s (gt=%d %s, dt=%d %s, n=%d, ff=%d)\n",
+                         il, why, gt, tg.type_name(), dt, td.type_name(), n, ff);
             type_notes.push_back("layer " + std::to_string(il) + ": gate " + tg.type_name() + ", up " + tu.type_name() +
                                  ", down " + td.type_name() + " -> per-expert path (" + why + ")");
             return false;
@@ -220,6 +293,25 @@ struct Model::Impl {
             strata::tensor_payload_bytes(td) != dbytes * ne)
             return note("tensor size differs from the row layout");
         const size_t stride = (xl.bytes + 255) & ~(size_t)255;
+        if (use_host_experts_) {
+            char* base = static_cast<char*>(host_expert_arena_) + (size_t)il * (size_t)ne * stride;
+            const uint8_t* hg = host_ptr(tg, blk(il, "ffn_gate_exps.weight"));
+            const uint8_t* hu = host_ptr(tu, blk(il, "ffn_up_exps.weight"));
+            const uint8_t* hd = host_ptr(td, blk(il, "ffn_down_exps.weight"));
+            for (int e = 0; e < ne; ++e) {
+                char* dst = base + (size_t)e * stride;
+                std::memcpy(dst, hg + (size_t)e * gbytes, gbytes);
+                std::memcpy(dst + xl.up_off, hu + (size_t)e * gbytes, gbytes);
+                std::memcpy(dst + xl.down_off, hd + (size_t)e * dbytes, dbytes);
+            }
+            w.grouped = true;
+            w.blobs = nullptr;
+            w.host_blobs = base;
+            w.blob_stride = stride;
+            w.gu_type = gt;
+            w.d_type = dt;
+            return true;
+        }
         char* base = static_cast<char*>(dalloc(stride * (size_t)ne));
         CK(cudaMemcpy2D(base, stride, host_ptr(tg, blk(il, "ffn_gate_exps.weight")), gbytes, gbytes, ne, cudaMemcpyHostToDevice));
         CK(cudaMemcpy2D(base + xl.up_off, stride, host_ptr(tu, blk(il, "ffn_up_exps.weight")), gbytes, gbytes, ne,
@@ -228,6 +320,7 @@ struct Model::Impl {
                         cudaMemcpyHostToDevice));
         w.grouped = true;
         w.blobs = base;
+        w.host_blobs = nullptr;
         w.blob_stride = stride;
         w.gu_type = gt;
         w.d_type = dt;
@@ -260,9 +353,15 @@ struct Model::Impl {
         w.gate_inp = mat(blk(il, "ffn_gate_inp.weight"));
         if (load_grouped(il, w)) ++n_grouped_layers;
         else {
-            w.gate_exps = mat(blk(il, "ffn_gate_exps.weight"));
-            w.up_exps = mat(blk(il, "ffn_up_exps.weight"));
-            w.down_exps = mat(blk(il, "ffn_down_exps.weight"));
+            if (use_host_experts_) {
+                w.gate_exps = mat_host(blk(il, "ffn_gate_exps.weight"));
+                w.up_exps = mat_host(blk(il, "ffn_up_exps.weight"));
+                w.down_exps = mat_host(blk(il, "ffn_down_exps.weight"));
+            } else {
+                w.gate_exps = mat(blk(il, "ffn_gate_exps.weight"));
+                w.up_exps = mat(blk(il, "ffn_up_exps.weight"));
+                w.down_exps = mat(blk(il, "ffn_down_exps.weight"));
+            }
         }
         w.sh_gate = mat(blk(il, "ffn_gate_shexp.weight"));
         w.sh_up = mat(blk(il, "ffn_up_shexp.weight"));
@@ -280,6 +379,29 @@ struct Model::Impl {
         emb_row_bytes = (size_t)(c.n_embd / be) * bb;
 
         const int n = c.n_embd;
+        if (use_host_experts_) {
+            host_expert_bytes_ = 0;
+            for (int il = 0; il < c.n_layer; ++il) {
+                host_expert_bytes_ += strata::tensor_payload_bytes(need(gg, blk(il, "ffn_gate_exps.weight")));
+                host_expert_bytes_ += strata::tensor_payload_bytes(need(gg, blk(il, "ffn_up_exps.weight")));
+                host_expert_bytes_ += strata::tensor_payload_bytes(need(gg, blk(il, "ffn_down_exps.weight")));
+            }
+            if (want_mtp && gg.find(blk(c.n_layer, "nextn.ffn_gate_exps.weight"))) {
+                host_expert_bytes_ += strata::tensor_payload_bytes(need(gg, blk(c.n_layer, "nextn.ffn_gate_exps.weight")));
+                host_expert_bytes_ += strata::tensor_payload_bytes(need(gg, blk(c.n_layer, "nextn.ffn_up_exps.weight")));
+                host_expert_bytes_ += strata::tensor_payload_bytes(need(gg, blk(c.n_layer, "nextn.ffn_down_exps.weight")));
+            }
+#if defined(_WIN32)
+            host_expert_arena_ = VirtualAlloc(nullptr, host_expert_bytes_, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+#else
+            host_expert_arena_ = std::malloc(host_expert_bytes_);
+#endif
+            if (!host_expert_arena_)
+                throw std::runtime_error("cannot allocate Host RAM Expert Arena (" + std::to_string(host_expert_bytes_ >> 20) + " MiB)");
+            host_expert_offset_ = 0;
+            std::fprintf(stderr, "[qwen36] Host RAM Expert Arena allocated: %.2f GiB (Strata VirtualLock mode)\n",
+                         (double)host_expert_bytes_ / (1024.0 * 1024.0 * 1024.0));
+        }
         L.resize(c.n_layer);
         layer_slot.resize(c.n_layer);
         int gi = 0, ai = 0;
@@ -294,8 +416,17 @@ struct Model::Impl {
         }
         out_norm = vec({"output_norm.weight"}, n);
         output = mat(gg.find("output.weight") ? "output.weight" : "token_embd.weight");
+        std::fprintf(stderr, "[qwen36] after output.weight: %.2f GiB on GPU\n", (double)vram / (1024.0 * 1024.0 * 1024.0));
         if (output.n_in != n || output.n_out != c.n_vocab) throw std::runtime_error("output.weight shape");
         load_mtp();
+        std::fprintf(stderr, "[qwen36] after load_mtp: %.2f GiB on GPU\n", (double)vram / (1024.0 * 1024.0 * 1024.0));
+        if (use_host_experts_ && host_expert_arena_) {
+            strata::platform::LockResult lr = strata::platform::lock_resident(host_expert_arena_, host_expert_bytes_);
+            std::fprintf(stderr, "[qwen36] Host RAM Expert Arena: %s\n", lr.note.c_str());
+#if defined(_WIN32)
+            SetProcessWorkingSetSize(GetCurrentProcess(), (SIZE_T)-1, (SIZE_T)-1);
+#endif
+        }
         std::fprintf(stderr, "[qwen36] grouped experts: %d of %d layers%s\n", n_grouped_layers, c.n_layer,
                      grouped_enabled ? "" : " (disabled by Q36_GROUPED=0)");
         for (size_t i = 0; i < type_notes.size() && i < 6; ++i) std::fprintf(stderr, "[qwen36]   %s\n", type_notes[i].c_str());
@@ -348,6 +479,17 @@ struct Model::Impl {
         }
     }
 
+    void alloc_spec() {
+        if (vlog) return;
+        const int s_rows = spec_max + 1;
+        vlog = falloc((size_t)s_rows * c.n_vocab);
+        const size_t st_f = (size_t)c.ssm_S * c.ssm_hv * c.ssm_S, hi_f = (size_t)c.ssm_qkv * (c.ssm_conv - 1);
+        for (int gi = 0; gi < c.n_gdn; ++gi) {
+            ck_state.push_back(falloc((size_t)s_rows * st_f));
+            ck_hist.push_back(falloc((size_t)s_rows * hi_f));
+        }
+    }
+
     void alloc_mtp() {
         if (!mtp_on) return;
         constexpr int MB = Model::kMaxBatch;
@@ -356,12 +498,6 @@ struct Model::Impl {
         me = falloc((size_t)MB * n); mh = falloc((size_t)MB * n); mhs = falloc((size_t)MB * n);
         mcat = falloc((size_t)MB * 2 * n);
         mtp_out = falloc(n); mtp_hn = falloc(n);
-        vlog = falloc((size_t)std::max(spec_max + 1, 8) * c.n_vocab);
-        const size_t st_f = (size_t)c.ssm_S * c.ssm_hv * c.ssm_S, hi_f = (size_t)c.ssm_qkv * (c.ssm_conv - 1);
-        for (int gi = 0; gi < c.n_gdn; ++gi) {
-            ck_state.push_back(falloc((size_t)(spec_max + 1) * st_f));
-            ck_hist.push_back(falloc((size_t)(spec_max + 1) * hi_f));
-        }
         kc.push_back(kv_take());      // the MTP layer's own K/V
         vc.push_back(kv_take());
     }
@@ -380,6 +516,12 @@ struct Model::Impl {
         CK(cudaMemset(gx.err, 0, sizeof(int)));
         CK(cudaMallocHost((void**)&gx.h_err, sizeof(int)));
         *gx.h_err = 0;
+        if (use_host_experts_) {
+            d_slot_bytes_ = L[0].blob_stride;
+            n_device_slots_ = std::min(c.n_expert, np);
+            d_expert_slots_ = static_cast<char*>(dalloc(d_slot_bytes_ * (size_t)n_device_slots_));
+            CK(cudaMallocHost((void**)&h_grp_ptr_, sizeof(unsigned long long) * (size_t)n_device_slots_));
+        }
     }
 
     // Queued after the last kernel of a forward pass; checked once the stream has been synchronised.
@@ -398,8 +540,38 @@ struct Model::Impl {
     // of n_embd floats, one per sorted (token, slot) pair; pos_d[b*k+j] = the row of pair (b, j).  No host synchronisation.
     void grouped_experts(const LayerWeights& w, int B, const float* xin, int* ids_d, float* D, int* pos_d) {
         const int n = c.n_embd, ku = c.n_used, ne = c.n_expert, np = B * ku;
-        q36::moe_group_dev(ids_d, B, ku, ne, (unsigned long long)(uintptr_t)w.blobs, (unsigned long long)w.blob_stride, gx.ptr,
-                           gx.start, gx.ngroups, gx.tok, gx.dst, pos_d, gx.err, st);
+        if (!use_host_experts_ && w.blobs) {
+            q36::moe_group_dev(ids_d, B, ku, ne, (unsigned long long)(uintptr_t)w.blobs, (unsigned long long)w.blob_stride, gx.ptr,
+                               gx.start, gx.ngroups, gx.tok, gx.dst, pos_d, gx.err, st);
+        } else {
+            CK(cudaMemcpyAsync(bb.h_ids, ids_d, sizeof(int) * np, cudaMemcpyDeviceToHost, st));
+            CK(cudaStreamSynchronize(st));
+            q36::group_pairs(bb.h_ids, B, ku, ne, bb.cnt, bb.off, bb.cur, bb.h_perm, bb.h_pos);
+            CK(cudaMemcpyAsync(bb.perm, bb.h_perm, sizeof(int) * np, cudaMemcpyHostToDevice, st));
+            CK(cudaMemcpyAsync(pos_d, bb.h_pos, sizeof(int) * np, cudaMemcpyHostToDevice, st));
+            CK(cudaMemcpyAsync(gx.tok, bb.perm, sizeof(int) * np, cudaMemcpyHostToDevice, st));
+            std::vector<int> h_dst(np);
+            for (int q = 0; q < np; ++q) h_dst[q] = q;
+            CK(cudaMemcpyAsync(gx.dst, h_dst.data(), sizeof(int) * np, cudaMemcpyHostToDevice, st));
+
+            int g = 0, o = 0;
+            std::vector<int> h_start;
+            for (int e = 0; e < ne; ++e) {
+                if (bb.cnt[e] > 0) {
+                    char* slot_dst = d_expert_slots_ + (size_t)g * w.blob_stride;
+                    const char* exp_src = static_cast<const char*>(w.host_blobs) + (size_t)e * w.blob_stride;
+                    CK(cudaMemcpyAsync(slot_dst, exp_src, w.blob_stride, cudaMemcpyHostToDevice, st));
+                    h_grp_ptr_[g] = (unsigned long long)(uintptr_t)slot_dst;
+                    h_start.push_back(o);
+                    ++g;
+                }
+                o += bb.cnt[e];
+            }
+            h_start.push_back(o);
+            CK(cudaMemcpyAsync(gx.ptr, h_grp_ptr_, sizeof(unsigned long long) * (size_t)g, cudaMemcpyHostToDevice, st));
+            CK(cudaMemcpyAsync(gx.start, h_start.data(), sizeof(int) * (size_t)(g + 1), cudaMemcpyHostToDevice, st));
+            CK(cudaMemcpyAsync(gx.ngroups, &g, sizeof(int), cudaMemcpyHostToDevice, st));
+        }
         K::quantize_q8_1_rows(xin, B, n, bb.q8g, st);
         const K::NativeExpertLayout xl = K::native_expert_layout(w.gu_type, w.d_type, n, c.n_ff_exp);
         K::native_expert_grouped(xl, gx.ptr, gx.start, gx.ngroups, gx.dst, gx.tok, std::min(ne, np), np, bb.q8g, gx.scratch, D, st);
@@ -460,8 +632,38 @@ struct Model::Impl {
                 vc.push_back(kv_take());
             }
         }
+        if (use_host_experts_) {
+            stage_g_stride_ = 0;
+            stage_u_stride_ = 0;
+            stage_d_stride_ = 0;
+            for (int il = 0; il < c.n_layer; ++il) {
+                stage_g_stride_ = std::max(stage_g_stride_, L[il].gate_exps.expert_stride);
+                stage_u_stride_ = std::max(stage_u_stride_, L[il].up_exps.expert_stride);
+                stage_d_stride_ = std::max(stage_d_stride_, L[il].down_exps.expert_stride);
+            }
+            const int total_layers = c.n_layer + (want_mtp ? 1 : 0);
+            if (const char* env_c = std::getenv("Q36_EXPERT_CACHE")) {
+                n_cache_slots_ = std::max(16, std::atoi(env_c));
+                slots_per_layer_ = std::max(1, n_cache_slots_ / total_layers);
+            } else {
+                slots_per_layer_ = 10; // 10 dedicated resident slots per layer
+                n_cache_slots_ = slots_per_layer_ * total_layers;
+            }
+            n_stage_slots_ = n_cache_slots_;
+            if (stage_g_stride_) d_stage_gate_ = static_cast<char*>(dalloc(stage_g_stride_ * (size_t)n_stage_slots_));
+            if (stage_u_stride_) d_stage_up_ = static_cast<char*>(dalloc(stage_u_stride_ * (size_t)n_stage_slots_));
+            if (stage_d_stride_) d_stage_down_ = static_cast<char*>(dalloc(stage_d_stride_ * (size_t)n_stage_slots_));
+            slot_layer_.assign(n_stage_slots_, -1);
+            slot_expert_.assign(n_stage_slots_, -1);
+            slot_tick_.assign(n_stage_slots_, 0);
+            slot_pinned_.assign(n_stage_slots_, false);
+            expert_to_slot_.assign(c.n_layer + 1, std::vector<int>(c.n_expert, -1));
+            std::fprintf(stderr, "[qwen36] Resident VRAM Expert Cache: %d slots (%d per layer, %.1f MiB)\n",
+                         n_stage_slots_, slots_per_layer_, (double)(stage_g_stride_ + stage_u_stride_ + stage_d_stride_) * n_stage_slots_ / (1024.0 * 1024.0));
+        }
         alloc_batch();
         alloc_grouped();
+        alloc_spec();
         alloc_mtp();
     }
 
@@ -565,21 +767,87 @@ struct Model::Impl {
         q36::gather_rows(bb.xg, bb.xn, bb.perm, np, n, st);
         quantc(bb.xg, n, np, bb.q8g);
         const size_t q8n = K::native_q8_1_bytes(n, 1), q8f = K::native_q8_1_bytes(fe, 1);
+        int slot_k = 0;
+        std::vector<int> used_b_slots;
+        std::vector<int> exp_to_bslot(ne, -1);
+        if (use_host_experts_) {
+            for (int e = 0; e < ne; ++e) {
+                if (!bb.cnt[e]) continue;
+                int slot = expert_to_slot_[il][e];
+                if (slot >= 0) {
+                    ++cache_hits_;
+                    slot_tick_[slot] = ++cache_tick_;
+                } else {
+                    ++cache_misses_;
+                    int lru_slot = -1;
+                    uint64_t min_tick = UINT64_MAX;
+                    const int s_base = il * slots_per_layer_;
+                    for (int s = 0; s < slots_per_layer_; ++s) {
+                        int gslot = s_base + s;
+                        if (slot_pinned_[gslot]) continue;
+                        if (slot_layer_[gslot] < 0) { lru_slot = gslot; break; }
+                        if (slot_tick_[gslot] < min_tick) {
+                            min_tick = slot_tick_[gslot];
+                            lru_slot = gslot;
+                        }
+                    }
+                    if (lru_slot < 0) lru_slot = s_base + (slot_k % slots_per_layer_);
+                    slot = lru_slot;
+                    int old_l = slot_layer_[slot], old_e = slot_expert_[slot];
+                    if (old_l >= 0 && old_e >= 0) {
+                        expert_to_slot_[old_l][old_e] = -1;
+                    }
+                    char* dst_g = d_stage_gate_ + (size_t)slot * stage_g_stride_;
+                    char* dst_u = d_stage_up_ + (size_t)slot * stage_u_stride_;
+                    char* dst_d = d_stage_down_ + (size_t)slot * stage_d_stride_;
+                    const char* src_g = static_cast<const char*>(w.gate_exps.d) + (size_t)e * w.gate_exps.expert_stride;
+                    const char* src_u = static_cast<const char*>(w.up_exps.d) + (size_t)e * w.up_exps.expert_stride;
+                    const char* src_d = static_cast<const char*>(w.down_exps.d) + (size_t)e * w.down_exps.expert_stride;
+                    CK(cudaMemcpyAsync(dst_g, src_g, w.gate_exps.expert_stride, cudaMemcpyHostToDevice, st));
+                    CK(cudaMemcpyAsync(dst_u, src_u, w.up_exps.expert_stride, cudaMemcpyHostToDevice, st));
+                    CK(cudaMemcpyAsync(dst_d, src_d, w.down_exps.expert_stride, cudaMemcpyHostToDevice, st));
+                    slot_layer_[slot] = il;
+                    slot_expert_[slot] = e;
+                    slot_tick_[slot] = ++cache_tick_;
+                    expert_to_slot_[il][e] = slot;
+                }
+                slot_pinned_[slot] = true;
+                used_b_slots.push_back(slot);
+                exp_to_bslot[e] = slot;
+                ++slot_k;
+            }
+        }
         for (int e = 0; e < ne; ++e) {
             const int o = bb.off[e], m = bb.cnt[e];
             if (!m) continue;
             const void* qg = static_cast<const char*>(bb.q8g) + (size_t)o * q8n;
-            mvc(w.gate_exps, e, bb.xg + (size_t)o * n, qg, bb.G + (size_t)o * fe, m);
-            mvc(w.up_exps, e, bb.xg + (size_t)o * n, qg, bb.U + (size_t)o * fe, m);
+            Mat gmat = w.gate_exps, umat = w.up_exps;
+            int s_idx = e;
+            if (use_host_experts_) {
+                s_idx = 0;
+                int slot = exp_to_bslot[e];
+                gmat.d = d_stage_gate_ + (size_t)slot * stage_g_stride_; gmat.expert_stride = 0;
+                umat.d = d_stage_up_ + (size_t)slot * stage_u_stride_;   umat.expert_stride = 0;
+            }
+            mvc(gmat, s_idx, bb.xg + (size_t)o * n, qg, bb.G + (size_t)o * fe, m);
+            mvc(umat, s_idx, bb.xg + (size_t)o * n, qg, bb.U + (size_t)o * fe, m);
         }
         q36::silu_mul(bb.H, bb.G, bb.U, np * fe, st);
         quantc(bb.H, fe, np, bb.q8h);
         for (int e = 0; e < ne; ++e) {
             const int o = bb.off[e], m = bb.cnt[e];
             if (!m) continue;
-            mvc(w.down_exps, e, bb.H + (size_t)o * fe, static_cast<const char*>(bb.q8h) + (size_t)o * q8f,
+            Mat dmat = w.down_exps;
+            int s_idx = e;
+            if (use_host_experts_) {
+                s_idx = 0;
+                int slot = exp_to_bslot[e];
+                dmat.d = d_stage_down_ + (size_t)slot * stage_d_stride_; dmat.expert_stride = 0;
+            }
+            mvc(dmat, s_idx, bb.H + (size_t)o * fe, static_cast<const char*>(bb.q8h) + (size_t)o * q8f,
                 bb.Dall + (size_t)o * n, m);
         }
+        for (int s : used_b_slots) slot_pinned_[s] = false;
         }
         mvc(w.sh_gate, 0, bb.xn, bb.q8b, bb.Gs, B);
         mvc(w.sh_up, 0, bb.xn, bb.q8b, bb.Us, B);
@@ -655,15 +923,74 @@ struct Model::Impl {
         }
         CK(cudaMemcpyAsync(h_ids, ids, sizeof(int) * ku, cudaMemcpyDeviceToHost, st));
         CK(cudaStreamSynchronize(st));  // the host needs the 8 ids to address the experts
+        std::vector<int> used_slots;
+        std::vector<int> exp_slot(ku, -1);
+        if (use_host_experts_) {
+            for (int j = 0; j < ku; ++j) {
+                const int e = h_ids[j];
+                if (e < 0 || e >= c.n_expert) throw std::runtime_error("router returned an invalid expert id");
+                int slot = expert_to_slot_[il][e];
+                if (slot >= 0) {
+                    ++cache_hits_;
+                    slot_tick_[slot] = ++cache_tick_;
+                } else {
+                    ++cache_misses_;
+                    int lru_slot = -1;
+                    uint64_t min_tick = UINT64_MAX;
+                    const int s_base = il * slots_per_layer_;
+                    for (int s = 0; s < slots_per_layer_; ++s) {
+                        int gslot = s_base + s;
+                        if (slot_pinned_[gslot]) continue;
+                        if (slot_layer_[gslot] < 0) { lru_slot = gslot; break; }
+                        if (slot_tick_[gslot] < min_tick) {
+                            min_tick = slot_tick_[gslot];
+                            lru_slot = gslot;
+                        }
+                    }
+                    if (lru_slot < 0) lru_slot = s_base + (j % slots_per_layer_);
+                    slot = lru_slot;
+                    int old_l = slot_layer_[slot], old_e = slot_expert_[slot];
+                    if (old_l >= 0 && old_e >= 0) {
+                        expert_to_slot_[old_l][old_e] = -1;
+                    }
+                    char* dst_g = d_stage_gate_ + (size_t)slot * stage_g_stride_;
+                    char* dst_u = d_stage_up_ + (size_t)slot * stage_u_stride_;
+                    char* dst_d = d_stage_down_ + (size_t)slot * stage_d_stride_;
+                    const char* src_g = static_cast<const char*>(w.gate_exps.d) + (size_t)e * w.gate_exps.expert_stride;
+                    const char* src_u = static_cast<const char*>(w.up_exps.d) + (size_t)e * w.up_exps.expert_stride;
+                    const char* src_d = static_cast<const char*>(w.down_exps.d) + (size_t)e * w.down_exps.expert_stride;
+                    CK(cudaMemcpyAsync(dst_g, src_g, w.gate_exps.expert_stride, cudaMemcpyHostToDevice, st));
+                    CK(cudaMemcpyAsync(dst_u, src_u, w.up_exps.expert_stride, cudaMemcpyHostToDevice, st));
+                    CK(cudaMemcpyAsync(dst_d, src_d, w.down_exps.expert_stride, cudaMemcpyHostToDevice, st));
+                    slot_layer_[slot] = il;
+                    slot_expert_[slot] = e;
+                    slot_tick_[slot] = ++cache_tick_;
+                    expert_to_slot_[il][e] = slot;
+                }
+                slot_pinned_[slot] = true;
+                used_slots.push_back(slot);
+                exp_slot[j] = slot;
+            }
+        }
         for (int j = 0; j < ku; ++j) {
             const int e = h_ids[j];
             if (e < 0 || e >= c.n_expert) throw std::runtime_error("router returned an invalid expert id");
-            mv(w.gate_exps, e, xn, q8x, g + (size_t)j * ffm);
-            mv(w.up_exps, e, xn, q8x, u + (size_t)j * ffm);
+            Mat gmat = w.gate_exps, umat = w.up_exps, dmat = w.down_exps;
+            int e_idx = e;
+            if (use_host_experts_) {
+                e_idx = 0;
+                int slot = exp_slot[j];
+                gmat.d = d_stage_gate_ + (size_t)slot * stage_g_stride_; gmat.expert_stride = 0;
+                umat.d = d_stage_up_ + (size_t)slot * stage_u_stride_;   umat.expert_stride = 0;
+                dmat.d = d_stage_down_ + (size_t)slot * stage_d_stride_; dmat.expert_stride = 0;
+            }
+            mv(gmat, e_idx, xn, q8x, g + (size_t)j * ffm);
+            mv(umat, e_idx, xn, q8x, u + (size_t)j * ffm);
             q36::silu_mul(h + (size_t)j * ffm, g + (size_t)j * ffm, u + (size_t)j * ffm, fe, st);
             quant(h + (size_t)j * ffm, fe, static_cast<char*>(q8h) + (size_t)j * q8h_slot);
-            mv(w.down_exps, e, h + (size_t)j * ffm, static_cast<char*>(q8h) + (size_t)j * q8h_slot, down + (size_t)j * n);
+            mv(dmat, e_idx, h + (size_t)j * ffm, static_cast<char*>(q8h) + (size_t)j * q8h_slot, down + (size_t)j * n);
         }
+        for (int s : used_slots) slot_pinned_[s] = false;
         mv(w.sh_gate, 0, xn, q8x, g + (size_t)ku * ffm);
         mv(w.sh_up, 0, xn, q8x, u + (size_t)ku * ffm);
         q36::silu_mul(h + (size_t)ku * ffm, g + (size_t)ku * ffm, u + (size_t)ku * ffm, fs, st);
@@ -804,7 +1131,7 @@ Model::Model(const std::string& path, int max_ctx, bool want_mtp, int mtp_k, int
     p_->load();
     p_->alloc_runtime();
     h_logits_.assign(cfg_.n_vocab, 0.f);
-    if (p_->mtp_on) h_vlogits_.assign((size_t)std::max(p_->spec_max + 1, 8) * cfg_.n_vocab, 0.f);
+    h_vlogits_.assign((size_t)(p_->spec_max + 1) * cfg_.n_vocab, 0.f);
     reset();
     std::fprintf(stderr, "[qwen36] ready: %.2f GiB on GPU, context %d\n", (double)vram_ / (1024.0 * 1024.0 * 1024.0), max_ctx_);
 }
@@ -820,6 +1147,16 @@ Model::~Model() {
     if (p_->bb.h_ids) cudaFreeHost(p_->bb.h_ids);
     if (p_->bb.h_perm) cudaFreeHost(p_->bb.h_perm);
     if (p_->bb.h_pos) cudaFreeHost(p_->bb.h_pos);
+    if (p_->h_grp_ptr_) cudaFreeHost(p_->h_grp_ptr_);
+    if (p_->host_expert_arena_) {
+        strata::platform::unlock_resident(p_->host_expert_arena_, p_->host_expert_bytes_);
+#if defined(_WIN32)
+        VirtualFree(p_->host_expert_arena_, 0, MEM_RELEASE);
+#else
+        std::free(p_->host_expert_arena_);
+#endif
+        p_->host_expert_arena_ = nullptr;
+    }
     for (Snap& s : snaps_) if (s.host) cudaFreeHost(s.host);
     if (p_->st) cudaStreamDestroy(p_->st);
 }
@@ -1024,7 +1361,6 @@ void Model::mtp_draft(int next, int k, std::vector<int>& out) {
 
 void Model::forward_verify(const int* tokens, int n) {
     Impl& m = *p_;
-    if (!m.mtp_on) throw std::runtime_error("forward_verify needs the MTP head (--mtp)");
     if (n < 1 || n > m.spec_max + 1) throw std::runtime_error("forward_verify: too many rows");
     v_pos0_ = pos_;
     v_n_ = n;
@@ -1056,7 +1392,14 @@ void Model::commit(int keep) {
         }
         pos_ = v_pos0_ + keep;
     }
-    m.mtp_track(v_tokens_.data(), keep, v_pos0_);     // synchronises
+    if (m.mtp_on) {
+        m.mtp_track(v_tokens_.data(), keep, v_pos0_);     // synchronises
+    } else {
+        m.queue_err_check();
+        CK(cudaStreamSynchronize(m.st));
+        CK(cudaGetLastError());
+        m.check_err();
+    }
     v_n_ = 0;
 }
 

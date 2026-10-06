@@ -36,6 +36,7 @@ struct LayerWeights {
     // [gate rows | up rows | down rows] at blobs + e * blob_stride, and gate_exps/up_exps/down_exps above are NOT loaded.
     bool grouped = false;
     const void* blobs = nullptr;
+    const void* host_blobs = nullptr;
     size_t blob_stride = 0;
     int gu_type = -1, d_type = -1;
 };
