@@ -467,39 +467,6 @@ __device__ __forceinline__ float vec_dot_q5_K_q8_1(const void* __restrict__ vbq,
     }
     return vec_dot_q5_K_q8_1_impl_vmmq(vl, vh, u, sc, m, bq5_K->dm, d8);
 }
-// Q6_K: llama.cpp's vec_dot_q6_K_q8_1 (vecdotq.cuh, VDR 1)
-__device__ __forceinline__ float vec_dot_q6_K_q8_1_impl_mmvq(const int vl, const int vh, const int* __restrict__ u,
-                                                             const int8_t* __restrict__ scales, const float d,
-                                                             const float* __restrict__ d8) {
-    float sumf = 0.0f;
-#pragma unroll
-    for (int i = 0; i < QR6_K; ++i) {
-        const int sc = scales[4 * i];
-        const int vil = (vl >> (4 * i)) & 0x0F0F0F0F;
-        const int vih = ((vh >> (4 * i)) << 4) & 0x30303030;
-        const int vi = __vsubss4(vil | vih, 0x20202020);
-        sumf += d8[i] * (ggml_cuda_dp4a(vi, u[i], 0) * sc);
-    }
-    return d * sumf;
-}
-__device__ __forceinline__ float vec_dot_q6_K_q8_1(const void* __restrict__ vbq, const block_q8_1* __restrict__ bq8_1,
-                                                   const int& kbx, const int& iqs) {
-    const block_q6_K* bq6_K = (const block_q6_K*) vbq + kbx;
-    const int bq8_offset = 2 * QR6_K * (iqs / (QI6_K / 2)) + (iqs % (QI6_K / 2)) / (QI6_K / 4);
-    const int scale_offset = (QI6_K / 4) * (iqs / (QI6_K / 2)) + (iqs % (QI6_K / 2)) / (QI6_K / 8);
-    const int vh_shift = 2 * ((iqs % (QI6_K / 2)) / (QI6_K / 4));
-    const int vl = get_int_b2(bq6_K->ql, iqs);
-    const int vh = get_int_b2(bq6_K->qh, (QI6_K / 4) * (iqs / (QI6_K / 2)) + iqs % (QI6_K / 4)) >> vh_shift;
-    const int8_t* scales = bq6_K->scales + scale_offset;
-    int u[QR6_K];
-    float d8[QR6_K];
-#pragma unroll
-    for (int i = 0; i < QR6_K; ++i) {
-        u[i] = get_int_b4(bq8_1[bq8_offset + 2 * i].qs, iqs % QI8_1);
-        d8[i] = __low2float(bq8_1[bq8_offset + 2 * i].ds);
-    }
-    return vec_dot_q6_K_q8_1_impl_mmvq(vl, vh, u, scales, __half2float(bq6_K->d), d8);
-}
 // Q5_1: llama.cpp's integer chain, but the min term multiplies the sum of the QUANTIZED activations (dp4a with
 // 0x01010101, times d8) instead of the q8_1 block's `ds.y`, which our quantizer (like llama.cpp's) fills with the sum
 // of the ORIGINAL activations.  That is ggml-cpu's convention (its q8_1 `s` is d * sum(q)) and the one the K-quant
@@ -1993,24 +1960,6 @@ __device__ void dq_q5_k(const void* vx, int64_t ibs, dst_t* yy, int tid) {
         hm <<= 1;
         y[32] = cvt<dst_t>(d2 * ((ql[0] >> 4) + (qh[0] & hm ? 16 : 0)) - m2);
         y[33] = cvt<dst_t>(d2 * ((ql[1] >> 4) + (qh[1] & hm ? 16 : 0)) - m2);
-    }
-}
-template<typename dst_t>
-__device__ void dq_q6_k(const void* vx, int64_t ibs, dst_t* yy, int tid) {
-    const block_q6_K* x = (const block_q6_K*) vx;
-    for (int tt = tid; tt < 64; tt += 32) {
-        const int64_t ip  = tt / 32;
-        const int64_t il  = tt - 32 * ip;
-        const int64_t is  = 8 * ip + il / 16;
-        dst_t* y = yy + 128 * ip + il;
-        const float d = __half2float(x[ibs].d);
-        const uint8_t* ql = x[ibs].ql + 64 * ip + il;
-        const uint8_t  qh = x[ibs].qh[32 * ip + il];
-        const int8_t*  sc = x[ibs].scales + is;
-        y[ 0] = cvt<dst_t>(d * sc[0] * ((int8_t)((ql[ 0] & 0xF) | (((qh >> 0) & 3) << 4)) - 32));
-        y[32] = cvt<dst_t>(d * sc[2] * ((int8_t)((ql[32] & 0xF) | (((qh >> 2) & 3) << 4)) - 32));
-        y[64] = cvt<dst_t>(d * sc[4] * ((int8_t)((ql[ 0] >> 4) | (((qh >> 4) & 3) << 4)) - 32));
-        y[96] = cvt<dst_t>(d * sc[6] * ((int8_t)((ql[32] >> 4) | (((qh >> 6) & 3) << 4)) - 32));
     }
 }
 template<typename dst_t>
