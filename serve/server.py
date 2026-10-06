@@ -59,6 +59,24 @@ from serve.winjob import contain  # noqa: E402
 from serve.structured import StructuredOutputError, prepare_format, validated_json  # noqa: E402
 from serve import responses as responses_api  # noqa: E402
 from serve.responses import ResponsesError, error_body as responses_error_body  # noqa: E402
+try:
+    from tools.inspect_gguf_arch import (  # noqa: E402
+        detect_model_architecture,
+        detect_config_architecture,
+        build_engine_command,
+        validate_unified_config,
+        resolve_engine_executable,
+        is_generic_strata,
+    )
+except ImportError:
+    from inspect_gguf_arch import (  # noqa: E402
+        detect_model_architecture,
+        detect_config_architecture,
+        build_engine_command,
+        validate_unified_config,
+        resolve_engine_executable,
+        is_generic_strata,
+    )
 
 IM_END = "<|im_end|>"
 IMAGE_PAD = "<|image_pad|>"
@@ -490,9 +508,24 @@ class StrataEngine:
     def __init__(self, exe: str, args: list[str], cwd: str | None = None, log: str | None = None,
                  env: dict | None = None, lazy: bool = False):
         args = apply_ram_safeguard(list(args))
-        self.spawn = (exe, list(args), cwd, log, env)   # to start it again after it died (issue #27)
+        clean_args = []
+        for x in args:
+            if x == "--serve":
+                continue
+            if x == exe or (os.path.basename(x) == os.path.basename(exe) and not str(x).startswith("-")):
+                continue
+            clean_args.append(x)
         paths = {k: v for k, v in zip(args, args[1:]) if k in ("--native", "--pack")}
         self.model_path = paths.get("--native") or paths.get("--pack", "pack/full")
+        try:
+            detected_arch = detect_model_architecture(self.model_path)
+            exe = resolve_engine_executable(detected_arch, exe)
+            cmd = build_engine_command(detected_arch, {"exe": exe, "args": args})
+            exe = cmd[0]
+            args = [x for x in cmd[1:] if x != "--serve"]
+        except Exception:
+            pass
+        self.spawn = (exe, list(args), cwd, log, env)   # to start it again after it died (issue #27)
         self.log_path = log
         self.proc, self.pump, self.log = None, None, None
         self.ended, self.unloaded = True, True
@@ -1530,11 +1563,12 @@ def layer_split_value(cfg: dict) -> str:
     return ",".join(str(x) for x in vals)
 
 
-def engine_args(cfg: dict) -> list[str]:
-    """The engine's arguments: the config's, and with several GPUs the layer split across them ("layer_split" in the
-    config: "auto" by default, or the first layer of each later GPU's share, e.g. "18" or "16,32"; see
-    layer_split_value)."""
-    args = list(cfg["args"])
+def engine_args(cfg: dict, arch: str | None = None) -> list[str]:
+    """The engine's arguments: synthesized and filtered for the model architecture (qwen38_moe vs
+    qwen36_moe), layer split across GPUs, elastic VRAM, and parallel slots."""
+    arch = arch or detect_config_architecture(cfg)
+    full_cmd = build_engine_command(arch, cfg)
+    args = [x for x in full_cmd[1:] if x != "--serve"]
     if len(gpu_list(cfg)) > 1 and "--layer-split" not in args:
         args += ["--layer-split", layer_split_value(cfg)]
     # opt-in: an auto split runs on the first card alone when it holds every profiled expert and the KV
@@ -1669,19 +1703,26 @@ class ByteTokenizer:
 
     ALWAYS = ()                                     # specials matched without parse_special (type 4, as <think>)
 
+    max_special_len = max(len(s) for s in SPECIALS)
+
     def encode(self, text, parse_special=False, plain=()):
-        out, i = [], 0
+        return self.encode_marked(text, parse_special, plain)[0]
+
+    def encode_marked(self, text, parse_special=False, plain=()):
+        """encode() and its resume points (after each special), as strata_tokenizer's for PromptEncoder."""
+        out, marks, i = [], [], 0
         while i < len(text):
             for k, s in enumerate(self.SPECIALS):
                 if (parse_special or s in self.ALWAYS) and text.startswith(s, i) and not any(
                         a <= i < b for a, b in plain):
                     out.append(256 + k)
                     i += len(s)
+                    marks.append((i, len(out)))
                     break
             else:
                 out.extend(text[i].encode("utf-8"))
                 i += 1
-        return out
+        return out, marks
 
     def decode(self, ids, errors="replace"):
         raw = bytearray()
@@ -1780,6 +1821,13 @@ class Service:
         self.anthropic_think_unasked = True               # #278: "anthropic_thinking": "on_request" -> False
         self.stop_ids = set(tokenizer.encode(IM_END, parse_special=True) +
                             tokenizer.encode("<|endoftext|>", parse_special=True))
+        # #567: a prompt re-encodes only what follows the last special token it shares with a recent prompt (the
+        # same ids as a full encode: tools/strata_tokenizer.py PromptEncoder).  Tokenizers without resume points
+        # encode in full.
+        self.prompts = None
+        if hasattr(tokenizer, "encode_marked") and hasattr(tokenizer, "max_special_len"):
+            from strata_tokenizer import PromptEncoder
+            self.prompts = PromptEncoder(tokenizer)
 
     def loaded(self) -> bool:
         return not hasattr(self.engine, "alive") or self.engine.alive()
@@ -2209,10 +2257,13 @@ class Service:
         message's text is encoded as the text it is, not as the model's reasoning markers (the template's own are)."""
         marked, marked_tools, changed = mark_think_literals(messages, tools)
         prompt = self.render_prompt(marked, marked_tools, kwargs)
-        if not changed:
-            return self.tok.encode(prompt, parse_special=True)
-        prompt, plain = unmark_think_literals(prompt)
-        return self.tok.encode(prompt, parse_special=True, plain=plain)
+        plain = ()
+        if changed:
+            prompt, plain = unmark_think_literals(prompt)
+        if self.prompts is not None:            # #567: only what follows the last special shared with a recent prompt
+            return self.prompts.encode(prompt, plain)
+        return self.tok.encode(prompt, parse_special=True, plain=plain) if plain else \
+            self.tok.encode(prompt, parse_special=True)
 
     def prepare(self, messages, tools, kwargs, max_new=None):
         """-> (ids, thinking, max_new). An unset or non-positive max_new (some clients send -1) means "unlimited":
@@ -2938,9 +2989,59 @@ def make_handler(svc: Service):
 
         record = None                                       # #332: this request's monitor record, if kept
         watch_done = None                                   # #430 #431: stops this request's disconnect watcher
+        body_read = False                                   # whether a handler took this request's body
+        DRAIN_SECONDS = 5                                   # the longest an unread body is read and dropped
 
         def log_message(self, fmt, *args):
             pass
+
+        def handle_one_request(self):
+            super().handle_one_request()
+            self._drain_body()
+
+        def _body(self, length=None) -> bytes:
+            """The request body, read by its handler.  Read whole, the drain leaves it alone; cut short, the drain
+            takes what is left."""
+            length = int(self.headers.get("Content-Length", 0)) if length is None else length
+            body = self.rfile.read(length)
+            self.body_read = len(body) == length
+            return body
+
+        def _drain_body(self):
+            """An answer sent before the body was read (a 401, a 403, a 413, a method with no handler) must not close
+            the connection on unread bytes: the close then sends a reset, and a client that sends its body after the
+            headers (http.client, urllib, requests) gets a connection error instead of the answer.  So the body is
+            read and dropped here, once, after an answer, in pieces so that its size is never held in memory.  What
+            has not arrived DRAIN_SECONDS later is left unread: the limit is time, so that a conversation of many
+            megabytes, at any speed the client has, still gets its answer."""
+            headers = getattr(self, "headers", None)
+            if self.body_read or headers is None:
+                return
+            try:
+                left = int(headers.get("Content-Length", 0))
+            except ValueError:
+                return
+            if left <= 0:
+                return
+            deadline = time.monotonic() + self.DRAIN_SECONDS
+            # One socket read at a time: read() would wait for it all.  A handler read that timed out leaves rfile
+            # refusing every read ("cannot read from timed out object"); the socket itself still reads, so the rest
+            # comes from there (what that read had taken is not known, so this one can run to the deadline).
+            read = self.rfile.read1
+            while left > 0 and (wait := deadline - time.monotonic()) > 0:
+                try:
+                    self.connection.settimeout(wait)         # a client that never sends what it announced
+                    piece = read(min(left, 1 << 20))
+                except TimeoutError:
+                    break
+                except OSError:
+                    if read == self.connection.recv:
+                        break
+                    read = self.connection.recv
+                    continue
+                if not piece:
+                    break
+                left -= len(piece)
 
         def parse_request(self):
             """Without an API key, every request (any method) first passes the Host check: DNS rebinding protection
@@ -3218,7 +3319,7 @@ def make_handler(svc: Service):
                     self._json(503, {"error": {"type": "server_error", "message": str(e)}})
                 return
             try:
-                req = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
+                req = json.loads(self._body() or b"{}")
                 if not isinstance(req, dict):
                     raise ValueError("send a JSON object")
                 if path.startswith("/v1/responses/"):        # retrieve/delete/cancel/compact: nothing is stored
@@ -3341,7 +3442,7 @@ def make_handler(svc: Service):
             timeout = self.connection.gettimeout()
             try:
                 self.connection.settimeout(2.0)
-                complete = len(self.rfile.read(length)) == length
+                complete = len(self._body(length)) == length
             except OSError:
                 complete = False
             finally:
@@ -3381,7 +3482,7 @@ def make_handler(svc: Service):
         def _config_post(self):
             """#564: change a few documented keys of the run config - JSON from Strata's own page only, as
             /settings (the key is checked before); every other key of the file stays as it is."""
-            body = self.rfile.read(int(self.headers.get("Content-Length", 0)))
+            body = self._body()
             if not self._own_page("the run config can be changed"):
                 return
             if not svc.config_path:
@@ -3407,7 +3508,7 @@ def make_handler(svc: Service):
 
         def _settings(self):
             # They change what every client gets, so only the app's own page may set them
-            body = self.rfile.read(int(self.headers.get("Content-Length", 0)))
+            body = self._body()
             if not self._own_page("settings can be changed"):
                 return
             try:
@@ -4062,7 +4163,14 @@ def main() -> int:
             atexit.register(ctypes.windll.winmm.timeEndPeriod, 1)
         except Exception:
             pass
-    cfg = json.loads(Path(a.config).read_text(encoding="utf-8-sig")) if a.config else {}   # Notepad adds a BOM
+    cfg = {}
+    if a.config:
+        cfg_path = Path(a.config)
+        if not cfg_path.exists() and (ROOT / "configs" / a.config).exists():
+            cfg_path = ROOT / "configs" / a.config
+        elif not cfg_path.exists() and (ROOT / a.config).exists():
+            cfg_path = ROOT / a.config
+        cfg = json.loads(cfg_path.read_text(encoding="utf-8-sig"))   # Notepad adds a BOM
     if a.gpu is not None:
         cfg["gpu"] = int(a.gpu) if a.gpu.strip().isdigit() else a.gpu
     a.host = a.host or cfg.get("host") or "127.0.0.1"   # issue #26: the run scripts pass no --host, the config can
@@ -4109,15 +4217,23 @@ def main() -> int:
                             env=vision_env(cfg, env))
         print("model unloaded; the first request loads it ..." if lazy else
               "loading the model (the first start takes a minute or two) ...", flush=True)
+        arch = detect_config_architecture(cfg)
+        val_errors = validate_unified_config(cfg)
+        if val_errors:
+            for ve in val_errors:
+                print(f"[strata] config warning: {ve}", file=sys.stderr)
+        print(f"[strata] detected model architecture: {arch}", flush=True)
+
         if len(gpu_list(cfg)) > 1:
             try:
                 split = layer_split_value(cfg)          # #644: before the (minutes-long) start
             except ValueError as e:
                 raise SystemExit(f"[strata] config {e}")
             print(f"[strata] layer split across GPUs {gpu_list(cfg)} ({split})", flush=True)
-        # a relative "exe" is the config's cwd's: Windows' CreateProcess resolves "engine/strata.exe" against nothing
-        # it is told about (WinError 2), so it is made absolute here
-        exe = cfg["exe"] if os.path.isabs(cfg["exe"]) else os.path.abspath(os.path.join(cfg.get("cwd") or ".", cfg["exe"]))
+        # Unified engine executable resolution based on architecture
+        target_cmd = build_engine_command(arch, cfg)
+        target_exe = target_cmd[0]
+        exe = target_exe if os.path.isabs(target_exe) else os.path.abspath(os.path.join(cfg.get("cwd") or ".", target_exe))
         try:
             silence = engine_silence_s(cfg)             # #481: checked before the (minutes-long) start
         except ValueError as e:
@@ -4126,7 +4242,7 @@ def main() -> int:
             effort_end = effort_end_args(cfg, exe, tok)  # #458
         except ValueError as e:
             raise SystemExit(f"[strata] config {e}")
-        engine = StrataEngine(exe, engine_args(cfg) + (effort_end or []), cwd=cfg.get("cwd"), log=cfg.get("log"),
+        engine = StrataEngine(exe, engine_args(cfg, arch=arch) + (effort_end or []), cwd=cfg.get("cwd"), log=cfg.get("log"),
                               env=env, lazy=lazy)
         engine.silence_s = silence                      # an attribute of its own: restart() keeps it
         warn_tight_ram(engine.info.get("arena_mib"))
@@ -4201,9 +4317,9 @@ def main() -> int:
     svc.gpu_indices = gpu_list(cfg)                     # ... or every card of a layer split (issue #112)
     svc.backend = cfg.get("backend")                    # "hip": the AMD cards' readings come from sysfs (#301)
     if a.config:
-        svc.config_path = a.config                      # #564: the web page's Settings view
+        svc.config_path = str(cfg_path)                 # #564: the web page's Settings view
     if a.config:                                        # the Chat settings shared with other apps, from last time
-        svc.shared_path = str(Path(a.config).with_suffix("")) + ".shared-settings.json"
+        svc.shared_path = str(cfg_path.with_suffix("")) + ".shared-settings.json"
         try:
             svc.shared = clean_shared_defaults(json.loads(Path(svc.shared_path).read_text(encoding="utf-8")))
             if svc.shared:
