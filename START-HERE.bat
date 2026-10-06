@@ -41,31 +41,67 @@ if "%~1"=="--help" goto run_setup
 if "%~1"=="--check" goto run_setup
 
 set "CHOICE=%~1"
-if "%CHOICE%"=="1" goto start_coder
-if "%CHOICE%"=="2" goto start_q20
+if "%CHOICE%"=="1" goto start_ornith_gsq
+if "%CHOICE%"=="2" goto start_ornith_ad
+if "%CHOICE%"=="3" goto start_qwen36
+if "%CHOICE%"=="4" goto start_coder
+if "%CHOICE%"=="5" goto start_q20
+if "%CHOICE%"=="6" goto start_tq10
 
 echo.
 echo ====================================================================
-echo   STRATA ENGINE RUNNER - 64K CONTEXT ^& 10-15+ TOK/S ACCELERATION
+echo   STRATA ENGINE RUNNER - 64K CONTEXT ^& HIGH-SPEED GPU INFERENCE
 echo ====================================================================
 echo   Select model to run:
 echo.
-echo     [1] Qwen 3.8 Flash Next Coder (IQ1_M) - 64K Context (Fast Coding)
-echo     [2] Qwen 3.8 Flash Next Full (Q2_0)    - 64K Context (Full Reasoning)
+echo     [1] Ornith 1.5 35B A3B (GSQ-RCO 3.5-bit / Q2_K) - Tested ^& Verified
+echo     [2] Ornith 1.5 35B A3B (Q4_K / IQ4_XS Mixed)    - High Quality
+echo     [3] Qwen 3.6 35B A3B UDT (Q4_K_XL + MTP)        - 85-115 tok/s
+echo     [4] Qwen 3.8 Flash Next Coder (IQ1_M)           - 64K Context
+echo     [5] Qwen 3.8 Flash Next Full (Q2_0)             - 64K Context
+echo     [6] Deep Ternary 1.58-bit (TQ1_0) Model Runner
 echo     [S] Advanced Strata Setup / Re-download
 echo.
-set /p "CHOICE=  Enter choice [1-2, default: 2]: "
-if "%CHOICE%"=="" set "CHOICE=2"
+set /p "CHOICE=  Enter choice [1-6, default: 1]: "
+if "%CHOICE%"=="" set "CHOICE=1"
 if /i "%CHOICE%"=="s" goto run_setup
-if "%CHOICE%"=="1" goto start_coder
-if "%CHOICE%"=="2" goto start_q20
-goto start_q20
+if "%CHOICE%"=="1" goto start_ornith_gsq
+if "%CHOICE%"=="2" goto start_ornith_ad
+if "%CHOICE%"=="3" goto start_qwen36
+if "%CHOICE%"=="4" goto start_coder
+if "%CHOICE%"=="5" goto start_q20
+if "%CHOICE%"=="6" goto start_tq10
+goto start_ornith_gsq
+
+:start_ornith_gsq
+echo.
+echo  Starting Ornith 1.5 35B A3B (GSQ-RCO 3.5-bit) with Native Q2_K...
+powershell -ExecutionPolicy Bypass -File "tools\optimize_memory.ps1"
+".venv\Scripts\python.exe" "serve\server.py" --engine strata --config "configs\strata-ornith-gsq.json" --port 8080 --open
+if errorlevel 1 pause
+exit /b
+
+:start_ornith_ad
+echo.
+echo  Starting Ornith 1.5 35B A3B (Q4_K / IQ4_XS)...
+powershell -ExecutionPolicy Bypass -File "tools\optimize_memory.ps1"
+".venv\Scripts\python.exe" "serve\server.py" --engine strata --config "configs\strata-ornith.json" --port 8080 --open
+if errorlevel 1 pause
+exit /b
+
+:start_qwen36
+echo.
+echo  Starting Qwen 3.6 35B A3B UDT (Q4_K_XL + MTP)...
+powershell -ExecutionPolicy Bypass -File "tools\optimize_memory.ps1"
+".venv\Scripts\python.exe" "serve\server.py" --engine strata --config "configs\strata-qwen36.json" --port 8080 --open
+if errorlevel 1 pause
+exit /b
 
 :start_coder
 echo.
 echo  Starting Qwen 3.8 Flash Next Coder (IQ1_M) with 64K Context...
 powershell -ExecutionPolicy Bypass -File "tools\optimize_memory.ps1"
-".venv\Scripts\python.exe" "serve\server.py" --engine strata --config "strata-coder-iq1_m.json" --port 8080 --open
+".venv\Scripts\python.exe" "serve\server.py" --engine strata --config "configs\strata-coder-iq1_m.json" --port 8080 --open
 if errorlevel 1 pause
 exit /b
 
@@ -73,7 +109,15 @@ exit /b
 echo.
 echo  Starting Qwen 3.8 Flash Next Full (Q2_0) with 64K Context...
 powershell -ExecutionPolicy Bypass -File "tools\optimize_memory.ps1"
-".venv\Scripts\python.exe" "serve\server.py" --engine strata --config "strata-q2_0.json" --port 8080 --open
+".venv\Scripts\python.exe" "serve\server.py" --engine strata --config "configs\strata-q2_0.json" --port 8080 --open
+if errorlevel 1 pause
+exit /b
+
+:start_tq10
+echo.
+echo  Starting Deep Ternary 1.58-bit (TQ1_0) Model Runner...
+powershell -ExecutionPolicy Bypass -File "tools\optimize_memory.ps1"
+".venv\Scripts\python.exe" "serve\server.py" --engine strata --config "configs\strata-tq1_0.json" --port 8080 --open
 if errorlevel 1 pause
 exit /b
 
