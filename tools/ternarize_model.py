@@ -251,23 +251,25 @@ def classify_tensor(
 def extract_tensor_f32(t: gguf.ReaderTensor) -> np.ndarray:
     """Extracts tensor elements as a contiguous float32 numpy array."""
     qtype = t.tensor_type
+    logical_shape = tuple(int(x) for x in reversed(t.shape))
 
     if qtype == gguf.GGMLQuantizationType.F32:
-        return np.asarray(t.data, dtype=np.float32)
+        return np.asarray(t.data, dtype=np.float32).reshape(logical_shape)
     elif qtype == gguf.GGMLQuantizationType.F16:
-        return np.asarray(t.data, dtype=np.float32)
+        raw_f16 = np.frombuffer(t.data.tobytes(), dtype=np.float16)
+        return raw_f16.astype(np.float32).reshape(logical_shape)
     elif qtype == gguf.GGMLQuantizationType.BF16:
         raw_u16 = np.frombuffer(t.data.tobytes(), dtype=np.uint16)
         f32_flat = (raw_u16.astype(np.uint32) << 16).view(np.float32)
-        return f32_flat.reshape(t.data.shape)
+        return f32_flat.reshape(logical_shape)
     elif qtype == gguf.GGMLQuantizationType.TQ1_0:
         trits, scales = unpack_tq1_0(t.data.tobytes())
         recon = scales.astype(np.float32)[:, None] * trits.astype(np.float32)
-        return recon.reshape(t.data.shape)
+        return recon.reshape(logical_shape)
     else:
         # Generic dequantize via gguf library
         try:
-            return gguf.dequantize(t.data, qtype).astype(np.float32)
+            return gguf.dequantize(t.data, qtype).astype(np.float32).reshape(logical_shape)
         except Exception as e:
             raise RuntimeError(f"Unable to dequantize tensor '{t.name}' of type {qtype}: {e}")
 
@@ -402,7 +404,7 @@ def ternarize_model(
 
     # 1. Copy all metadata unchanged
     for k, field in reader.fields.items():
-        if k.startswith("GGUF.") or k == "general.architecture":
+        if k.startswith("GGUF.") or k == "general.architecture" or k == "general.quantization_version":
             continue
         val = field.contents()
         if field.types[0] == gguf.GGUFValueType.ARRAY:
@@ -449,7 +451,7 @@ def ternarize_model(
                 writer.add_tensor(t_name, arr_fp16)
                 if verbose:
                     print(f"  [{idx+1}/{tensors_total}] PROTECTED (F32->FP16): {t_name} shape={t_shape}")
-            elif t_type in (gguf.GGMLQuantizationType.F32, gguf.GGMLQuantizationType.F16):
+            elif t_type in (gguf.GGMLQuantizationType.F32, gguf.GGMLQuantizationType.F64):
                 writer.add_tensor(t_name, t.data)
                 if verbose:
                     print(f"  [{idx+1}/{tensors_total}] PROTECTED ({t_type.name}): {t_name} shape={t_shape}")
@@ -487,10 +489,10 @@ def ternarize_model(
 
         else:  # UNMODIFIED
             tensors_unmodified += 1
-            if t_type in (gguf.GGMLQuantizationType.F32, gguf.GGMLQuantizationType.F16):
-                writer.add_tensor(t_name, t.data)
-            else:
+            if t.data.dtype == np.uint8 or t_type not in (gguf.GGMLQuantizationType.F32, gguf.GGMLQuantizationType.F64):
                 writer.add_tensor(t_name, t.data, raw_dtype=t_type)
+            else:
+                writer.add_tensor(t_name, t.data)
             if verbose:
                 print(f"  [{idx+1}/{tensors_total}] UNMODIFIED ({t_type.name}): {t_name} shape={t_shape}")
 
