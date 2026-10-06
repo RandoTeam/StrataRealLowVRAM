@@ -232,6 +232,31 @@ inline void dequantize_q5_K(const uint8_t* block, float* out) {
         u2 = (uint8_t)(u2 << 2);
     }
 }
+// ---- Q2_K: 256 elements from an 84-byte super-block: `scales[16]`, `qs[64]`, `fp16 d`, `fp16 dmin`.
+// Transcribed from dequantize_row_q2_K (ggml-quants.c).
+inline void dequantize_q2_K(const uint8_t* block, float* out) {
+    const uint8_t* scales = block;
+    const uint8_t* q = block + 16;
+    const float d = fp16_to_fp32(read_u16(block + 80));
+    const float min = fp16_to_fp32(read_u16(block + 82));
+    float* y = out;
+    int is = 0;
+    for (int n = 0; n < 256; n += 128) {
+        int shift = 0;
+        for (int j = 0; j < 4; ++j) {
+            uint8_t sc = scales[is++];
+            float dl = d * (float)(sc & 0xF), ml = min * (float)(sc >> 4);
+            for (int l = 0; l < 16; ++l) *y++ = dl * (float)((int8_t)((q[l] >> shift) & 3)) - ml;
+
+            sc = scales[is++];
+            dl = d * (float)(sc & 0xF); ml = min * (float)(sc >> 4);
+            for (int l = 0; l < 16; ++l) *y++ = dl * (float)((int8_t)((q[l + 16] >> shift) & 3)) - ml;
+
+            shift += 2;
+        }
+        q += 32;
+    }
+}
 // ---- Q3_K: 256 elements from a 110-byte super-block: `hmask[32]`, `qs[64]`, `scales[12]`, `fp16 d`
 // LAST. Transcribed from dequantize_row_q3_K (ggml-quants.c, 3cf03257). This type has NO `dmin` - its
 // scales are SIGNED 6-bit with a `- 32` bias - so it does not follow the Q4_K/Q5_K pattern at all.

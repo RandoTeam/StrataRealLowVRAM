@@ -55,6 +55,7 @@ void dequant_buf(uint32_t type, const uint8_t* src, int64_t n, float* out) {
     case 2: fn = strata::dequantize_q4_0; break;
     case 6: fn = strata::dequantize_q5_0; break;
     case 8: fn = strata::dequantize_q8_0; break;
+    case 10: fn = strata::dequantize_q2_K; break;
     case 11: fn = strata::dequantize_q3_K; break;
     case 12: fn = strata::dequantize_q4_K; break;
     case 13: fn = strata::dequantize_q5_K; break;
