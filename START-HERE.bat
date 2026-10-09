@@ -99,12 +99,10 @@ if not exist "packs\q2_0\layers.bin" (
             exit /b 1
         )
         mkdir "models\Q2_0" 2>nul
-        echo [*] Launching download assistant...
-        %PY% tools\setup_model.py --model Q2_0 --dest models\Q2_0
-    )
-    
-    if exist "models\Q2_0" (
-        echo [*] Creating optimized IQ data packs (packs\q2_0)...
+        echo [*] Launching Strata automated model downloader and pack builder...
+        %PY% setup.py --model Q2_0 --context 32768 --yes
+    ) else (
+        echo [*] Raw models folder found. Creating optimized IQ data packs (packs\q2_0)...
         mkdir "packs\q2_0" 2>nul
         %PY% tools\iq_pack.py --model models\Q2_0 --out packs\q2_0
     )
