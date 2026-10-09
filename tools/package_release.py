@@ -20,6 +20,7 @@ def package_release():
     root_files = [
         "START-HERE.bat",
         "run-q2_0.bat",
+        "run-27b.bat",
         "strata-q2_0.json",
         "setup.py",
         "README.md",
