@@ -51,7 +51,7 @@ if "%PY_CMD%"=="" (
 
 rem 4. Create/Verify Virtual Environment
 if not exist ".venv\Scripts\python.exe" (
-    echo [*] Creating virtual environment (.venv)...
+    echo [*] Creating virtual environment .venv...
     %PY_CMD% -m venv .venv
     if errorlevel 1 (
         echo [ERROR] Failed to create virtual environment.
@@ -73,7 +73,7 @@ if not exist "engine\strata.exe" (
 )
 
 if not exist "engine\cublas64_13.dll" (
-    echo [*] WDDM proxy hook not found in engine\. Attempting to compile from source...
+    echo [*] WDDM proxy hook not found in engine. Attempting to compile from source...
     if exist "tools\wddm_hook\build_hook.bat" (
         call tools\wddm_hook\build_hook.bat
     ) else (
@@ -84,15 +84,15 @@ if not exist "engine\cublas64_13.dll" (
 )
 
 rem 6. Check Model & Packs
-if not exist "packs\q2_0\layers.bin" (
+if not exist "packs\q2_0\experts.bin" (
     echo.
     echo ===============================================================================
-    echo [NOTICE] Pre-packed model layers (packs\q2_0\layers.bin) not found!
+    echo [NOTICE] Pre-packed model layers packs\q2_0\experts.bin not found!
     echo ===============================================================================
     if not exist "models\Q2_0" (
-        echo Models folder "models\Q2_0" is missing.
+        echo Models folder models\Q2_0 is missing.
         echo Would you like to download Qwen3.8-Flash-Next-GSQ-RCO-Q2_0 now?
-        set /p DOWNLOAD_CHOICE="Download model shards (~34 GB)? [Y/n]: "
+        set /p DOWNLOAD_CHOICE="Download model shards - 34 GB [Y/n]: "
         if /i "!DOWNLOAD_CHOICE!"=="n" (
             echo Aborted by user. Please place model files in models\Q2_0\
             pause
@@ -102,7 +102,7 @@ if not exist "packs\q2_0\layers.bin" (
         echo [*] Launching Strata automated model downloader and pack builder...
         %PY% setup.py --model Q2_0 --context 32768 --yes
     ) else (
-        echo [*] Raw models folder found. Creating optimized IQ data packs (packs\q2_0)...
+        echo [*] Raw models folder found. Creating optimized IQ data packs...
         mkdir "packs\q2_0" 2>nul
         %PY% tools\iq_pack.py --model models\Q2_0 --out packs\q2_0
     )
@@ -115,9 +115,24 @@ if not exist "strata-q2_0.json" (
     exit /b 1
 )
 
+rem 8. Set Low-VRAM Environment Flags
+set "PATH=%~dp0.venv\Lib\site-packages\nvidia\cu13\bin\x86_64;%PATH%"
+set STRATA_FILE_RELEASE=1
+set STRATA_STAGER_SLEEP=0
+set STRATA_Q2_BITPLANE=1
+set STRATA_HOST_CORE=last
+set STRATA_OWNED_PRICE=exact
+set STRATA_KV_GROW=1
+set STRATA_KV_GROW_INIT=256
+set STRATA_PREFILL_CPU_SHARE=0
+set STRATA_PREFILL_STREAM_MIN=64
+set STRATA_PREFILL_RING=64
+set STRATA_PF_FUSED=1
+set STRATA_EMB_REUSE_ACCOUNT=1
+
 echo.
 echo ===============================================================================
-echo Starting Strata Low-VRAM Server (OpenAI & Anthropic Compatible)
+echo Starting Strata Low-VRAM Server (OpenAI and Anthropic Compatible)
 echo Web UI / API Base URL: http://127.0.0.1:8080
 echo Model: Qwen3.8-Flash-Next (125B MoE, Q2_0)
 echo Context Window: 32,768 tokens
@@ -129,7 +144,7 @@ rem Launch browser in background after 3 seconds
 start "" cmd /c "timeout /t 3 >nul & start http://127.0.0.1:8080"
 
 rem Start Server
-%PY% serve\server.py --config strata-q2_0.json --host 127.0.0.1 --port 8080
+%PY% serve\server.py --engine strata --config strata-q2_0.json --port 8080
 if errorlevel 1 (
     echo.
     echo [ERROR] Strata server stopped unexpectedly.
