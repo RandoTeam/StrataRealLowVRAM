@@ -293,17 +293,17 @@ __global__ void native_q5_k_mmvq_kernel(const Q5KBlock* __restrict__ w,
 __device__ __forceinline__ float q2_q8_dot(const Q20Block* __restrict__ w,
                                           const Q81Block* __restrict__ x, int iqs) {
     const float d2 = w->d;
-    const int16_t* qs = reinterpret_cast<const int16_t*>(w->qs) + iqs * 4;
+    const uint16_t* qs = reinterpret_cast<const uint16_t*>(w->qs) + iqs * 4;
     const Q81Block* chunk = x + iqs;
     const int* q8 = reinterpret_cast<const int*>(chunk->qs);
     int sumi = 0;
 #pragma unroll
     for (int j = 0; j < 4; ++j) {
-        const int q = qs[j];
+        const uint32_t q = qs[j];
         const int u = q8[j * 2];
         const int v = q8[j * 2 + 1];
-        const int qe = __byte_perm(0x020100ff, 0x020100ff, q >> 0);
-        const int qo = __byte_perm(0x020100ff, 0x020100ff, q >> 2);
+        const uint32_t qe = __byte_perm(0x020100FFu, 0x020100FFu, q & 0x7777);
+        const uint32_t qo = __byte_perm(0x020100FFu, 0x020100FFu, (q >> 2) & 0x7777);
         const int qx = __byte_perm(qe, qo, 0x5140);
         const int qy = __byte_perm(qe, qo, 0x7362);
         sumi = STRATA_DP4A(u, qx, sumi);
@@ -917,12 +917,12 @@ struct Q20Traits {
     __device__ static W load(const Block* __restrict__ w, int iqs) {
         W r;
         r.d2 = w->d;
-        const int16_t* qs = reinterpret_cast<const int16_t*>(w->qs) + iqs * 4;
+        const uint16_t* qs = reinterpret_cast<const uint16_t*>(w->qs) + iqs * 4;
 #pragma unroll
         for (int j = 0; j < 4; ++j) {
-            const int q = qs[j];
-            const int qe = __byte_perm(0x020100ff, 0x020100ff, q >> 0);
-            const int qo = __byte_perm(0x020100ff, 0x020100ff, q >> 2);
+            const uint32_t q = qs[j];
+            const uint32_t qe = __byte_perm(0x020100FFu, 0x020100FFu, q & 0x7777);
+            const uint32_t qo = __byte_perm(0x020100FFu, 0x020100FFu, (q >> 2) & 0x7777);
             r.qx[j] = __byte_perm(qe, qo, 0x5140);
             r.qy[j] = __byte_perm(qe, qo, 0x7362);
         }

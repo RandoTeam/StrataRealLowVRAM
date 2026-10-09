@@ -75,16 +75,16 @@ __device__ __forceinline__ float vec_dot_q2_0_q8_1(const void* __restrict__ vbq,
                                                    const int& kbx, const int& iqs) {
     const block_q2_0* bq2_0 = (const block_q2_0*) vbq + kbx;
     const float d2 = bq2_0->d;
-    const int16_t* qs = (const int16_t*) bq2_0->qs + iqs * 4;
+    const uint16_t* qs = (const uint16_t*) bq2_0->qs + iqs * 4;
     const block_q8_1* bq8_1_chunk = bq8_1 + iqs;
     int sumi = 0;
 #pragma unroll
     for (int j = 0; j < 4; ++j) {
-        const int q = qs[j];
+        const uint32_t q = qs[j];
         const int u = get_int_b4(bq8_1_chunk->qs, j * 2 + 0);
         const int v = get_int_b4(bq8_1_chunk->qs, j * 2 + 1);
-        const int qe = __byte_perm(0x020100FF, 0x020100FF, q >> 0);
-        const int qo = __byte_perm(0x020100FF, 0x020100FF, q >> 2);
+        const uint32_t qe = __byte_perm(0x020100FFu, 0x020100FFu, q & 0x7777);
+        const uint32_t qo = __byte_perm(0x020100FFu, 0x020100FFu, (q >> 2) & 0x7777);
         const int qx = __byte_perm(qe, qo, 0x5140);
         const int qy = __byte_perm(qe, qo, 0x7362);
         sumi = ggml_cuda_dp4a(u, qx, sumi);
