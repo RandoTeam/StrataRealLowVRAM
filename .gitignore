@@ -98,6 +98,7 @@ desktop.ini
 # 8. User-generated Batches (whitelist release scripts)
 run-*.bat
 !run-q2_0.bat
+!run-27b.bat
 run-*.sh
 strata-*.json
 !strata-q2_0.json
@@ -105,3 +106,6 @@ build-strata*.bat
 build-vision*.bat
 build-release*/
 *.done
+bin/
+ref/
+

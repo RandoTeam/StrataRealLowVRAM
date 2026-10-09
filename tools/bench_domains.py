@@ -100,6 +100,7 @@ def compute_metrics(domain_def: dict, prompt_n: int, prompt_ms: float, predicted
         "spec_gain_pct": spec_gain_pct,
         "wall_s": round(wall_s, 2),
         "output_chars": len(text),
+        "output_text": text,
     }
 
 

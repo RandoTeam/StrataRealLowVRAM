@@ -115,6 +115,18 @@ if not exist "strata-q2_0.json" (
     exit /b 1
 )
 
+echo.
+echo ===============================================================================
+echo Select Model to Launch:
+echo   [1] Qwen3.8-Flash-Next 125B MoE (Q2_0) - Ultra-Fast Edge MoE (5.7-6.3 tok/s) [Default]
+echo   [2] Huihui-Qwen3.8-27B (IQ3_XXS)        - Dense 27B Reasoning Model (llama-server)
+echo ===============================================================================
+choice /c 12 /n /t 5 /d 1 /m "Select option (auto-starting [1] in 5s): "
+if errorlevel 2 (
+    call run-27b.bat
+    exit /b %errorlevel%
+)
+
 rem 8. Set Low-VRAM Environment Flags
 set "PATH=%~dp0.venv\Lib\site-packages\nvidia\cu13\bin\x86_64;%PATH%"
 set STRATA_FILE_RELEASE=1
