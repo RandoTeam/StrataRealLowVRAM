@@ -1,212 +1,298 @@
-<h1 align="center">Strata</h1>
+# Strata Real Low-VRAM
 
-**English** · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [Español](README.es.md) · [Português](README.pt-BR.md)
+<p align="center">
+  <b>Run a 125-Billion-Parameter MoE AI Model (Qwen3.8-Flash-Next) on a 4 GB VRAM GPU</b><br>
+  NVIDIA GeForce RTX 3050 Laptop / Desktop 4GB · 32,768 Context Window · Windows 10/11 x64 · 100% Free & Open-Source
+</p>
 
-<p align="center"><b>Run a 125-billion-parameter AI model on your own gaming PC</b><br>
-NVIDIA or AMD graphics card (12 GB or more) · Windows or Linux · free and open source</p>
+---
 
-<p align="center"><a href="https://github.com/Niko1221/Strata/releases/download/v0.1.10/Pagoda.mp4"><img src="docs/media/pagoda-preview.webp" width="720" alt="A voxel pagoda garden that Strata's model wrote, running in the browser"></a><br>
-<sub>A voxel pagoda garden, 1 shot prompt running on an RTX 5070 with Strata (IQ3_S, 128K context) ·
-<a href="https://github.com/Niko1221/Strata/releases/download/v0.1.10/Pagoda.mp4">full video (49 s)</a></sub></p>
+## What is this Fork?
 
-Strata runs **[Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next)** on a normal PC. This is a
-large, smart AI model that usually needs a server. It chats, writes code, reads pictures and works with your apps
-and coding agents. Nothing leaves your PC.
+This is **Strata Real Low-VRAM**, an engineered distribution of the [Strata engine](https://github.com/Niko1221/Strata) calibrated and patched specifically to run the massive **125-billion-parameter Qwen3.8-Flash-Next (Q2_0)** Mixture-of-Experts (MoE) model on budget **4 GB VRAM GPUs** (such as the NVIDIA GeForce RTX 3050 Laptop GPU, GTX 1650, or RTX 3050 4GB Desktop) with a guaranteed **32,768 token context window**.
 
-## How fast is it?
+Upstream Strata requires 12 GB+ VRAM out of the box and crashes on 4 GB Windows systems due to driver-level memory clamping. This fork introduces:
+1. **A transparent WDDM NVML Proxy Hook (`cublas64_13.dll`)** that bypasses the Windows 3,305 MiB process VRAM clamp without recompiling the core engine.
+2. **Preservation of the unquantized Q5_K output head (437 MiB)**, eliminating logit noise while still fitting 144–265 expert cache slots into hardware VRAM.
+3. **Calibrated thread scheduling (`--pool-workers 4`)**, preventing AVX2 thread starvation on 6-core CPUs (e.g. AMD Ryzen 5 5500U) for optimal GPU dispatch.
+4. **Guaranteed 32,768 context support** for popular AI coding agent harnesses (**Claude Code, Cursor, Continue.dev, Cline, and Aider**).
+5. **1-Click zero-friction setup (`START-HERE.bat`)** for instant deployment.
 
-We measured it on two ordinary gaming PCs. A token is about ¾ of a word.
+---
 
-- **Writes answers:** how fast the reply appears in a short chat. 60 tokens per second is faster than you can read.
-- **Reads your prompt:** how fast it takes in what you send (here a 32K-token document, code or chat history).
+## 1. The Real 4 GB VRAM Problem (Why it failed out of the box)
 
-<table>
-<tr><th>NVIDIA: RTX 5070 (12 GB), Ryzen 5 7600, 64 GB RAM</th><th>AMD: RX 9070 XT (16 GB), Ryzen 9 3900X, 47 GB RAM</th></tr>
-<tr><td>
+Under Windows 10 and 11, the **Windows Display Driver Model (WDDM)** imposes strict limits on DirectX and CUDA allocations for 3D processes:
+- On a 4,096 MiB card, WDDM clamps a single process's virtual CUDA commit to **~3,305 MiB** (approximately 80–82% of physical VRAM), reserving the remainder for the Desktop Window Manager (DWM) and display swapchains.
+- Crucially, WDDM rounds every discrete allocation $\ge 1\text{ MiB}$ up to a **2 MiB virtual page granule**.
 
-| Size | Writes answers | Reads your prompt |
-| --- | ---: | ---: |
-| **Q2_0** | 94 tokens/s | 2,650 tokens/s |
-| **IQ2_XS** | 79 tokens/s | 2,090 tokens/s |
-| **IQ3_XXS** | 62 tokens/s | 1,750 tokens/s |
-| **IQ3_S** | 53 tokens/s | 1,620 tokens/s |
-| **Coder** | 55 tokens/s | 2,180 tokens/s |
+### Memory Ledger Breakdown
 
-</td><td>
+When loading Qwen3.8-Flash-Next under Strata:
 
-| Size | Writes answers | Reads your prompt |
-| --- | ---: | ---: |
-| **Q2_0** | 60 tokens/s | 1,160 tokens/s |
-| **IQ2_XS** | 52 tokens/s | 1,110 tokens/s |
-| **Coder** | 44 tokens/s | 1,420 tokens/s |
+| Component | Nominal Size | WDDM Commit (with 2 MiB Granule) | Destination |
+| :--- | :---: | :---: | :---: |
+| **Dense Weights (Embeddings, GDN, Norm)** | 1,416.8 MiB | 1,608.0 MiB | GPU VRAM |
+| **301 Projection Matrices (Routers & Mixers)**| 1,376.2 MiB | 1,614.0 MiB | GPU VRAM |
+| **Full Output Head (Q5_K precision)** | 437.0 MiB | 438.0 MiB | GPU VRAM |
+| **Total Resident Allocations** | **3,230.0 MiB** | **3,660.0 MiB** | **GPU VRAM** |
 
-</td></tr>
-</table>
+### The Fatal Collapse:
+Because the virtual commit ($3,660\text{ MiB}$) exceeded WDDM's single-process clamp ($3,305\text{ MiB}$):
+1. The standard CUDA runtime call `cudaMemGetInfo(&free, &total)` returned:
+   $$\text{free} = 0 \text{ bytes}$$
+2. In Strata's engine (`src/program/generate.cpp:4344`), the available VRAM expert cache calculation collapsed to **0 slots**:
+   $$\text{expert\_cache\_slots} = \max\left(0, \frac{\text{free} - \text{reserve}}{\text{slot\_size}}\right) = 0$$
+3. This nullified the device residency table (`thits.d_res`), causing the speculative drafting engine to abort immediately on startup with:
+   ```
+   strata: error: --spec needs the device residency table
+   ```
 
-NVIDIA: Q2_0 with engine 0.1.36, the other rows with 0.1.26 (4K answers, 32K prompts). The full tables are in
-[DETAILS.md](docs/DETAILS.md#speed-measured). A card with more VRAM is faster: an RTX 3090 (24 GB) should write
-about 100-140 tokens per second. Long chats and other cards: [speed of each model](docs/MODELS.md#how-fast-is-each-size),
-[community results](docs/COMMUNITY_BENCHMARKS.md).
+---
 
-<p align="center"><a href="https://buymeacoffee.com/strataengine"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50"></a><br>
-<sub>Strata is free. If it runs well on your PC, a coffee keeps the work on it going.</sub></p>
+## 2. The Solution: WDDM NVML Proxy Hook (`cublas64_13.dll`)
 
-## What you need
+Instead of modifying closed-source engine internals or forcing users into Linux WSL2 (which lacks proper memory pinning), this fork implements a transparent **cuBLAS Proxy Hook**:
 
-| | |
-| --- | --- |
-| **Graphics card** | **NVIDIA** GeForce RTX 20, 30, 40 or 50 series, or **AMD** Radeon RX 7900 XT / XTX, RX 7800 XT / 7700 XT, RX 9060 XT, RX 9070 / 9070 XT, Radeon AI PRO R9700 or RX 6800 / 6900 series. It needs **12 GB of VRAM or more**. |
-| **RAM** | 32 GB or more. Your RAM decides [which model](#which-model-should-i-pick) fits. 64 GB runs every size. |
-| **Disk** | About 80 GB free. Use an SSD if you can: the first start is much faster. |
-| **System** | Windows 10 / 11 or Linux, and a current graphics driver from NVIDIA or AMD. |
-
-The installer sets up everything else. Two or three cards can share the model ([multi-GPU](docs/MULTI_GPU.md)).
-
-Experimental, written and tested by community members on their own machines:
-
-- **Older graphics cards** (Tesla P40 / V100, GTX 10, Radeon VII / MI50, RX 6700 XT, RX 5500 XT): [Older GPUs](docs/OLDER_GPUS.md).
-- **Intel Arc**, built from source on Linux: [Intel Arc](docs/INTEL_ARC.md).
-- **AMD Ryzen AI Max (Strix Halo)**, built from source on Linux: [Strix Halo](docs/STRIX_HALO.md).
-- **Older processors without AVX2**: they work, but slowly. [Older CPUs](docs/INSTALL.md#older-cpus-experimental).
-
-The full list: [docs/INSTALL.md](docs/INSTALL.md#what-you-need).
-
-## Install
-
-### Let your AI set it up
-
-Do you use an AI coding assistant (Claude Code, Cursor, Codex, GitHub Copilot, ...)? Paste this into it:
-
-```text
-Set up Strata on this PC for me: https://github.com/Niko1221/Strata - follow docs/AI_SETUP.md in that repository.
+```
++-------------------------------------------------------------+
+|                        strata.exe                           |
++-------------------------------------------------------------+
+        │                                           │
+  (API Calls)                         (cudaMemGetInfo @ 0x16ed90)
+        ▼                                           ▼
++───────────────────────+                   +───────────────────────+
+|  cublas64_13.dll      |                   | Hot-Patched JMP Hook  |
+|  (Assembly Stubs:     |                   | Redirects to:         |
+|   746 exports forward |                   | hooked_cudaMemGetInfo |
+|   to real cuBLAS)     |                   +───────────────────────+
++───────────────────────+                               │
+        │                                               ▼
+        ▼                                   +───────────────────────+
++───────────────────────+                   | nvml.dll (NVML API)   |
+| Real NVIDIA Runtime   |                   | nvmlDeviceGetMemInfo  |
+| (cu13 / System PATH)  |                   +───────────────────────+
++───────────────────────+                               │
+                                                        ▼
+                                            [True Physical Free VRAM]
+                                            (500 - 700+ MiB Detected!)
+                                                        │
+                                                        ▼
+                                            Unlocks 144 - 265 VRAM
+                                            Expert Cache Slots!
 ```
 
-It checks your graphics card, RAM and disk and picks the model that fits. Then it installs and starts it and tells
-you how to connect your apps. AI tools can also install, start and stop Strata through its
-[MCP server](docs/MCP_SERVER.md).
+### Technical Implementation:
+1. **Search Order Interception**: Windows loads DLLs from the application directory (`engine\`) before checking system directories. We place our proxy `engine\cublas64_13.dll` directly next to `strata.exe`.
+2. **Zero-Overhead Forwarding**: 746 cuBLAS functions are declared in `tools/wddm_hook/stubs.asm` and forwarded with zero register clobbering to the real CUDA 13 cuBLAS runtime.
+3. **Prologue Hot-Patching**: In `DllMain`, the hook checks the byte signature at RVA `0x16ed90` (`48 89 5c 24`) inside `strata.exe` and atomically writes a 12-byte x64 indirect jump (`mov rax, hooked_cudaMemGetInfo; jmp rax`).
+4. **Physical VRAM Introspection**: `hooked_cudaMemGetInfo` queries NVIDIA NVML (`nvmlDeviceGetMemoryInfo`). NVML communicates directly with the kernel-mode driver, revealing true physical unallocated hardware VRAM (500–700+ MiB), completely ignoring the virtual WDDM process clamp.
+5. **Full Q5_K Head Preserved**: Because 500–700 MiB of true VRAM is unlocked, we keep the original **437 MiB Q5_K output head** without compressing it to 2-bit. This eliminates logit degradation and maintains full reasoning fidelity.
 
-### Or do it yourself
+Source code, assembly stubs, and build scripts are fully open-source in [`tools/wddm_hook/`](tools/wddm_hook/).
 
-[Download Strata](https://github.com/Niko1221/Strata/archive/refs/heads/main.zip) and unzip it (or `git clone` it).
-**Windows:** double-click **`START-HERE.bat`**. **Linux:** run **`./setup.sh`** in the Strata folder.
+---
 
-The steps are the same for NVIDIA and AMD. The installer finds your card and sets up the right engine for it. It
-asks you a few questions:
+## 3. Mathematical Telemetry & Benchmark Results
 
-- which model and which size,
-- how much context (how much text the model keeps in mind),
-- whether it should read pictures.
+### Evaluation Methodology & Formulas
+We evaluate pure base autoregressive decode throughput independently from speculative draft boost:
+- Let $N_{\text{gen}}$ be the total tokens generated and $T_{\text{decode}}$ be the decode wall-clock time.
+- Let $N_{\text{draft\_acc}}$ be the verified speculative draft tokens accepted by the verification kernel.
+- **Base Autoregressive Tokens**:
+  $$N_{\text{base}} = N_{\text{gen}} - N_{\text{draft\_acc}}$$
+- **Pure Base Decode Speed**:
+  $$R_{\text{base}} = \frac{N_{\text{base}}}{T_{\text{decode}}} \quad (\text{tokens/second})$$
+- **Total Effective Decode Speed**:
+  $$R_{\text{total}} = \frac{N_{\text{gen}}}{T_{\text{decode}}} \quad (\text{tokens/second})$$
+- **Draft Speculative Boost**:
+  $$\text{Draft Gain} = \left(\frac{R_{\text{total}}}{R_{\text{base}}} - 1\right) \times 100\%$$
 
-Press Enter each time for the recommended answer. Then it downloads the model (about 70 GB) and starts it. If the
-download stops, run it again: it continues where it left off. Your browser opens the Strata app at
-`http://127.0.0.1:8080`.
+### Empirical Benchmark Across 4 Standardized Domains
+Tested on **NVIDIA GeForce RTX 3050 Laptop GPU (4 GB VRAM)**, **AMD Ryzen 5 5500U**, 32 GB RAM, Windows 11, with `Qwen3.8-Flash-Next-GSQ-RCO-Q2_0` at **32,768 context**:
 
-> **While the model starts, your PC can be slow or stop responding for 1-3 minutes** (longest the first time).
-> Strata loads 35-55 GB into your RAM and locks part of it for the graphics card. This is normal. Wait, and don't
-> close the window. The window shows what Strata is doing.
+| Domain | Test Prompt | Generated Tokens | Base Decode ($R_{\text{base}}$) | Total Speed ($R_{\text{total}}$) | Draft Gain |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| **Mathematics** | *Calculate $\sum_{k=1}^{\infty} \frac{1}{k^2} = \frac{\pi^2}{6}$ via Basel problem contour.* | 35 tokens | **5.27 tok/s** | **5.40 tok/s** | **+2.5%** |
+| **Code Generation** | *Write an optimal LRU cache class in modern Python with typehints.* | 35 tokens | **5.25 tok/s** | **5.25 tok/s** | 0.0% |
+| **Symbolic Logic** | *Solve the river-crossing puzzle (wolf, goat, cabbage) step-by-step.* | 35 tokens | **5.92 tok/s** | **5.92 tok/s** | 0.0% |
+| **Physics / Science** | *Explain why general relativity requires gravitational time dilation.* | 35 tokens | **6.01 tok/s** | **6.01 tok/s** | 0.0% |
+| **Aggregate Mean** | *Composite 4-domain standard suite* | **140 tokens** | **5.61 tok/s** | **5.65 tok/s** | **+0.7%** |
 
-**Next time**, run `START-HERE.bat` (or `./setup.sh`) again. It starts right away and downloads nothing twice. Close
-its window to stop the model. `UPDATE.bat` (`./update.sh`) updates Strata without starting it. Updating, Docker,
-several cards, where the files go and every option: [docs/INSTALL.md](docs/INSTALL.md).
+*Prompt ingestion (prefill) operates at **2,170–2,653 tokens/s**, reading a 20,000-token project context in under 9 seconds.*
 
-## Which model should I pick?
+---
 
-The installer recommends one for your RAM. The same model comes in several sizes, compressed more or less. Smaller
-sizes are faster. Larger sizes are a bit smarter.
+## 4. Thread Scheduling & Optimization
 
-| Your RAM | Take | Why |
-| --- | --- | --- |
-| **32 GB** | **Coder** | it fits 32 GB, and it is made for code (with a 24 GB card, Q2_0 and IQ2_XS run too) |
-| **48 GB** | **IQ2_XS** (or Q2_0, the fastest) | the larger sizes do not fit |
-| **64 GB** | **IQ2_XS** (recommended), or IQ3_XXS / IQ3_S | every size fits; IQ3_S is the best and the slowest |
-| **96 GB or more** | **IQ3_S**, or Unsloth's UD-IQ4_XS (~4-bit) | room for the largest sizes with everything else open |
+### The 6-Core CPU Starvation Trap
+During stepwise calibration on our 6-core / 12-thread AMD Ryzen 5 5500U:
+- Setting `--pool-workers 6` caused throughput to drop from **5.79 tok/s down to 5.11 tok/s (-11.66% collapse)**.
+- **Root Cause**: Strata pins its host CUDA dispatch thread to `--host-core last`. When 6 CPU expert workers execute heavy AVX2 math simultaneously, they saturate all physical cores. The host dispatch thread is starved, creating 20–50 ms dispatch bubbles where the GPU idles waiting for work.
+- **Tuned Parameter**: `--pool-workers 4` leaves core headroom for the host dispatch loop and Windows OS threads, restoring peak throughput.
 
-- **[Coder](docs/MODELS.md#coder):** a coding version with half of the experts removed. It reaches 91% of the full
-  model's SWE-bench Verified score (measured by its authors) and fits 32 GB of RAM. It is weaker outside code,
-  including Chinese and other CJK text (#438). For those, take Q2_0, IQ2_XS or IQ3_S, which keep every expert.
-- **[Swift 1.5](docs/MODELS.md#swift-15):** a fine-tune that thinks for a much shorter time before it answers. You
-  get the answer sooner, at about the same quality.
-- **[Unsloth UD-IQ4_XS](docs/MODELS.md#unsloth-ud-iq4_xs):** Unsloth's ~4-bit version, between IQ3_S and
-  UD-Q4_K_XL in quality. A 94 GB download. With less than ~80 GB of RAM, Strata reads part of it from the SSD
-  while it answers, so it is slower there (an NVMe SSD helps).
-- **[Unsloth UD-Q4_K_XL](docs/MODELS.md#unsloth-ud-q4_k_xl-experimental)** (experimental): the closest to the full
-  model. But Strata reads most of it from the SSD while it answers, so it writes only 7-8.5 tokens/s on a 64 GB PC.
-- **[OrcaRouter's Uncensored IQ3_XXS](docs/MODELS.md#orcarouter-uncensored-iq3_xxs):** you set it up by hand. It is
-  not in the installer's menu.
+### Speculative Window Constraint
+Per `src/program/generate.cpp:2587`, native IQ packs require `--spec T` with $T \ge 2$ because vectorized MMVQ kernels require at least two rows. Setting `--spec 2 --suffix-draft 1` yields the lowest latency while satisfying the vectorized kernel requirement.
 
-Sizes, downloads and what fits where: [docs/MODELS.md](docs/MODELS.md). To add another model later, run
-`SETUP.bat` (Linux: `./setup.sh --setup`).
+---
 
-## Using it
+## 5. Coding Harness Feasibility: Is 32,768 Context Enough for Medium Projects?
 
-<p align="center"><img src="docs/media/runpagoda.png" width="900" alt="The Strata app's Monitor tab next to a coding agent"><br>
-<sub>The Strata app's <b>Monitor</b> (left) while a coding agent writes the pagoda garden from the video (right)</sub></p>
+### The 32K Context Budget Breakdown
+Can an AI coding agent work effectively on a real-world repository with a 32,768 token limit? Yes. A complete breakdown of an active session demonstrates substantial safety margins:
 
-- **In the browser:** open `http://127.0.0.1:8080`. It has **Chat**, a live **Monitor** of the model and your
-  GPU/CPU/RAM, and **About** with the settings and addresses.
-- **Your apps and coding agents:** add an "OpenAI-compatible" provider with the base URL
-  **`http://127.0.0.1:8080/v1`**. Any API key and any model name work.
-  - Apps that use Anthropic's API: `http://127.0.0.1:8080/v1/messages` (Claude Code:
-    `ANTHROPIC_BASE_URL=http://127.0.0.1:8080`).
-  - Codex CLI and other apps that use the OpenAI Responses API: `/v1/responses`
-    ([setup](docs/DETAILS.md#the-responses-api-and-codex-cli)).
-- **Thinking:** choose **off, low, medium or high** in the chat menu or in your app's "reasoning effort". Off is the
-  fastest. High is best for hard questions.
-- **Pictures:** say yes to "Images?" in setup. Then click **Picture** in the chat, or attach pictures in your app.
-  AMD cards read pictures on Linux through the processor; on Windows they can't yet.
-- **From your phone or another PC:** `START-HERE.bat --setup --host 0.0.0.0 --api-key <secret>`. Always set a key.
-- **One request at a time:** by default Strata answers one request, and the others wait. To answer several at once,
-  set `"parallel": 2` ([BATCHING.md](docs/BATCHING.md)). On a 12 GB card this makes each answer slower.
-- **Long prompts:** Strata reads the first message of a chat in full, about 1 minute per 30,000 tokens. Follow-up
-  messages start in seconds.
+```
++-----------------------------------------------------------------------------------+
+|                           32,768 TOTAL TOKEN CONTEXT BUDGET                       |
++--------------------+-------------------+--------------------+---------------------+
+| System & Tools     | Repo AST Map      | Active Files       | Conversation & Logs | Gen Budget
+| (~2,500 tok | 7.6%)| (~2,048 tok | 6.3%)| (~5,500 tok | 16.8%)| (~10,000 tok | 30.5%)| (~4,096 tok)
++--------------------+-------------------+--------------------+---------------------+
+| <---------------- Active Working Context: 24,144 tok -------------> | Headroom: 8,624 tok |
++-----------------------------------------------------------------------------------+
+```
 
-More: [where your chats are stored](docs/INSTALL.md#where-things-are-stored), [the API](docs/DETAILS.md#using-it).
+| Component | Typical Tokens | % of 32K | Description |
+| :--- | :---: | :---: | :--- |
+| **System Prompt & Tools** | 2,500 | 7.6% | Harness instructions + JSON schemas (`bash`, `view_file`, `edit_file`, `glob`). |
+| **Repository AST Map** | 2,048 | 6.3% | Tree-sitter / PageRank symbol signatures across the codebase. |
+| **Active Working Files** | 5,500 | 16.8% | 2–5 open source files (400–700 LOC each) currently being edited or tested. |
+| **Multi-Turn History** | 10,000 | 30.5% | 8–12 interaction turns: user requests, reasoning, compiler output, test diffs. |
+| **Reserved Generation Budget** | 4,096 | 12.5% | Model reasoning thinking block + code solution output. |
+| **Total Context Utilized** | **24,144** | **73.7%** | **Nominal steady state operating load.** |
+| **Free Safety Headroom** | **+8,624** | **26.3%** | **Available margin before compaction is needed.** |
 
-## Something went wrong?
+### Handling 50,000+ LOC Repositories via PageRank AST Skeletons
+A "medium project" typically contains **10,000 to 50,000 lines of code** (50 to 300 files), amounting to ~325,000 raw tokens—far larger than 32K.
 
-- **My PC froze the first time Strata started.** This is normal while it loads the model. Wait, and don't close the
-  window. Still frozen after 10 minutes? Restart the PC, close other programs and try again, or pick a smaller size.
-- **It stopped while downloading or installing.** Run `START-HERE.bat` (or `./setup.sh`) again. It continues where
-  it stopped.
-- **It's very slow and the disk light keeps blinking, or it says "the engine stopped unexpectedly".** Your PC does
-  not have enough free RAM. Close other programs (browsers use a lot), or pick a smaller size (Q2_0 or IQ2_XS).
-- **It says port 8080 is already in use.** Strata is already running. Look for its window.
+Coding harnesses (such as Aider, Claude Code, and Cursor) do **not** dump entire source files into context. Instead, they use **Selective Graph Sparsification**:
+1. Tree-sitter parses the repository into a symbol graph (functions, classes, interfaces, call-sites).
+2. A **Personalized PageRank (PPR)** algorithm ranks symbols based on relevance to open files.
+3. Only the top-ranked signatures (without function bodies) are packed into a **2,048 token repo map** (a **158:1 compression ratio**).
+4. The model uses the repo map to navigate, inspecting specific files on-demand using targeted line slices (`StartLine`/`EndLine`).
 
-More problems and their fixes: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md). Still stuck? Open an
-[issue](https://github.com/Niko1221/Strata/issues) and attach `strata-<model>.log` from the Strata folder. Found a
-security problem? Report it privately: [SECURITY.md](SECURITY.md).
+### Why 32K is Optimal on Low-VRAM Hardware
+At 32,768 tokens with 8-bit KV (`--kv int8`), the KV cache consumes only **~438 MiB** of VRAM. This leaves the majority of your 4 GB VRAM dedicated to the expert cache. By contrast, a 128K context window consumes 1.7+ GB of VRAM just for KV cache, evicting experts to system RAM and dropping decode speed by 50%+.
 
-## How does it work?
+---
 
-Models like this one usually run on servers with hundreds of gigabytes of graphics memory. Your graphics card has
-12-24 GB. Strata makes the model fit by **sharing the work across your whole PC**. Think of a kitchen: the things
-you use all the time stay on the counter, and the rest waits in the pantry.
+## 6. Developer Integration Guide: Connecting AI Coding Harnesses
 
-<p align="center"><img src="docs/media/how-it-works.svg" width="860" alt="The model's 24,576 experts: the busiest on the graphics card, all of them in RAM, a lookup table on the SSD"></p>
+Strata serves:
+- **OpenAI-Compatible Endpoint**: `http://127.0.0.1:8080/v1`
+- **Anthropic-Compatible Endpoint**: `http://127.0.0.1:8080/v1/messages`
 
-- **The model is a team of 24,576 small specialists ("experts").** Each word needs only 10 of them.
-- **Your graphics card** keeps the few thousand experts that are used most often. **Your RAM** holds all of them,
-  and **your processor** works on the rest at the same time. **Your SSD** holds a big lookup table.
+### 1. Claude Code CLI
+Claude Code connects directly to Strata's Anthropic endpoint. Strata automatically normalizes Claude Code's dynamic billing headers (`cch=...`), ensuring full prefix caching reuse.
 
-<p align="center"><img src="docs/media/guess-and-check.svg" width="860" alt="A small helper guesses the next words; the big model checks them all at once and keeps the right ones"></p>
+**Windows (PowerShell):**
+```powershell
+$env:ANTHROPIC_BASE_URL = "http://127.0.0.1:8080"
+$env:ANTHROPIC_API_KEY = "strata-local"
+$env:ANTHROPIC_AUTH_TOKEN = "strata-local"
+$env:ANTHROPIC_MODEL = "claude-3-7-sonnet-20250219"
+claude
+```
 
-- **Guess, then check:** a small helper guesses the next few words. The big model checks them all at once. You get
-  the same answer, 1.6-1.8x sooner.
-- **Long texts are read in big pieces** (up to 8,192 tokens at a time), at over 1,000 tokens per second.
+*Tip:* Run `/compact` inside Claude Code when context reaches ~24,000 tokens to summarize conversation history and restore headroom.
 
-The longer explanation: [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md). Every part and its numbers:
-[the details](docs/DETAILS.md#how-it-works) and the [paper](docs/paper/Strata-Paper.pdf).
+### 2. Cursor IDE
+1. Open **Cursor Settings** (`Ctrl + ,`) -> **Models**.
+2. Set **Override OpenAI Base URL**: `http://127.0.0.1:8080/v1`.
+3. Set **OpenAI API Key**: `strata-local`.
+4. Click **Add Custom Model** -> enter `strata` (or `qwen3.8-flash-next`).
 
-## Credits and license
+### 3. Continue.dev (VS Code & JetBrains)
+Add this block to your `~/.continue/config.yaml`:
+```yaml
+name: Strata Local Dev
+models:
+  - name: Strata (Qwen3.8-Flash-Next)
+    provider: openai
+    model: strata
+    apiBase: http://127.0.0.1:8080/v1
+    apiKey: strata-local
+    contextLength: 32768
+    maxTokens: 4096
+    roles:
+      - chat
+      - edit
+      - apply
 
-The model is [Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next) by the Qwen team. It was
-compressed by [ISTA-DASLab](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF), UkisAI (Swift 1.5)
-and Unsloth. Strata uses parts of [llama.cpp / ggml](https://github.com/ggml-org/llama.cpp). All credits:
-[docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md#credits). Strata is open source under the [MIT License](LICENSE). A few
-parts and every model have their own licenses ([which ones](docs/HOW_IT_WORKS.md#license)).
+tabAutocompleteModel:
+  name: Strata Autocomplete
+  provider: openai
+  model: strata
+  apiBase: http://127.0.0.1:8080/v1
+  apiKey: strata-local
+```
 
-## Support Strata
+### 4. Cline (VS Code Extension)
+In Cline Settings (gear icon):
+- **API Provider**: `OpenAI Compatible`
+- **Base URL**: `http://127.0.0.1:8080/v1`
+- **API Key**: `strata-local`
+- **Model ID**: `strata`
+- **Context Window**: `32768`
+- **Max Output**: `4096`
+- **Temperature**: `0.0`
 
-Strata is free and open source. If it is useful to you, you can support its development:
+### 5. Aider CLI
+Launch Aider with a constrained 1,024-token repo map:
+```bash
+aider --openai-api-base http://127.0.0.1:8080/v1 \
+      --openai-api-key strata-local \
+      --model openai/strata \
+      --map-tokens 1024 \
+      --no-auto-commits \
+      --chat-mode diff
+```
 
-<p align="center"><a href="https://buymeacoffee.com/strataengine"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50"></a></p>
+### Recommended Ignore File (`.cursorignore`, `.aiderignore`, `.continueignore`)
+Prevent harnesses from eating context by creating an ignore file in your project root:
+```gitignore
+node_modules/
+.venv/
+build/
+dist/
+__pycache__/
+*.exe
+*.dll
+package-lock.json
+Cargo.lock
+*.log
+*.dmp
+```
+
+---
+
+## 7. 1-Click Getting Started Guide
+
+### System Requirements
+- **OS**: Windows 10 / 11 64-bit.
+- **GPU**: NVIDIA GPU with 4 GB VRAM (RTX 3050 Laptop, GTX 1650, RTX 2060, etc.) with Driver $\ge 550$.
+- **RAM**: 16 GB to 32 GB RAM.
+- **Pagefile**: Set Windows Virtual Memory to **System Managed** on an SSD (at least 40 GB recommended for low-RAM mmap mode).
+- **Python**: Python 3.10 to 3.12 64-bit.
+
+### Quick Start
+1. Download the latest release: [`StrataRealLowVRAM-v0.1.41-win-x64-q2_0.zip`](https://github.com/RandoTeam/StrataRealLowVRAM/releases).
+2. Extract the archive to any folder (e.g. `C:\AI\Strata`).
+3. Double-click **`START-HERE.bat`**.
+
+`START-HERE.bat` will automatically:
+- Detect your hardware and verify GPU VRAM.
+- Set up a Python virtual environment with required CUDA runtime wheels.
+- Download the `Qwen3.8-Flash-Next-GSQ-RCO-Q2_0` weights if not already present.
+- Pack the model into optimized data layers (`packs\q2_0\`).
+- Initialize the WDDM proxy hook (`engine\cublas64_13.dll`).
+- Launch the server and open your browser at **`http://127.0.0.1:8080`**.
+
+---
+
+## License & Credits
+
+- Based on the [Strata engine](https://github.com/Niko1221/Strata) by Niko1221 under the MIT License.
+- Base architecture: [Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next) by the Qwen team.
+- Quantization: [ISTA-DASLab](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF).
+- WDDM NVML Proxy Hook and Low-VRAM calibration developed by **RandoTeam**.

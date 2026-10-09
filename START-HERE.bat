@@ -1,52 +1,140 @@
 @echo off
-rem Strata for Windows: the first run installs everything and starts the model; later runs just start it.
-rem Needs only an NVIDIA or AMD graphics driver. Python is installed for your user account if it is missing (no admin needed).
-setlocal
-title Strata
-cd /d "%~dp0"
-if exist ".venv\Scripts\python.exe" goto run
+setlocal enabledelayedexpansion
+title Strata Real Low VRAM Launcher (125B MoE on 4GB VRAM)
 
-call :findpy
-if defined PY goto venv
+echo ===============================================================================
+echo       Strata Real Low VRAM (v0.1.41) - 125B MoE on Budget 4GB GPUs
+echo       Optimized for RTX 3050 Laptop / 4GB Desktop GPUs + 32,768 Context
+echo ===============================================================================
 echo.
-echo  Python 3.10 or newer is not installed. Installing Python 3.12 for your user account ...
-where winget >nul 2>nul
-if errorlevel 1 goto pyorg
-winget install -e --id Python.Python.3.12 --scope user --silent --source winget --accept-package-agreements --accept-source-agreements --disable-interactivity
-call :findpy
-if defined PY goto venv
-:pyorg
-echo  Downloading the Python installer from python.org ...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol='Tls12'; Invoke-WebRequest -UseBasicParsing https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe -OutFile \"$env:TEMP\strata-python-setup.exe\""
-if exist "%TEMP%\strata-python-setup.exe" "%TEMP%\strata-python-setup.exe" /quiet InstallAllUsers=0 PrependPath=1 Include_launcher=1 Include_test=0
-call :findpy
-if defined PY goto venv
+
+rem 1. Check Architecture
+if not "%PROCESSOR_ARCHITECTURE%"=="AMD64" (
+    echo [ERROR] 64-bit Windows is required.
+    pause
+    exit /b 1
+)
+
+rem 2. Check NVIDIA GPU
+where nvidia-smi >nul 2>nul
+if %errorlevel% neq 0 (
+    echo [WARNING] nvidia-smi not found in PATH. Please verify NVIDIA Drivers are installed.
+) else (
+    echo [OK] NVIDIA GPU detected:
+    nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader
+)
 echo.
-echo  Python could not be installed automatically.
-echo  Install 64-bit Python 3.12 from https://www.python.org/downloads/ ("Add python.exe to PATH"),
-echo  then double-click START-HERE.bat again.
-pause
-exit /b 1
 
-:venv
-rem a private environment inside this folder, so nothing is installed into the system Python
-%PY% -m venv .venv
-if exist ".venv\Scripts\python.exe" goto run
-echo  Could not create the Python environment in .venv
-pause
-exit /b 1
+rem 3. Check Python
+set "PY_CMD="
+if exist ".venv\Scripts\python.exe" (
+    set "PY_CMD=.venv\Scripts\python.exe"
+) else (
+    where python >nul 2>nul
+    if %errorlevel% equ 0 (
+        set "PY_CMD=python"
+    ) else (
+        where py >nul 2>nul
+        if %errorlevel% equ 0 (
+            set "PY_CMD=py -3"
+        )
+    )
+)
 
-:run
-".venv\Scripts\python.exe" setup.py %*
-if errorlevel 1 pause
-exit /b
+if "%PY_CMD%"=="" (
+    echo [ERROR] Python 3.10+ is required but not installed or not in PATH.
+    echo Please install Python 3.12 from https://www.python.org/downloads/
+    echo Make sure to check "Add Python to PATH" during installation.
+    pause
+    exit /b 1
+)
 
-:findpy
-rem the py launcher first, then python on PATH (not the Microsoft Store stub), then the usual per-user folders
-set "PY="
-py -3 -c "import sys; sys.exit(0 if sys.version_info >= (3, 10) and sys.maxsize > 2**32 else 1)" >nul 2>nul
-if not errorlevel 1 set "PY=py -3" & goto :eof
-python -c "import sys; sys.exit(0 if sys.version_info >= (3, 10) and sys.maxsize > 2**32 else 1)" >nul 2>nul
-if not errorlevel 1 set "PY=python" & goto :eof
-for %%V in (313 312 311 310) do if exist "%LOCALAPPDATA%\Programs\Python\Python%%V\python.exe" set "PY="%LOCALAPPDATA%\Programs\Python\Python%%V\python.exe"" & goto :eof
-goto :eof
+rem 4. Create/Verify Virtual Environment
+if not exist ".venv\Scripts\python.exe" (
+    echo [*] Creating virtual environment (.venv)...
+    %PY_CMD% -m venv .venv
+    if errorlevel 1 (
+        echo [ERROR] Failed to create virtual environment.
+        pause
+        exit /b 1
+    )
+    echo [*] Installing required Python wheels...
+    .venv\Scripts\python.exe -m pip install --upgrade pip
+    .venv\Scripts\python.exe -m pip install nvidia-cublas-cu13 nvidia-cuda-runtime-cu13 aiohttp requests safetensors numpy pefile
+)
+set "PY=.venv\Scripts\python.exe"
+
+rem 5. Check Engine and WDDM Proxy Hook
+if not exist "engine\strata.exe" (
+    echo [ERROR] engine\strata.exe is missing!
+    echo Please ensure the release archive was extracted completely.
+    pause
+    exit /b 1
+)
+
+if not exist "engine\cublas64_13.dll" (
+    echo [*] WDDM proxy hook not found in engine\. Attempting to compile from source...
+    if exist "tools\wddm_hook\build_hook.bat" (
+        call tools\wddm_hook\build_hook.bat
+    ) else (
+        echo [ERROR] engine\cublas64_13.dll is missing!
+        pause
+        exit /b 1
+    )
+)
+
+rem 6. Check Model & Packs
+if not exist "packs\q2_0\layers.bin" (
+    echo.
+    echo ===============================================================================
+    echo [NOTICE] Pre-packed model layers (packs\q2_0\layers.bin) not found!
+    echo ===============================================================================
+    if not exist "models\Q2_0" (
+        echo Models folder "models\Q2_0" is missing.
+        echo Would you like to download Qwen3.8-Flash-Next-GSQ-RCO-Q2_0 now?
+        set /p DOWNLOAD_CHOICE="Download model shards (~34 GB)? [Y/n]: "
+        if /i "!DOWNLOAD_CHOICE!"=="n" (
+            echo Aborted by user. Please place model files in models\Q2_0\
+            pause
+            exit /b 1
+        )
+        mkdir "models\Q2_0" 2>nul
+        echo [*] Launching download assistant...
+        %PY% tools\setup_model.py --model Q2_0 --dest models\Q2_0
+    )
+    
+    if exist "models\Q2_0" (
+        echo [*] Creating optimized IQ data packs (packs\q2_0)...
+        mkdir "packs\q2_0" 2>nul
+        %PY% tools\iq_pack.py --model models\Q2_0 --out packs\q2_0
+    )
+)
+
+rem 7. Verify Configuration
+if not exist "strata-q2_0.json" (
+    echo [ERROR] strata-q2_0.json configuration file not found!
+    pause
+    exit /b 1
+)
+
+echo.
+echo ===============================================================================
+echo Starting Strata Low-VRAM Server (OpenAI & Anthropic Compatible)
+echo Web UI / API Base URL: http://127.0.0.1:8080
+echo Model: Qwen3.8-Flash-Next (125B MoE, Q2_0)
+echo Context Window: 32,768 tokens
+echo Speculative Decoding: 2-step verification + 1 suffix draft
+echo ===============================================================================
+echo.
+
+rem Launch browser in background after 3 seconds
+start "" cmd /c "timeout /t 3 >nul & start http://127.0.0.1:8080"
+
+rem Start Server
+%PY% serve\server.py --config strata-q2_0.json --host 127.0.0.1 --port 8080
+if errorlevel 1 (
+    echo.
+    echo [ERROR] Strata server stopped unexpectedly.
+    echo Please review log output above or check strata-q2_0.log.
+    pause
+)

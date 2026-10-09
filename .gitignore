@@ -1,63 +1,107 @@
-# Generated, not source: deterministic build products of tools/ (see docs/).
-# tiny-qwen4exp.gguf is ~113 MB, over GitHub's 100 MB file limit -- regenerate with
-#   python tools/make_tiny_model.py
-bench/tiny-*.gguf
-bench/wide-*.gguf
-bench/micro/*.exe
-bench/micro/*.obj
-bench/micro/*.bin
-bench/micro/*.dll
-bench/micro/*.txt
-*.log
-build*/
-pack/
-logs/
-__pycache__/
-.pytest_cache/
-*.pyc
+# ==============================================================================
+# Git Hygiene & Security Configuration - Strata Real Low-VRAM
+# ==============================================================================
 
-# plan v0.3 P1 (repository hygiene, review E1): profiler captures and large diagnostic dumps stay out of git.
+# 1. Credentials, API Keys, Tokens & Private Secrets
+.env
+.env.*
+*.key
+*.pem
+*.token
+*secret*
+*credential*
+api_key.txt
+hf_token
+*.id_rsa
+*.id_ed25519
+
+# 2. Large Model Weights & Dynamic Binary Blobs (Multi-Gigabyte)
+*.gguf
+*.safetensors
+*.pt
+*.onnx
+models/
+packs/
+mtp/
+pack/
+/third_party/llama.cpp
+/third_party/*.zip
+data/expert-profile-learned.bin
+data/downloads/
+
+# Whitelist small static distribution tables in data/
+!data/expert-profile.bin
+!data/draft_vocab*.bin
+!data/gguf_fingerprints.json
+
+# 3. Crash Dumps, Profiler Traces & Diagnostics
+*.dmp
+*.mdmp
+core
+core.*
 *.nsys-rep
 
-# Pi harness metadata (local session state, not project source)
-*.sqlite
-*.npz
-*.occ1
+# 4. Logs, Runtime Traces & Backups
+*.log
+strata-*.log
 td.log
+logs/
+*.bak
+*.orig
+*.tmp
+strata-*.json.bak
 
-# created by setup.py on the user's machine
-/.venv/
-/build/
-/third_party/llama.cpp
-/models/
-/packs/
-/mtp/
-/run-*.bat
-/run-*.sh
-/strata-*.json
-/strata-*.log
-/build-strata.bat
-/build-strata-cuda12.bat
-/build-cuda12/
-/.strata-mcp/
-
-# image encoder (setup.py --vision): build output and the generated build script
-build-vision*/
-build-vision.bat
-build-vision-cuda12.bat
-
-# setup.py outputs (engine, downloads) and release builds
+# 5. Local Python Virtual Environments & Bytecode Caches
+.venv/
+env/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.obj
+*.exp
+*.lib
 /engine/
 /engine-cuda12/
-/build-release*/
-/dist/
-*.done
-/third_party/*.zip
+docs/superpowers/
+Strata-data/
+.pytest_cache/
+*.egg-info/
+dist/
+build*/
+/.ccache/
+/.rocm-win/
 
-# IDEs
+# 6. Local Benchmark Results & Intermediate Diagnostic Scratch Files
+calibration_report.json
+tuning_history.json
+golden_baseline_*.json
+baseline_*.json
+final_optimized_benchmark.json
+help.txt
+scratch/
+
+# 7. IDE, Editor & OS Artifacts
 .vscode/
 .idea/
 .cursor/
+.vs/
+Thumbs.db
+desktop.ini
+.DS_Store
+*.sqlite
+*.npz
+*.occ1
+/.strata-mcp/
 
-/.ccache/
-/.rocm-win/
+# 8. User-generated Batches (whitelist release scripts)
+run-*.bat
+!run-q2_0.bat
+run-*.sh
+strata-*.json
+!strata-q2_0.json
+build-strata*.bat
+build-vision*.bat
+build-release*/
+*.done
