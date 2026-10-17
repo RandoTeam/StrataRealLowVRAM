@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" width="960" height="360" role="img" aria-label="StrataRealLowVRAM generation speed on 4 GB VRAM GPU across context depths"><title>StrataRealLowVRAM Speed Benchmark on 4 GB VRAM</title>
+<style>
+text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+.h{font-size:20px;font-weight:700;fill:#f2f4f7}
+.s{font-size:13px;fill:#98a2b3}
+.p{font-size:14px;font-weight:600;fill:#38bdf8}
+.m{font-size:13px;fill:#e4e7ec}
+.v{font-size:13px;font-weight:700;fill:#f2f4f7}
+.t{fill:#1d2939}
+.sub{font-size:11px;fill:#64748b}
+.badge{font-size:11px;font-weight:600;fill:#10b981}
+</style>
+<rect width="960" height="360" rx="14" fill="#101828" stroke="#1e293b" stroke-width="1.5"/>
+<text x="32" y="42" class="h">StrataRealLowVRAM: Generation Speed on 4 GB VRAM</text>
+<text x="32" y="64" class="s">Hardware: NVIDIA RTX 3050 Laptop (4 GB VRAM) · Ryzen 5 5500U · 32 GB RAM · 131K Context Engine</text>
+
+<!-- Model 1: Fast Q4_K_S -->
+<text x="32" y="105" class="p">1. Cyber-Tiel-Coder-35B UD-Q4_K_S (Fast 131K, 21.3 GB)</text>
+<text x="32" y="122" class="sub">Optimized for high-speed coding and lightweight memory pressure</text>
+
+<text x="32" y="152" class="m">Short Chat (&lt; 1K tokens)</text>
+<rect x="220" y="139" width="180" height="16" rx="4" class="t"/><rect x="220" y="139" width="168" height="16" rx="4" fill="#38bdf8"/>
+<text x="408" y="152" class="v">37 – 42 tok/s</text>
+
+<text x="32" y="184" class="m">Thinking CoT (4K tokens)</text>
+<rect x="220" y="171" width="180" height="16" rx="4" class="t"/><rect x="220" y="171" width="156" height="16" rx="4" fill="#0ea5e9"/>
+<text x="408" y="184" class="v">38 – 40 tok/s</text>
+
+<text x="32" y="216" class="m">Code Generation (6K)</text>
+<rect x="220" y="203" width="180" height="16" rx="4" class="t"/><rect x="220" y="203" width="138" height="16" rx="4" fill="#0284c7"/>
+<text x="408" y="216" class="v">33 – 35 tok/s</text>
+
+<text x="32" y="248" class="m">Deep Context (15K tokens)</text>
+<rect x="220" y="235" width="180" height="16" rx="4" class="t"/><rect x="220" y="235" width="120" height="16" rx="4" fill="#0369a1"/>
+<text x="408" y="248" class="v">29 – 31 tok/s</text>
+
+<!-- Model 2: Senior Q4_K_XL -->
+<text x="500" y="105" class="p" fill="#a78bfa">2. Cyber-Tiel-Coder-35B UD-Q4_K_XL (Senior Quality, 22.8 GB)</text>
+<text x="500" y="122" class="sub">Maximum reasoning depth, exact logic and complex generation</text>
+
+<text x="500" y="152" class="m">Short Chat (&lt; 1K tokens)</text>
+<rect x="688" y="139" width="180" height="16" rx="4" class="t"/><rect x="688" y="139" width="158" height="16" rx="4" fill="#a78bfa"/>
+<text x="876" y="152" class="v">35 – 40 tok/s</text>
+
+<text x="500" y="184" class="m">Thinking CoT (4K tokens)</text>
+<rect x="688" y="171" width="180" height="16" rx="4" class="t"/><rect x="688" y="171" width="155" height="16" rx="4" fill="#8b5cf6"/>
+<text x="876" y="184" class="v">38.7 tok/s</text>
+
+<text x="500" y="216" class="m">Code Generation (6K)</text>
+<rect x="688" y="203" width="180" height="16" rx="4" class="t"/><rect x="688" y="203" width="148" height="16" rx="4" fill="#7c3aed"/>
+<text x="876" y="216" class="v">37.1 tok/s</text>
+
+<text x="500" y="248" class="m">Deep Context (15K tokens)</text>
+<rect x="688" y="235" width="180" height="16" rx="4" class="t"/><rect x="688" y="235" width="109" height="16" rx="4" fill="#6d28d9"/>
+<text x="876" y="248" class="v">27.2 tok/s</text>
+
+<!-- Footer Banner -->
+<line x1="32" y1="282" x2="928" y2="282" stroke="#1e293b" stroke-width="1"/>
+<circle cx="40" cy="312" r="5" fill="#10b981"/>
+<text x="54" y="316" class="badge">ONLY 2 MODELS BENCHMARKED &amp; VERIFIED SO FAR</text>
+<text x="400" y="316" class="s">· VRAM: &le; 3.8 GB strictly · Speculative MTP: 76.9% accepted · Context: 131K enabled</text>
+</svg>

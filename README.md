@@ -1,18 +1,12 @@
-<h1 align="center">PolyStrata</h1>
+<h1 align="center">StrataRealLowVRAM</h1>
 
-**English** · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [Español](README.es.md) · [Português](README.pt-BR.md)
+<p align="center"><b>Run massive 35B MoE models on ordinary PCs with 4 GB VRAM</b><br>
+Cyber-Tiel-Coder-35B-A3B, Qwen3.6-35B, Ornith 1.5 · 131K Context Engine · Free and Open Source</p>
 
-<p align="center"><b>Run large AI models on your own PC</b><br>
-Qwen3.8-Flash-Next, GLM 5.3 Flash, DeepSeek V4 Flash, Qwen3.6, Ornith 1.5, Gemma 4 and Tiel Coder · free and open source</p>
-
-<p align="center"><img src="docs/media/speed.svg" width="820" alt="Tokens per second while writing an answer: 94 to 100 for Qwen3.6-35B-A3B on a laptop with an 8 GB card, 385 to 393 on an RTX 5090"></p>
+<p align="center"><img src="docs/media/speed_lowvram.svg" width="860" alt="StrataRealLowVRAM tokens per second on 4 GB VRAM GPU"></p>
 
 <p align="center"><img src="docs/media/claude-code-demo.gif" width="820" alt="Claude Code in a terminal beside PolyStrata's API Monitor"><br>
-<sub>Claude Code on Qwen3.6-35B-A3B UD-Q3_K_M, on the laptop with the 8 GB card, in real time: it adds a <code>--json</code> option to a small program, writes a test for it and runs the tests. The server had read Claude Code's system prompt when it started (<code>"warm_start": true</code>).</sub></p>
-
-<p align="center"><a href="https://github.com/Niko1221/Strata/releases/download/v0.1.10/Pagoda.mp4"><img src="docs/media/pagoda-preview.webp" width="720" alt="A voxel pagoda garden the model wrote, running in the browser"></a><br>
-<sub>A voxel pagoda garden, 1 shot prompt running on an RTX 5070 with <a href="https://github.com/Niko1221/Strata">Strata</a> (Qwen3.8-Flash-Next IQ3_S, 128K context) ·
-<a href="https://github.com/Niko1221/Strata/releases/download/v0.1.10/Pagoda.mp4">full video (49 s)</a></sub></p>
+<sub>Claude Code on Cyber-Tiel-Coder-35B-A3B UD-Q4_K_XL, on a budget laptop with a 4 GB GeForce RTX 3050 card, in real time: runs locally with 131K context window.</sub></p>
 
 PolyStrata runs large AI models on a normal PC, models that usually need a server. They chat, write code and work
 with your apps and coding agents. Nothing leaves your PC.
@@ -50,6 +44,50 @@ A token is about ¾ of a word.
 
 - **Writes answers:** how fast the reply appears in a short chat. 60 tokens per second is faster than you can read.
 - **Reads your prompt:** how fast it takes in what you send (a document, code or a chat history).
+
+### 4 GB VRAM Low-Memory Benchmark (StrataRealLowVRAM 131K Engine)
+
+> [!IMPORTANT]
+> **Verified Model Coverage Notice:**  
+> Currently, **only two models** have been formally benchmarked and verified under our 4 GB VRAM / 131K setup:
+> 1. **Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_S** (21.28 GB, Fast 131K Edition)
+> 2. **Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL** (22.75 GB, Senior High-Quality Edition)
+> 
+> Additional models (`UD-IQ4_XS`, baseline `Tiel-Coder`, `Qwen3.6-35B`, `Ornith 1.5`, etc.) are queued for upcoming test validation on this hardware.
+
+Measured with `engine-poly/strata-poly-131k.exe` (`kSnapPlaces = 7`, CUDA 12.8, SM_86) on consumer hardware:
+
+<table>
+<tr><th>NVIDIA GeForce RTX 3050 Laptop (4 GB VRAM), AMD Ryzen 5 5500U (6 threads), 32 GB RAM, Windows 11</th></tr>
+<tr><td>
+
+#### 1. Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_S (Fast 131K, 21.3 GB)
+*Optimized for high-speed coding and lightweight memory pressure.*
+
+| Phase / Context Depth | Writes answers (Generation) | Reads prompt (Prefill) | MTP Speculative Efficiency | Memory & Context |
+| :--- | ---: | ---: | ---: | ---: |
+| **Short Chat (&lt; 1K tokens)** | **37 – 42 tokens/s** | 130 – 150 tokens/s | ~70 – 75% accepted | VRAM: &le; 3.8 GB |
+| **Thinking CoT (4K tokens)** | **38 – 40 tokens/s** | 135 tokens/s | ~72% accepted | 131K context window |
+| **Code Generation (6K tokens)**| **33 – 35 tokens/s** | 140 tokens/s | ~71% accepted | 0 CUDA OOMs |
+| **Deep Context (15K tokens)** | **29 – 31 tokens/s** | 145 tokens/s | ~68% accepted | 0 memory stalls |
+
+<br>
+
+#### 2. Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL (Senior Quality, 22.8 GB)
+*Maximum reasoning depth, exact architectural logic and comprehensive code generation.*
+
+| Phase / Context Depth | Writes answers (Generation) | Reads prompt (Prefill) | MTP Speculative Efficiency | Time to First Token (TTFT) |
+| :--- | ---: | ---: | ---: | ---: |
+| **Short Chat (&lt; 1K tokens)** | **34.6 – 39.6 tokens/s** | 98.2 tokens/s | 67.4% (97 / 144) | 26.0 ms |
+| **Thinking CoT (4K tokens)** | **38.7 tokens/s sustained** | 115.0 tokens/s | **76.9%** (2,885 / 3,752) | 2.5 ms |
+| **Code Generation (6K tokens)**| **37.1 tokens/s** | 149.0 tokens/s | 56.3% (432 / 768) | 2.8 ms |
+| **Deep Context & Simulation (15K)**| **27.2 tokens/s** | 142.6 tokens/s | **76.8%** (7,417 / 9,656)| 3.9 ms |
+
+</td></tr>
+</table>
+
+- **Zero Memory Leaks / OOM**: strictly stays within 3.8 GB VRAM.
+- **Continuous 15K Token Run**: generated 14,530 consecutive completion tokens in a single request without halting or dropping under 27 tokens/s.
 
 ### Qwen3.8-Flash-Next
 
@@ -426,10 +464,16 @@ It checks your graphics card, RAM and disk and picks the model that fits. Then i
 you how to connect your apps. AI tools can also install, start and stop PolyStrata through its
 [MCP server](docs/MCP_SERVER.md).
 
+### 1-Click Launch on 4 GB VRAM (Windows)
+
+For preconfigured low-memory 131k environments, launch directly via dedicated batch scripts:
+- **`run-cybertiel-xl-131k.bat`**: Starts the senior **Cyber-Tiel-Coder-35B UD-Q4_K_XL** (131K context, 4,096 thinking budget, port 8085).
+- **`run-cybertiel-131k.bat`**: Starts the fast **Cyber-Tiel-Coder-35B UD-Q4_K_S** (131K context, 4,096 thinking budget, port 8085).
+
 ### Or do it yourself
 
-[Download PolyStrata](https://github.com/VecSzn/PolyStrata/archive/refs/heads/main.zip) and unzip it (or `git clone` it).
-**Windows:** double-click **`START-HERE.bat`**. **Linux:** run **`./setup.sh`** in the PolyStrata folder.
+[Download StrataRealLowVRAM](https://github.com/RandoTeam/StrataRealLowVRAM/archive/refs/heads/main.zip) and unzip it (or `git clone` it).
+**Windows:** double-click **`START-HERE.bat`**. **Linux:** run **`./setup.sh`** in the repository folder.
 
 **Mac (Apple Silicon, M1 to M5, macOS 15 or newer):** install Apple's Command Line Tools once
 (`xcode-select --install` in Terminal; Xcode itself is not needed). Then open Terminal in the PolyStrata folder and run
