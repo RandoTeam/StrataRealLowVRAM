@@ -53,9 +53,8 @@ constexpr int kWayAgain = 4, kWayAgainMost = 64;
 constexpr double kWayWeight = 0.125, kWayBehind = 0.5;
 
 // window(): the recurrent states a window leaves when its layers can leave them after any of its tokens
-// (Engine::snaps_spread()), 62 MiB each for Qwen3.6.  A window of four has one after each token but the last,
-// so a longer one takes no more VRAM than that, and keep() puts up to two right tokens through the layers again.
-constexpr int kSnapPlaces = 3;
+// (Engine::snaps_spread()). Increased to 7 to cover all tokens of an 8-token window without rollback reruns.
+constexpr int kSnapPlaces = 7;
 
 // The attention caches grow with the sequence (Engine::cover()): a call that would write past the rows they have
 // gives them VRAM for rows kKvGrow at a time, kKvAhead past the call, and the expert cache gives that up in pieces

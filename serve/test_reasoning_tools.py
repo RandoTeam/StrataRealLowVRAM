@@ -69,6 +69,15 @@ class Parser(unittest.TestCase):
                     self.assertEqual(joined(evs, "reasoning"), "before\n" + CALL + "\n")
                     self.assertEqual(joined(evs, "content"), "answer")
 
+    def test_undeclared_function_in_content_stays_content(self):
+        text = "before</think>\n<tool_call>\n<function=Answer>\n<parameter=code>\nhello\n</parameter>\n</function>\n</tool_call>"
+        for tools in (None, []):
+            for width in (1, 5, 100_000):
+                with self.subTest(tools=tools, width=width):
+                    evs = run(text, width, tools=tools)
+                    self.assertFalse([e for e in evs if e.kind in ("tool_start", "tool_args", "tool_call")])
+                    self.assertIn("hello", joined(evs, "content"))
+
     def test_an_unfinished_call_is_never_a_call(self):
         for text in ("before<tool_call>\n<function=read_file>\n",
                      "before<tool_call>\n<function=read_file>\n<parameter=path>\nfile.txt\n</parameter>\n"):

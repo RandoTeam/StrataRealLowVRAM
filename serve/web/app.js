@@ -879,6 +879,15 @@ async function send() {
           if (lastTool && m.text && lastTool.at === m.text.length) m.text += "\n\n";
           m.text += d.content;
         }
+        if (d.tool_calls && !j.strata_mcp) {
+          if (!firstAt) firstAt = performance.now();
+          if (thinkStart && m.thinkSecs == null) m.thinkSecs = (performance.now() - thinkStart) / 1000;
+          for (const tc of d.tool_calls) {
+            if (tc.function && tc.function.arguments) {
+              m.text += tc.function.arguments;
+            }
+          }
+        }
         if (!frame) frame = requestAnimationFrame(paint);
       }
     }

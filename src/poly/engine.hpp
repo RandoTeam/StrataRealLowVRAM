@@ -429,6 +429,10 @@ protected:
     int room_key(int n) const;
     void* dmalloc(size_t bytes, const char* what);
     void* hmalloc(size_t bytes, const char* what);
+    /// A write into VRAM, on st_.  Every one of them goes through these two or is an async call on a stream of
+    /// its own: see the note on h2d() in engine.cpp.
+    void h2d(void* dst, const void* src, size_t bytes);
+    void zero_vram(void* dst, size_t bytes);
     /// An attention cache for alloc_caches(): `bytes` for every `per` rows, with addresses for the whole context
     /// and VRAM for the rows the sequence has reached (cover()).
     void* kv_alloc(size_t bytes, int per);
