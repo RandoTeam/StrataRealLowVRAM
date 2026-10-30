@@ -6,7 +6,7 @@ Retour à [README.fr.md](../../README.fr.md)
 
 ## Quelle est sa vitesse ?
 
-Mesuré par PolyStrata sur deux PC, avec une courte discussion et un prompt de 30,000 à 32,000 tokens : à gauche un
+Mesuré par 4gbVramStrata sur deux PC, avec une courte discussion et un prompt de 30,000 à 32,000 tokens : à gauche un
 portable dont la carte a 8 Go, où le processeur calcule les experts que la carte ne peut pas contenir, à droite une
 station de travail dont la carte contient le modèle entier.
 

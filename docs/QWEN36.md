@@ -1,6 +1,6 @@
 # Qwen3.6-35B-A3B: pictures, several requests at once and speed
 
-PolyStrata runs [Qwen3.6-35B-A3B](https://huggingface.co/Qwen/Qwen3.6-35B-A3B) (35B mixture of experts, 3B active, 256 experts, top-8) from
+4gbVramStrata runs [Qwen3.6-35B-A3B](https://huggingface.co/Qwen/Qwen3.6-35B-A3B) (35B mixture of experts, 3B active, 256 experts, top-8) from
 [Unsloth's GGUFs with the MTP layer](https://huggingface.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF) (UD-Q4_K_XL, UD-Q6_K_XL, Q8_0)
 on the Strata project's own engine path (`src/qwen35`; `strata` switches to it from the file's architecture). Pick it in
 setup (`--family qwen36-strata`); `--family qwen36` runs the same model on strata-poly instead
@@ -13,7 +13,7 @@ UD-Q4_K_XL in the hybrid mode: 22-37 of 256 experts per layer in VRAM, the rest 
 ## Pictures
 
 The vision encoder is Unsloth's `mmproj-F16.gguf` (0.9 GB, pinned revision, SHA-256 checked by setup): a 27-layer ViT with a 2x2 merger,
-the same projector family as the Flash-Next models' (`qwen3vl_merger`; only its output width differs: 2048 here, 2560 there). PolyStrata runs
+the same projector family as the Flash-Next models' (`qwen3vl_merger`; only its output width differs: 2048 here, 2560 there). 4gbVramStrata runs
 it with the same helper (`strata-vision`, llama.cpp's `mtmd`), so the encoder choices are the Flash-Next ones
 ([Images](DETAILS.md#images-vision)): **setup asks "Do you want images?"**, the default answer is yes on an NVIDIA card of 16 GB or more
 (GPU encoder, ~1.2 GB of VRAM at up to 1,024 image tokens) and on AMD under Linux (CPU encoder, no VRAM); `--vision yes|no|gpu|cpu`
@@ -34,7 +34,7 @@ A picture becomes up to 1,024 tokens of the context (the CPU default is 300). Th
 llama.cpp gives fed to both so the logits are compared step by step, 24 steps; the "floor" is llama.cpp's CPU backend against its own
 HIP run, the noise two correct engines have on this model):
 
-| Picture and question | Prompt tokens | First token | Mean KL, llama.cpp HIP vs PolyStrata | Floor (llama.cpp CPU vs HIP) |
+| Picture and question | Prompt tokens | First token | Mean KL, llama.cpp HIP vs 4gbVramStrata | Floor (llama.cpp CPU vs HIP) |
 | --- | ---: | --- | ---: | ---: |
 | 640x400, text in the image | 288 | same | 0.029 | 0.056 |
 | 640x400, list the shapes | 294 | same | 0.035 | 0.039 |
@@ -65,9 +65,9 @@ A request that runs alone (the solo path, with its MTP drafts) and is moved into
 alone again, gives the text it gives running alone (the server's hand-over reuses the held state).
 
 Aggregate decode speed, N requests at once, same prompts, greedy, 128 new tokens each, wall time from the first request to the last
-answer, **R9700 32 GB, UD-Q4_K_XL, llama.cpp `llama-server -np N`** (5 interleaved pairs, median; PolyStrata `--batch 8 --mtp 0`):
+answer, **R9700 32 GB, UD-Q4_K_XL, llama.cpp `llama-server -np N`** (5 interleaved pairs, median; 4gbVramStrata `--batch 8 --mtp 0`):
 
-| Requests at once | PolyStrata | llama.cpp | Ratio | Pairs faster |
+| Requests at once | 4gbVramStrata | llama.cpp | Ratio | Pairs faster |
 | ---: | ---: | ---: | ---: | ---: |
 | 1 | 83.9 tok/s | 73.8 | 1.14 | 5/5 |
 | 2 | 173.5 | 107.4 | 1.61 | 5/5 |
@@ -78,7 +78,7 @@ answer, **R9700 32 GB, UD-Q4_K_XL, llama.cpp `llama-server -np N`** (5 interleav
 `llama-server -np N -ncmoe 28 -t 8`, the best split of a sweep on this card; 5 interleaved pairs, medians; the box was shared with other
 jobs between runs, never during one):
 
-| Requests at once | PolyStrata | llama.cpp | Ratio | Pairs faster |
+| Requests at once | 4gbVramStrata | llama.cpp | Ratio | Pairs faster |
 | ---: | ---: | ---: | ---: | ---: |
 | 1 | 64.0 tok/s | 41.1 | 1.56 | 5/5 |
 | 2 | 85.1 | 52.5 | 1.62 | 5/5 |

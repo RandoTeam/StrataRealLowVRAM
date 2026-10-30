@@ -1,4 +1,4 @@
-"""Destructive-to-cache HTTP smoke test for an EXCLUSIVE, idle PolyStrata test server.
+"""Destructive-to-cache HTTP smoke test for an EXCLUSIVE, idle 4gbVramStrata test server.
 
 Sends synthetic conversations, deliberately evicts cached conversations, and
 disconnects a streaming response. Never run while other clients are using it.

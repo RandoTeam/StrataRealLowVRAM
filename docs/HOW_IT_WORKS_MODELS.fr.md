@@ -3,7 +3,7 @@
 Retour à [README.fr.md](../README.fr.md)
 
 Les modèles comme celui-ci tournent d'habitude sur des serveurs avec des centaines de gigaoctets de mémoire
-graphique. Votre carte graphique a 8-32 Go. PolyStrata fait tenir le modèle en **répartissant le travail sur tout votre
+graphique. Votre carte graphique a 8-32 Go. 4gbVramStrata fait tenir le modèle en **répartissant le travail sur tout votre
 PC**. Pensez à une cuisine : ce que vous utilisez tout le temps reste sur le plan de travail, et le reste attend dans
 le placard.
 

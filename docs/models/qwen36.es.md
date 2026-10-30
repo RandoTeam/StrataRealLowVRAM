@@ -6,7 +6,7 @@ Volver a [README.es.md](../../README.es.md)
 
 ## ¿Qué velocidad tiene?
 
-Medido por PolyStrata en dos PC, con un chat corto y un prompt de 30,000 a 32,000 tokens: a la izquierda un portátil
+Medido por 4gbVramStrata en dos PC, con un chat corto y un prompt de 30,000 a 32,000 tokens: a la izquierda un portátil
 con una tarjeta de 8 GB, donde el procesador calcula los expertos que no caben en la tarjeta, y a la derecha una
 estación de trabajo cuya tarjeta tiene el modelo entero.
 

@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 #
-# PolyStrata: Qwen3.8-Flash-Next on NVIDIA GPUs (RTX 30/40/50, 12+ GB VRAM; two or
+# 4gbVramStrata: Qwen3.8-Flash-Next on NVIDIA GPUs (RTX 30/40/50, 12+ GB VRAM; two or
 # three cards can share one model, 8 GB each - docs/MULTI_GPU.md).
 #
 # The engine is compiled during docker build, so the first container start only
@@ -28,7 +28,7 @@
 # GGUF_DIR (GGUF files you already have), RESIDENT_BUDGET_GIB, KV_STREAMING.
 #
 # Only the model files, the prepared pack, the MTP layer and the install config
-# live in the /data volume; the engine is part of the image. PolyStrata loads 32-62 GB
+# live in the /data volume; the engine is part of the image. 4gbVramStrata loads 32-62 GB
 # into RAM, so a capped container needs -e LOW_RAM=on: setup.py reads the RAM from
 # /proc/meminfo, which here is the host's total, not the container's limit. Add an
 # API key before exposing the port to a network: -e API_KEY=<secret>. Pass

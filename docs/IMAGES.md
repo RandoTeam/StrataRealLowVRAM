@@ -1,6 +1,6 @@
 # Image generation (Qwen-Image-2.1-Turbo)
 
-PolyStrata's server can also make images: `POST /v1/images/generations`, OpenAI's images API. The model is
+4gbVramStrata's server can also make images: `POST /v1/images/generations`, OpenAI's images API. The model is
 [Qwen-Image-2.1-Turbo](https://huggingface.co/Qwen/Qwen-Image-2.1-Turbo) (8 steps, CFG 1) in
 [Unsloth's GGUF quants](https://huggingface.co/unsloth/Qwen-Image-2.1-Turbo-GGUF), run by
 [stable-diffusion.cpp](https://github.com/leejet/stable-diffusion.cpp) (`sd-cli`), which setup compiles for your GPU.
@@ -51,8 +51,8 @@ time of sd.cpp's default half overlap.
 | `size` | `WIDTHxHEIGHT`, each side a multiple of 32 from 256 to 2048 (`max_side`); default and `auto`: `1024x1024` |
 | `n` | images, 1 to 4 (`max_n`); image *i* uses seed + *i* |
 | `response_format` | `b64_json` (default) or `url` (`/v1/images/files/<random name>.png`; the server keeps the newest 64) |
-| `seed` | PolyStrata's: a whole number for a repeatable image (default: random; the answer says which) |
-| `steps` | PolyStrata's: 8 (Turbo's schedule). Another count uses stable-diffusion.cpp's own schedule, which Turbo was not made for |
+| `seed` | 4gbVramStrata's: a whole number for a repeatable image (default: random; the answer says which) |
+| `steps` | 4gbVramStrata's: 8 (Turbo's schedule). Another count uses stable-diffusion.cpp's own schedule, which Turbo was not made for |
 
 The answer is OpenAI's shape (`created`, `data[].b64_json` or `data[].url`, `revised_prompt` = the prompt) plus
 `data[].seed` and a `strata` object with the seconds, steps and backend. The settings are the model card's for

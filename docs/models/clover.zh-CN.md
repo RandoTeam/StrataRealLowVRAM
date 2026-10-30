@@ -6,7 +6,7 @@
 
 ## 速度有多快？
 
-由 PolyStrata 在笔记本上测得，用一段短对话和一个 3.2 万个 token 的提示。笔记本的显卡是 8 GB，显卡放不下的专家由处理器来算。
+由 4gbVramStrata 在笔记本上测得，用一段短对话和一个 3.2 万个 token 的提示。笔记本的显卡是 8 GB，显卡放不下的专家由处理器来算。
 
 <table>
 <tr><th>NVIDIA：RTX 4070 Laptop（8 GB）、Core i7-14700HX、32 GB 内存</th></tr>
@@ -23,9 +23,9 @@
 
 读完 3.2 万个 token 的提示之后，Q3_K_M 在笔记本上每秒写 60 到 65 个 token。Q4_K_M 会把 32 GB 内存占满，所以在那台笔记本上又慢又不稳。RTX 5090 的工作站没测。
 
-同一台笔记本上 Qwen3.6-35B-A3B 写得更快，每秒 94 到 100 个，因为它的文件里带一个猜词块，猜下面几个词只要算一层。Clover 的文件里没有。Clover 自己也能猜一整块，但那要把整个模型再跑一遍，PolyStrata 把它关掉了：在装得下全部专家的显卡上，不猜反而更快（[测量结果](../BACKENDS.md#clover-35b-a3b-preview)，英文）。
+同一台笔记本上 Qwen3.6-35B-A3B 写得更快，每秒 94 到 100 个，因为它的文件里带一个猜词块，猜下面几个词只要算一层。Clover 的文件里没有。Clover 自己也能猜一整块，但那要把整个模型再跑一遍，4gbVramStrata 把它关掉了：在装得下全部专家的显卡上，不猜反而更快（[测量结果](../BACKENDS.md#clover-35b-a3b-preview)，英文）。
 
-在一张装得下 Q3_K_M 全部专家的 RTX PRO 6000 上，PolyStrata 挑的下一个 token 和 llama.cpp（它的 pull request 31306 加的 `clover_moe` 支持）一致：短提示后 128 步里有 127 步一样，5,573 个 token 的提示后 128 步里有 125 步一样。
+在一张装得下 Q3_K_M 全部专家的 RTX PRO 6000 上，4gbVramStrata 挑的下一个 token 和 llama.cpp（它的 pull request 31306 加的 `clover_moe` 支持）一致：短提示后 128 步里有 127 步一样，5,573 个 token 的提示后 128 步里有 125 步一样。
 
 ## 你需要什么
 

@@ -1,4 +1,4 @@
-# Scrape a PolyStrata server's GET /metrics (Prometheus text, vLLM's names; docs/DETAILS.md).
+# Scrape a 4gbVramStrata server's GET /metrics (Prometheus text, vLLM's names; docs/DETAILS.md).
 # Prometheus asks for text/plain, so it gets the text format; the Monitor tab keeps the JSON.
 scrape_configs:
   - job_name: strata

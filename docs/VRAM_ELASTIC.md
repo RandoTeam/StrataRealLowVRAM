@@ -11,7 +11,7 @@ The expert cache is normally one big `cudaMalloc`. With `"vram_elastic": true` i
 `--vram-elastic`, segment size `"vram_segment_mib"`, default 512, at least 64) it is allocated in segments instead.
 `POST /v1/vram` then keeps a number of MiB of VRAM free for another program by unmapping the last segments, or maps
 them again when more is free. Nothing resizes on its own. Only the expert cache moves: the dense weights, the K/V, the
-MTP head, the CUDA context and the prompt buffers stay, so PolyStrata never gives back "everything".
+MTP head, the CUDA context and the prompt buffers stay, so 4gbVramStrata never gives back "everything".
 
 The engine switches the feature off at start, with one line in its log (`--vram-elastic is off: ...`), when it is not
 a `--serve` engine, with a layer split, with helper caches on other GPUs, with a segment below 64 MiB, and on HIP
@@ -29,7 +29,7 @@ Content-Type: application/json          (anything else: 415)
 - The server's API key applies as for the other `/v1` routes. A request that carries a foreign `Origin` is refused
   (403) unless the origin is in `trusted_origins`.
 - `reserve_mib` is the free VRAM you want left on the card after the call (it counts what any program holds, not only
-  PolyStrata). Below 0, a string, a boolean or a fraction: 400.
+  4gbVramStrata). Below 0, a string, a boolean or a fraction: 400.
 - `null` and `0` are the grow-back requests: `null` keeps the `--vram-reserve-mib` the engine started with, `0` keeps
   nothing free on purpose.
 
@@ -41,7 +41,7 @@ Content-Type: application/json          (anything else: 415)
 | The model is unloaded | 200 | `{"status": "not loaded", "reserve_mib": N, "note": "applied when the model loads"}` |
 | Bad `reserve_mib` | 400 | `invalid_request_error` |
 | The engine refuses the command | 400 | `invalid_request_error`, the engine's reason in `message`. The engine stays up. |
-| Not from PolyStrata's own page, or wrong content type | 403 / 415 | |
+| Not from 4gbVramStrata's own page, or wrong content type | 403 / 415 | |
 | A request is still running or queued (waited up to 300 s) | 409 | `model_busy` |
 | The engine ended, or did not answer in 120 s | 503 | `server_error` |
 

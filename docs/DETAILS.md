@@ -1,6 +1,6 @@
-# PolyStrata - the details
+# 4gbVramStrata - the details
 
-The technical side of PolyStrata: every measured number, the API, images, all settings and how the engine works.
+The technical side of 4gbVramStrata: every measured number, the API, images, all settings and how the engine works.
 New here? Start with the [README](../README.md); installing step by step is in [INSTALL.md](INSTALL.md), the models in
 [MODELS.md](MODELS.md), common problems in [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
@@ -97,7 +97,7 @@ slower. It streams its KV cache like the other formats (`--kv-resident N`): on a
 20,480 resident cells, +780 expert slots over resident K8V4, and it scores better than 4-bit KV on long documents.
 
 **Reproducible greedy output (0.1.30, opt-in, `STRATA_IQ_MT_MIN=1`):** with the IQ models, the CPU computes an
-expert for one token with ggml's dot product and for several tokens with PolyStrata's multi-token kernels, which round
+expert for one token with ggml's dot product and for several tokens with 4gbVramStrata's multi-token kernels, which round
 slightly differently. How many tokens share an expert depends on the drafts in a verify window, so the same prompt
 at temperature 0 can end in a different (equally good) answer when the drafting, the cache state or a resumed
 conversation differ (issue #152). `STRATA_IQ_MT_MIN=1` (in the config's `env`) uses the multi-token kernels for
@@ -315,7 +315,7 @@ Windows 11, Swift 1.5 IQ3_XXS at 128K):**
 
 **Exact one-token expert rows (0.1.45, opt-in, `STRATA_CPU_IQ_ALL_EXACT1=1`, #1415 #1544):** below the #152 rule
 (a lone token in an expert's group) an AVX-2 CPU without AVX-512 runs ggml-cpu's `vec_dot` for the i-quant gate/up rows.
-With the switch, IQ2_XXS, IQ2_XS, IQ2_S, IQ3_XXS and IQ3_S take PolyStrata's AVX-2 decode instead, with ggml's float order
+With the switch, IQ2_XXS, IQ2_XS, IQ2_S, IQ3_XXS and IQ3_S take 4gbVramStrata's AVX-2 decode instead, with ggml's float order
 (the same per-lane integer sums, one fmadd per block, the format constant after `hsum_float_8`), so the output does not
 change, only the time (`iq_avx2_parity`: 0 of 5,120 outputs per format differ from ggml's; the identity gate with the
 switch on is 10/10 plus exact_pp 4K/20K identical on RTX 3060, 2x A4000 and R9700 boxes).  It is used only where
@@ -444,7 +444,7 @@ RCO on code, agentic and vision calibration data; its authors report 91.3% of th
 98.7% of LiveCodeBench v6. One size, named IQ1_M for its 1.89 bits per *original* parameter; the kept experts are
 stored like IQ3_S (IQ2_S-IQ4_XS gate/up, IQ4_NL/Q2_0 down). Shard 1 is 29.6 GB (experts: 23 GB of RAM), so it runs
 on **32 GB of RAM**, and at 262K on 64 GB. Its shard 2 and its vision encoder are the original's files: with the
-original installed, setup downloads only shard 1. PolyStrata ships its expert profile (`data/expert-profile-coder.bin`,
+original installed, setup downloads only shard 1. 4gbVramStrata ships its expert profile (`data/expert-profile-coder.bin`,
 the shipped ranking mapped onto the kept experts through the release's `rco-allocation.txt`: 72% of the expert
 reads hit the GPU on a 12 GB card). Images work; the experimental speed projection loads and runs on it (it was made
 for the full model).
@@ -459,7 +459,7 @@ The setup's first question also offers **[Swift 1.5](https://huggingface.co/ukis
 UkisAI's fine-tune of Qwen3.8-Flash-Next, trained to reach the answer with much less thinking (its authors: 63% fewer
 thinking tokens, 1.8x sooner answers, under 1% accuracy loss). Same architecture, the original's sizes except Q2_0,
 its own
-vision encoder; PolyStrata runs it at the same speed (4K, IQ2_XS: 465 prompt / 78.7 output tokens/s, vs 467 / 78.3 for
+vision encoder; 4gbVramStrata runs it at the same speed (4K, IQ2_XS: 465 prompt / 78.7 output tokens/s, vs 467 / 78.3 for
 the original). Its authors recommend **IQ2_XS** (their Q2_0 is marked experimental). Its license is the Swift Open
 License 1.0 - read it on the model page.
 
@@ -495,12 +495,12 @@ Everything else is installed for you the first time.
 | OS | Windows 10/11, or Linux (Ubuntu 22.04/24.04 and Debian 12/13 get everything installed automatically). |
 
 What the first start installs: in this folder `.venv/`, `engine/` and `third_party/`; the model files (`models/`,
-`packs/`, `mtp/`, 70-120 GB) in **`PolyStrata-data` next to this folder**, so a new copy of PolyStrata (an update unzipped
-elsewhere) finds them and sets itself up the same way. The place is remembered per user (`%APPDATA%\PolyStrata\settings.json`,
+`packs/`, `mtp/`, 70-120 GB) in **`4gbVramStrata-data` next to this folder**, so a new copy of 4gbVramStrata (an update unzipped
+elsewhere) finds them and sets itself up the same way. The place is remembered per user (`%APPDATA%\4gbVramStrata\settings.json`,
 `~/.config/polystrata/settings.json`); `--data-dir` chooses another. Installs from before 0.1.16 are moved there by the next
 start (a rename on the same drive; files on another drive are used where they are).
 Python 3.12 if you have none (for your user account, no admin), a private Python environment, NVIDIA's CUDA libraries
-(from pip, ~0.4 GB), the ready-made PolyStrata engine for RTX 20/30/40/50, the model and the MTP draft layer. If no
+(from pip, ~0.4 GB), the ready-made 4gbVramStrata engine for RTX 20/30/40/50, the model and the MTP draft layer. If no
 ready-made engine fits your PC, it offers to install the build tools (Visual Studio Build Tools + CUDA Toolkit on
 Windows, `build-essential` + CUDA on Ubuntu) and compiles the engine for your GPU (asks first; 20-40 minutes once).
 
@@ -518,7 +518,7 @@ Windows, `build-essential` + CUDA on Ubuntu) and compiles the engine for your GP
 4. **Images?** yes / no (see [Images](#images-vision)).
 
 Then it downloads and prepares everything (the model is 66-76 GB, so the first start takes a while; an interrupted
-download continues where it stopped) and **starts the model**: your browser opens `http://127.0.0.1:8080`, the PolyStrata
+download continues where it stopped) and **starts the model**: your browser opens `http://127.0.0.1:8080`, the 4gbVramStrata
 app. It has three tabs:
 - **Chat:** streaming answers, the model's thinking (folded away once it answers), code with a copy button, pictures when
   images are on, and sampling and thinking-level settings. Chats stay in your browser.
@@ -543,7 +543,7 @@ SETUP.bat                                       the same (double-click it)
 START-HERE.bat --model IQ2_XS --context 32768 --vision yes --yes     no questions
 START-HERE.bat --gguf-dir D:\models\IQ2_XS       use GGUF files you already have
 START-HERE.bat --custom-gguf D:\models          install one custom GGUF: a file, or a folder of its shards
-START-HERE.bat --data-dir E:\PolyStrata-data         keep the model files somewhere else
+START-HERE.bat --data-dir E:\4gbVramStrata-data         keep the model files somewhere else
 START-HERE.bat --port 8081                      another port
 START-HERE.bat --gpu 1                          another GPU (numbered as nvidia-smi; setup picks the one with the most VRAM)
 START-HERE.bat --calibrate                      tune the engine for this PC (about 15-30 minutes, longer on a slow card), then start
@@ -637,7 +637,7 @@ Terminal chat: `.venv/bin/python chat.py`.
 
 ## Sharing the GPU with other programs (optional)
 
-By default the model stays loaded until you close PolyStrata. On a PC that also games, renders or runs another model
+By default the model stays loaded until you close 4gbVramStrata. On a PC that also games, renders or runs another model
 server, three server options (all off by default; also as keys in `strata-<model>.json`) give the VRAM back:
 
 | Option | Config key | What it does |
@@ -686,7 +686,7 @@ profile - the experts in VRAM first, then the routing it counted since the start
 clean exit and every 10 minutes between requests (`"expert_profile_save_every": 5` for another interval, `0` for
 exit only), written to a temporary file and renamed, so a crash never leaves half a file. The next start begins from
 it instead of the config's `--expert-profile` when it is a profile of the same model (else from the config's, as
-before). A relative path is in the PolyStrata folder; one file per model, and a profile per project works the same way
+before). A relative path is in the 4gbVramStrata folder; one file per model, and a profile per project works the same way
 (point the key at another file). The file is a fingerprint of what you used the model for: it stays on your PC.
 Without the key nothing is counted or written. Setup rewrites the config when run again: add the key again then.
 On an Intel Arc card with `STRATA_VERIFY_NO_HOST` (the SYCL default on Battlemage, no adaptive tier) the profile is ranked from the device's own routing counts and applies at the next start; a profile learned from one kind of text speeds that kind up (code, +13-19% decode on the Arc Pro B70, same tokens) and slows other kinds (prose, -18%), so keep one file per kind of work.
@@ -803,10 +803,10 @@ it also reads a vLLM server.
 
 `/models` and `/v1/models` list only the loaded model, with its context limit and input modalities (with `switch_on_request`, every installed model that can run, the loaded one first; see Switching models on request below). `/props` exposes the original chat template, context limit, configured generation defaults (shared settings take precedence), model path and engine version when available. Context means the full engine context, not the resident KV window. `n_predict: -1` means no fixed output cap. Unconfigured sampling fields are omitted. `/slots` uses llama.cpp's names: `n_ctx` and `n_prompt_tokens` (the running request's prompt size, kept after it ends: what a front-end's context meter divides by `n_ctx`). `total_slots` in `/props` is the number of `--batch` slots (1 without). `autoload` has no effect; an unknown `model` returns 404. These metadata endpoints and `/slots` require the API key when one is configured. They do not load, unload or restart models.
 
-`chat_template_caps` uses llama.cpp's field names. PolyStrata checks them when loading the active template by rendering
+`chat_template_caps` uses llama.cpp's field names. 4gbVramStrata checks them when loading the active template by rendering
 small requests; a rejected or omitted feature is `false`, and a template that fails a probe in any way only turns that
 feature off (the server still starts). `supports_tools` checks tool definitions and XML call
-instructions; `supports_tool_calls` checks that calls in the history use PolyStrata's XML format and keep tool results.
+instructions; `supports_tool_calls` checks that calls in the history use 4gbVramStrata's XML format and keep tool results.
 `supports_parallel_tool_calls` checks multiple calls in one assistant turn, and `supports_system_role` checks a
 leading system message. `supports_preserve_reasoning` means older assistant turns keep their `reasoning_content`
 in the rendered prompt. It does not describe whether a new reply returns reasoning. These are compatibility hints
@@ -976,11 +976,11 @@ print(r.choices[0].message.content)
     "provider": {
       "strata": {
         "npm": "@ai-sdk/openai-compatible",
-        "name": "PolyStrata (local)",
+        "name": "4gbVramStrata (local)",
         "options": { "baseURL": "http://127.0.0.1:8080/v1", "apiKey": "none" },  // or your api_key
         "models": {
           "strata": {
-            "name": "Qwen3.8-Flash-Next (PolyStrata)",
+            "name": "Qwen3.8-Flash-Next (4gbVramStrata)",
             // context: what you chose in setup; output: what one reply may use (prompt + output must fit)
             "limit": { "context": 262144, "output": 32768 },
             "options": { "reasoningEffort": "high" },                  // sent as reasoning_effort
@@ -1001,8 +1001,8 @@ print(r.choices[0].message.content)
   Keep `limit.output` well under it: a request whose prompt plus `max_tokens` runs past the context is refused (see
   **Context** below), or add `"fit_max_tokens": true` to `strata-<model>.json`. For a hard cap on the thinking, add
   `"reasoning_budget_tokens": N` to `strata-<model>.json` (see above).
-- **Claude Code** (PolyStrata 0.1.17 or newer): set `ANTHROPIC_BASE_URL=http://127.0.0.1:8080` and
-  `ANTHROPIC_MODEL` to a Claude model name it knows (it refuses names it doesn't; PolyStrata ignores the name), plus any
+- **Claude Code** (4gbVramStrata 0.1.17 or newer): set `ANTHROPIC_BASE_URL=http://127.0.0.1:8080` and
+  `ANTHROPIC_MODEL` to a Claude model name it knows (it refuses names it doesn't; 4gbVramStrata ignores the name), plus any
   `ANTHROPIC_AUTH_TOKEN` (or your `api_key`, if you set one). It asks for 32,000 tokens of answer in every request,
   more than a 32K context leaves beside its prompt: add `"fit_max_tokens": true` to `strata-<model>.json` (see
   **Context** below).
@@ -1037,7 +1037,7 @@ print(r.choices[0].message.content)
   `lazy_load`, `engine_silence_s`, `api_monitor`, `switch_on_request`, `open_browser` and `--vram-reserve-mib`. An empty field removes the
   key (its default). Every other key of the file stays as it is, the earlier file is kept as
   `strata-<model>.json.bak`, and the model uses the change from its next start, or the next switch to it. Only
-  PolyStrata's own page can save (JSON, the API key when one is set, as for the Chat settings); the network, key, MCP
+  4gbVramStrata's own page can save (JSON, the API key when one is set, as for the Chat settings); the network, key, MCP
   and program keys are not editable there.
 - **Switching models in the web page (#37).** With more than one model installed, the chat page's model list switches
   the server to another one without a restart: the loaded model is stopped first (its VRAM and memory are given back),
@@ -1056,7 +1056,7 @@ print(r.choices[0].message.content)
   `"api_key": "..."` to `strata-<model>.json`). The server window then prints this PC's addresses
   (`from other devices: http://192.168.x.x:8080/`); open that on the other device, or use `.../v1` as an API base URL.
   On Windows the firewall blocks it until you allow it: accept its prompt for Python (private networks), or run
-  `New-NetFirewallRule -DisplayName "PolyStrata 8080" -Direction Inbound -Protocol TCP -LocalPort 8080 -Action Allow -Profile Private`
+  `New-NetFirewallRule -DisplayName "4gbVramStrata 8080" -Direction Inbound -Protocol TCP -LocalPort 8080 -Action Allow -Profile Private`
   in an admin PowerShell, and make sure the network is set to Private.
 - **From the internet.** Put a tunnel in front of it, for example [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/):
   `cloudflared tunnel --url http://127.0.0.1:8080`. **Set a key first**, or anyone with the link can use your PC:
@@ -1065,7 +1065,7 @@ print(r.choices[0].message.content)
   with commas, `--api-key key1,key2` or `"api_key": "key1,key2"` as llama.cpp does, or give a list,
   `"api_key": ["key1", "key2"]` (the way to use a key that contains a comma); a request passes with any one of them.
   Streamed answers carry `X-Accel-Buffering: no`, so nginx-style proxies pass
-  each token on at once. The web app's settings and MCP tools only answer PolyStrata's own page: when you open it through
+  each token on at once. The web app's settings and MCP tools only answer 4gbVramStrata's own page: when you open it through
   a proxy or tunnel whose address differs, add that address, e.g. `"trusted_origins": ["https://strata.example.com"]`.
   With the key set, any `Host` name reaches the server (see Host names below).
 - **From web apps in a browser (CORS).** Off by default. `"cors_origins": ["https://chat.example.com"]` lets pages of
@@ -1084,14 +1084,14 @@ print(r.choices[0].message.content)
   name and every name below it, and `["*"]` turns the check off (so does setting `api_key`). The hosts of
   `trusted_origins` count as allowed. Requests without a `Host` header (HTTP/1.0 clients) pass.
 - **Web pages without an API key.** Without `api_key`, a `POST` to `/v1/*` that carries an `Origin` header (a
-  browser page sent it) is answered only for PolyStrata's own page, pages on `localhost` or an allowed host name (any
+  browser page sent it) is answered only for 4gbVramStrata's own page, pages on `localhost` or an allowed host name (any
   port), the origins in `trusted_origins` or `cors_origins`, and browser extensions and desktop apps
   (`chrome-extension://`, `moz-extension://`, `app://`: no web site can send those), and only with a JSON body; any
   other page, and `Origin: null`, gets **403**. Clients that send no `Origin` (curl, the OpenAI and Anthropic SDKs,
   other servers) are not affected. With
-  an API key, the key decides. `POST /unload` and `POST /load` take `Content-Type: application/json` from PolyStrata's
+  an API key, the key decides. `POST /unload` and `POST /load` take `Content-Type: application/json` from 4gbVramStrata's
   own page (or no `Origin`), like `/settings`. `POST /slots/0?action=save|restore` keeps the Host and API-key checks
-  and also takes only JSON from no `Origin`, PolyStrata's own page or a trusted origin - also when an API key is set.
+  and also takes only JSON from no `Origin`, 4gbVramStrata's own page or a trusted origin - also when an API key is set.
 
 **Conversation cache.** A request that continues a chat reads only the part after what the engine already holds: the
 live session, or one of the checkpoints it keeps in RAM (up to 6, ~118 MB each, taken at the start of each new
@@ -1288,7 +1288,7 @@ persisted across restarts; the session files below are.
 restart of the same engine version, so a long prompt is not read again. The server exposes the save and restore
 requests of llama-server's slot API, for its single slot 0, when started with `--slot-save-path DIR` (also
 `"slot_save_path"` in the config); NAME must be a plain file name inside DIR. There is no erase action and the file
-format is PolyStrata's own, not llama.cpp's:
+format is 4gbVramStrata's own, not llama.cpp's:
 
 ```bash
 curl -X POST "http://127.0.0.1:8080/slots/0?action=save"    -H "Content-Type: application/json" -d '{"filename": "chat1.bin"}'
@@ -1299,7 +1299,7 @@ curl -X POST "http://127.0.0.1:8080/slots/0?action=restore" -H "Content-Type: ap
 
 DIR becomes one absolute path at start (`--slot-save-path` relative to the server's working directory, the config's
 `slot_save_path` relative to the config's `"cwd"`), created with mode 0700 when missing. It should be private to the
-user that runs PolyStrata: the files hold the conversation's token IDs and state, are created with mode 0600 on Linux
+user that runs 4gbVramStrata: the files hold the conversation's token IDs and state, are created with mode 0600 on Linux
 (on Windows they inherit the folder's permissions), and nothing deletes them - about 1.2 GB per 63K-token
 conversation. Before it writes, a save checks that the disk has room for the whole new file plus
 `--session-min-free-mib` (an engine argument, in the config's `args`; default 4096, 0 = no check) - also when it
@@ -1328,7 +1328,7 @@ I/O later fails; the current tokens, images, steering and live device state are 
 SAVE under arbitrary memory pressure. With the option off, or enough RAM at the first probe, cache retention and
 the session file format are unchanged. RESTORE is unchanged.
 
-The request must be `Content-Type: application/json` (else `415`) and come from no browser page, PolyStrata's own or a
+The request must be `Content-Type: application/json` (else `415`) and come from no browser page, 4gbVramStrata's own or a
 trusted origin (another site's `Origin` gets `403`, also with an API key); the Host and API-key checks apply as
 everywhere. Errors: `501` without `--slot-save-path` or with parallel requests; `400` for a slot other than 0, an unknown action, a refused
 file name, or a file the engine refuses as invalid (not a session file, corrupt, another model or configuration, over
@@ -1456,7 +1456,7 @@ It is **stateless**: nothing is stored, so the client sends the whole conversati
 with `store: false`). `previous_response_id`, `conversation`, `background` and the retrieve/delete/cancel endpoints
 are refused with an error that says so.
 
-| Request | What PolyStrata does |
+| Request | What 4gbVramStrata does |
 | --- | --- |
 | `input` as a string, or as items | `message` items (`user`, `assistant`, `system`, `developer`; text and images), `reasoning`, `function_call`, `function_call_output`, `custom_tool_call(_output)` |
 | `instructions` | The system message (with leading `developer` messages; later ones become user messages, as on the chat path) |
@@ -1486,14 +1486,14 @@ it started they arrive as `response.failed`.
 **Codex CLI.** In `~/.codex/config.toml` (Windows: `%USERPROFILE%\.codex\config.toml`):
 
 ```toml
-model = "strata"                        # any name; PolyStrata answers with its model
+model = "strata"                        # any name; 4gbVramStrata answers with its model
 model_provider = "strata"
 model_context_window = 32768            # the context you chose in setup: Codex compacts before it gets there
 show_raw_agent_reasoning = true         # show the model's thinking (it writes no summaries)
 # model_reasoning_effort = "medium"     # none, low, medium or high; default: the model's (high)
 
 [model_providers.strata]
-name = "PolyStrata (local)"
+name = "4gbVramStrata (local)"
 base_url = "http://127.0.0.1:8080/v1"
 wire_api = "responses"
 stream_idle_timeout_ms = 600000         # a first, long prompt can take minutes to read
@@ -1504,12 +1504,12 @@ Then run `codex` (or `codex exec "..."`) as usual. Codex warns `Model metadata f
 name; that is expected. Measured with Codex CLI 0.160.0 and Q2_0 on an RTX 5070: its first prompt (instructions and
 tool descriptions) was 9,443 tokens, read in 10 s; in a tool loop, each later turn reused about 96% of the prompt from
 the cache and read only the new part in 1-2 s. On Windows, Codex's sandbox rejected every shell command in that test
-until it was started with `-c 'windows.sandbox="unelevated"'` (a Codex setting, not PolyStrata's).
+until it was started with `-c 'windows.sandbox="unelevated"'` (a Codex setting, not 4gbVramStrata's).
 
 **Codex's compaction (opt-in: `"codex_compaction_cache": true` in `strata-<model>.json`).** When the context fills up (or
 on `/compact`), Codex sends the conversation once more with a request to summarize it, and with `tools: []`. The template
 writes the tools at the top of the prompt, so that prompt would share only its first few tokens with the conversation the
-engine holds and be read again from the start, at its longest. With the option on, PolyStrata keeps which Codex conversation
+engine holds and be read again from the start, at its longest. With the option on, 4gbVramStrata keeps which Codex conversation
 sent the last prompt other than a compaction (`session_id` and `thread_id` from `client_metadata["x-codex-turn-metadata"]`)
 and the tools that prompt was rendered with; a request Codex marks `"request_kind": "compaction"`, from that same
 conversation and without tools of its own, is rendered with them. Only the prompt: for the output parser and in the
@@ -1537,13 +1537,13 @@ also paste as it is (key `"mcpServers"`):
 ```
 
 Or keep them in their own file and start the server with `--mcp-config path\to\claude_desktop_config.json` (a file
-with an `mcpServers` block; add it to the `serve/server.py` line of your run script). Restart PolyStrata after a change.
+with an `mcpServers` block; add it to the `serve/server.py` line of your run script). Restart 4gbVramStrata after a change.
 
-- **A program** (`command`, `args`, optional `env` and `cwd`) is started by PolyStrata and spoken to over its
+- **A program** (`command`, `args`, optional `env` and `cwd`) is started by 4gbVramStrata and spoken to over its
   stdin/stdout; `npx`, `uvx`, `python` and friends are found on `PATH` as usual (Node.js is needed for `npx`
   servers). **An address** (`url`, optional `headers`) uses MCP's Streamable HTTP transport (the older SSE-only
   transport is not supported). `"disabled": true` leaves an entry out.
-- The servers start with PolyStrata, in the background; the server window says what each one offers
+- The servers start with 4gbVramStrata, in the background; the server window says what each one offers
   (`MCP server 'files': 14 tools (...)`), or why it did not start - its tools are then left out and the chat works
   without them. The Monitor tab lists them, and the Sampling drawer has **Use tools from MCP servers** (on by
   default). A server that stops later is started again at its next call.
@@ -1558,7 +1558,7 @@ with an `mcpServers` block; add it to the `serve/server.py` line of your run scr
 **Security.** MCP tools run on your PC with your user's rights, and **the model decides when to call them** - also
 because of what it reads (a web page or a file can contain instructions). Give a filesystem server only the folders
 it needs, prefer read-only tools, and don't add servers you don't trust. The tools can only be used from the chat
-page itself (a request with another site's Origin or without a JSON content type is refused); if PolyStrata is reachable
+page itself (a request with another site's Origin or without a JSON content type is refused); if 4gbVramStrata is reachable
 from other devices, set an API key.
 
 **Context extension past 262K (rope scaling, EXPERIMENTAL, off unless you pick it).** The model was trained on
@@ -1600,14 +1600,14 @@ unmeasured: all the runs above are text.
 
 ---
 
-## Manage PolyStrata from your AI assistant (MCP server)
+## Manage 4gbVramStrata from your AI assistant (MCP server)
 
 `tools/strata_mcp.py` is an MCP server for Claude Code, Claude Desktop, Cursor, VS Code, Codex and other assistants.
-Once it is added, you can ask your assistant "install PolyStrata for this PC", "start PolyStrata" or "is PolyStrata running?".
+Once it is added, you can ask your assistant "install 4gbVramStrata for this PC", "start 4gbVramStrata" or "is 4gbVramStrata running?".
 In Claude Code, add it with:
 
 ```bash
-claude mcp add strata -- python C:\Users\you\PolyStrata\tools\strata_mcp.py
+claude mcp add strata -- python C:\Users\you\4gbVramStrata\tools\strata_mcp.py
 ```
 
 It has eight tools: status (the running model, what is installed, the hardware, a recommended size), the model
@@ -1619,7 +1619,7 @@ processes it started itself. It uses only Python's standard library, so it works
 
 The config snippets for every client, the tool arguments and the safety rules are in
 [docs/MCP_SERVER.md](MCP_SERVER.md). This is the opposite direction from
-[Tools from MCP servers](#tools-from-mcp-servers) above, where the PolyStrata model calls *your* MCP tools.
+[Tools from MCP servers](#tools-from-mcp-servers) above, where the 4gbVramStrata model calls *your* MCP tools.
 
 ---
 
@@ -1761,7 +1761,7 @@ on the GPU, measured through the API):
 run below the long-output speed: the first rounds have no draft yet.)
 
 **How it works inside:** the encoder turns the picture into rows of the same width as the model's word embeddings;
-PolyStrata puts them where the prompt has `<|image_pad|>` tokens and gives each one its 2-D position (row and column in the
+4gbVramStrata puts them where the prompt has `<|image_pad|>` tokens and gives each one its 2-D position (row and column in the
 picture; the model uses interleaved M-RoPE). Answers match llama.cpp's multimodal implementation token for token on our
 test images.
 
@@ -1980,7 +1980,7 @@ the pairs in which the switched arm won). They are here so you can try them on y
 - **`STRATA_MMQ_DIRECT=1`: the prompt's MMQ reads resident experts in their cache slots** (CUDA, native packs; needs an
   engine built with `-DSTRATA_MMQ_TAB=ON`, which is off by default). The prompt path multiplies its experts in groups of
   16 with llama.cpp's MMQ, which wants a group's weights in one buffer at a fixed stride, so every expert a chunk routes
-  to is copied there first (2.3-3.1 MB each, per chunk and layer), resident ones too. With this on, a PolyStrata-side copy of
+  to is copied there first (2.3-3.1 MB each, per chunk and layer), resident ones too. With this on, a 4gbVramStrata-side copy of
   MMQ's outer scheduler (`src/prefill/moe_mmq_tab.cuh`) takes one pointer per expert instead, and a resident expert is
   read where it is; streamed, peer-GPU and other experts are still copied. The launch (tile size, stream-k split,
   fixup) is the one MMQ makes for the copied group and the tile code is llama.cpp's own, so the answers are the same
@@ -2060,7 +2060,7 @@ never changes a result.
 
 ## Experimental speed projection (EXPERIMENTAL, off by default)
 
-**This is an experiment, not a finished feature.** It ships with PolyStrata but stays off unless you turn it on.
+**This is an experiment, not a finished feature.** It ships with 4gbVramStrata but stays off unless you turn it on.
 
 A 480 KB control vector for Qwen3.8-Flash-Next (`data/experimental-speed-projection/`, see its README). After each
 of layers 4-44 the engine removes one direction from every hyper-connection stream of the residual: `h -= (h . v) v`,
@@ -2078,7 +2078,7 @@ no), or pass `--experimental-speed-projection on` (`off`, or a path to another v
 Qwen3.8-Flash-Next, not Swift 1.5. It writes these engine flags (llama.cpp's) into `strata-<model>.json`:
 
 ```
---control-vector-scaled <PolyStrata>\data\experimental-speed-projection\Qwen3.8-Flash-Next-experimental-speed-projection.gguf:1.0
+--control-vector-scaled <4gbVramStrata>\data\experimental-speed-projection\Qwen3.8-Flash-Next-experimental-speed-projection.gguf:1.0
 --control-vector-layer-range 4 44 --cvec-mode project --cvec-dir per-layer
 ```
 
@@ -2164,7 +2164,7 @@ both and of neither were the same 128 tokens at 32K and parted at token 85 at 10
 | --- | --- |
 | `the NVIDIA driver is too old` | Update the driver (NVIDIA App or nvidia.com/drivers), restart, run `START-HERE.bat` again. |
 | Python or the build tools could not be installed | Install what it names (links are printed), then run it again. Everything already done is kept. |
-| `port 8080 is already in use` | PolyStrata is already running (look for its window), or another program uses the port: `START-HERE.bat --port 8081`. |
+| `port 8080 is already in use` | 4gbVramStrata is already running (look for its window), or another program uses the port: `START-HERE.bat --port 8081`. |
 | `cudaHostRegister ... out of memory` in the log | Normal on Windows: the engine pins the experts in per-layer slices instead. Only a problem if the load then fails. |
 | `ExpertCache: cudaMalloc(...) failed: out of memory` although VRAM is free | Windows' page file is off or tiny: every allocation on the graphics card is also charged to Windows' commit (RAM + page file). Set a fixed page file size, the same initial and maximum size (e.g. 65536 MB: System > About > Advanced system settings > Performance > Advanced > Virtual memory > Custom size), and restart: a page file Windows grows on demand ("System managed", or an initial size below the maximum) may not grow in time while the card's memory is charged (#60: "System managed" and 4096-32768 MB still failed, a fixed 64 GB worked). Since 0.1.19 the engine retries with a smaller cache instead of stopping, and setup warns about a page file under 4 GB (issue #60). |
 | The first start takes minutes | It is reading 34-55 GB into RAM; the second start is faster while the files are in the OS cache. |
@@ -2175,7 +2175,7 @@ both and of neither were the same 128 tokens at 32K and parted at token 85 at 10
 | `the setup refuses --rope-scaling none for a past-trained context` | A context past the trained 262,144 needs the rotary angles rescaled (experimental rope scaling), and the setup will not configure one with the stock angles there. Let it pick (`START-HERE.bat --setup --context 393216` adds yarn and a covering factor), or pass `--rope-scaling linear` or `yarn` yourself. |
 | Slower than the tables | The monitor plugged into the GPU and other GPU programs take VRAM from the expert cache; RAM running below its rated speed (enable EXPO/XMP in the BIOS) slows the CPU half. |
 | `this server was started without the vision encoder` | The model was set up for text only: run setup again with `--vision gpu`. |
-| Setup puts the model on an old drive after you moved or reinstalled PolyStrata (#1070) | Setup remembers the data folder you used last in its settings file (`%APPDATA%\PolyStrata\settings.json` on Windows, `~/.config/strata/settings.json` on Linux; the `data_dir` entry) and uses it again. Choose another place with `--data-dir DIR` (model files, packs, MTP layer) or `--models-dir DIR` (the GGUF files only), or delete the `data_dir` line; `--gguf-dir DIR` uses GGUF files you already have without copying. To move a model, copy its folder and run setup with the new `--data-dir`. |
+| Setup puts the model on an old drive after you moved or reinstalled 4gbVramStrata (#1070) | Setup remembers the data folder you used last in its settings file (`%APPDATA%\4gbVramStrata\settings.json` on Windows, `~/.config/strata/settings.json` on Linux; the `data_dir` entry) and uses it again. Choose another place with `--data-dir DIR` (model files, packs, MTP layer) or `--models-dir DIR` (the GGUF files only), or delete the `data_dir` line; `--gguf-dir DIR` uses GGUF files you already have without copying. To move a model, copy its folder and run setup with the new `--data-dir`. |
 | A picture is refused or `cannot read the image` | The file is not a picture Pillow can open (JPEG, PNG, WebP, GIF, BMP, TIFF, AVIF work). |
 | Pictures are slow (3-30 s) | The encoder runs on the CPU: run setup again with `--vision gpu` (needs ~1.4 GB of VRAM). |
 | A request never finishes: "reading the prompt", GPU "100%" at low power | The GPU ran out of VRAM (engines before 0.1.9 could end with ~30 MiB free at large contexts). Run `START-HERE.bat` once to get engine 0.1.9 or newer; the log then says `... MiB of VRAM free with everything loaded` (a few hundred) and names the `--vram-reserve-mib` to add if it is low. |
@@ -2231,12 +2231,12 @@ The full story, with measurements, bottlenecks and what comes next: **[docs/pape
 
 ## Credits and licenses
 
-PolyStrata itself: [MIT](../LICENSE). The model files are not part of it; their licenses apply to them (below).
+4gbVramStrata itself: [MIT](../LICENSE). The model files are not part of it; their licenses apply to them (below).
 
 - Model: [Qwen/Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next) by the Qwen team; quantizations:
   [ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF).
   The Coder: [ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF](https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF)
-  (Apache-2.0 per its card); its support in PolyStrata came from @pjgmobile's PR #54.
+  (Apache-2.0 per its card); its support in 4gbVramStrata came from @pjgmobile's PR #54.
   Swift 1.5: [ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF)
   by UkisAI. Their licenses apply to the weights.
 - [llama.cpp / ggml](https://github.com/ggml-org/llama.cpp) (MIT): the i-quant formats, the GPU dot products and
@@ -2256,7 +2256,7 @@ PolyStrata itself: [MIT](../LICENSE). The model files are not part of it; their 
 config) starts the lightweight HTTP API without starting the native engine or the vision encoder. The first
 generation request, or `POST /load`, starts the vision encoder first when configured, then loads the engine through
 the existing reload path, including `before_load` and `min_free_vram_mib`. This also works with image requests:
-the load finishes before PolyStrata encodes the image. `POST /unload` stops both processes. Eager startup remains the
+the load finishes before 4gbVramStrata encodes the image. `POST /unload` stops both processes. Eager startup remains the
 default.
 
 `POST /v1/load` and `/v1/unload` are JSON control aliases for integrations, accepting `{}` or
@@ -2306,7 +2306,7 @@ first-token, prompt/output tokens and engine decode timing are shown separately.
 Both use the existing API-key check. The monitor retains the newest **100 requests in memory** until restart,
 with **262,144 characters per input/output/reasoning/response field** and visible truncation flags. The actual API
 responses are unaffected. Headers are not recorded, and the monitor key is kept in this tab's session storage.
-Treat request history as sensitive input/output when exposing PolyStrata on a network: set an API key as above.
+Treat request history as sensitive input/output when exposing 4gbVramStrata on a network: set an API key as above.
 The page uses relative URLs and works through the existing host binding or a reverse proxy.
 
 ### Prompt buffers: `bo` shares `emb` (#1454)

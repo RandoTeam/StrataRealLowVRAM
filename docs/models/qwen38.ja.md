@@ -74,7 +74,7 @@ NVIDIA：Q2_0 はエンジン 0.1.36、ほかの行は 0.1.26 で測定（回答
 - **[Swift 1.5](../MODELS.md#swift-15)：** 答える前に考える時間がずっと短いファインチューン版です。
   ほぼ同じ品質のまま、答えが早く返ってきます。
 - **[Unsloth UD-IQ4_XS](../MODELS.md#unsloth-ud-iq4_xs)：** Unsloth の約 4-bit 版で、品質は IQ3_S と UD-Q4_K_XL の間です。
-  ダウンロードは 94 GB。RAM が約 80 GB 未満だと、答えている間に PolyStrata がその一部を SSD から読むので遅くなります（NVMe SSD が有効です）。
+  ダウンロードは 94 GB。RAM が約 80 GB 未満だと、答えている間に 4gbVramStrata がその一部を SSD から読むので遅くなります（NVMe SSD が有効です）。
 - **[Unsloth UD-Q4_K_XL / UD-Q5_K_XL / UD-Q6_K_XL / Q8_0](../MODELS.md#unsloths-files-ud-iq4_xs-to-q8_0)：** 4〜8 ビットで、フルモデルにより近いモデルです
   （次のトークンが Q8_0 と一致する割合は 93〜95%）。すべてのエキスパートが RAM に収まる場合（UD-Q4_K_XL で約 88 GB、
   Q8_0 で約 136 GB）は高速です。RAM が足りない場合は回答の生成中に一部を SSD から読み込むため、大幅に遅くなります

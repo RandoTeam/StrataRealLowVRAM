@@ -3,7 +3,7 @@
 Volver a [README.es.md](../README.es.md)
 
 Los modelos como este suelen funcionar en servidores con cientos de gigabytes de memoria gráfica. Tu tarjeta gráfica
-tiene 8-32 GB. PolyStrata hace que el modelo quepa **repartiendo el trabajo por todo tu PC**. Piensa en una cocina: lo
+tiene 8-32 GB. 4gbVramStrata hace que el modelo quepa **repartiendo el trabajo por todo tu PC**. Piensa en una cocina: lo
 que usas todo el rato se queda en la encimera, y el resto espera en la despensa.
 
 ## Qwen3.8-Flash-Next

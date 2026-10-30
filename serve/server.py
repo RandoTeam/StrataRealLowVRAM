@@ -97,7 +97,7 @@ def listen_problem(host: str, port: int, e: OSError) -> str:
     import errno
     code = getattr(e, "winerror", None) or e.errno
     if code in (errno.EADDRINUSE, 10048):
-        return (f"port {port} is already in use - is PolyStrata (or another server) already running? "
+        return (f"port {port} is already in use - is 4gbVramStrata (or another server) already running? "
                 f"Close it, or start this one with a different --port")
     what = e.strerror or str(e)
     if code in (10013, errno.EACCES):
@@ -742,7 +742,7 @@ class ConvCacheLog:
 
 
 def poly_engine(cfg: dict) -> bool:
-    """The run config starts strata-poly (the engine of the models PolyStrata adds), not the Strata project's."""
+    """The run config starts strata-poly (the engine of the models 4gbVramStrata adds), not the Strata project's."""
     return Path(str(cfg.get("exe") or "")).stem.lower() in ("strata-poly", "strata-glm")   # its name before 10-05
 
 
@@ -871,7 +871,7 @@ class StrataEngine:
         if cpus and hasattr(os, "sched_setaffinity"):    # replicas: this engine's own physical cores (serve/replicas.py)
             pin["preexec_fn"] = lambda: os.sched_setaffinity(0, cpus)
         spawned_at = time.monotonic()
-        self.proc = popen("the PolyStrata engine", [exe, "--serve", *args], cwd=cwd, stdin=subprocess.PIPE,
+        self.proc = popen("the 4gbVramStrata engine", [exe, "--serve", *args], cwd=cwd, stdin=subprocess.PIPE,
                           stdout=subprocess.PIPE, stderr=self.log, text=True, encoding="utf-8", bufsize=1, env=env, **pin)
         contain(self.proc)                               # ends with the server, however it ends (Windows)
         # the READY read has a timeout (#1317): the lines come from a thread, up to READY, so the rest of the stream
@@ -2266,7 +2266,7 @@ class StrataEngine:
             try:
                 self.proc.wait(timeout=20)
             except subprocess.TimeoutExpired:
-                raise EngineStuck("PolyStrata is still releasing GPU/RAM; retry unloading after it exits") from None
+                raise EngineStuck("4gbVramStrata is still releasing GPU/RAM; retry unloading after it exits") from None
         except OSError:
             pass
         finally:
@@ -3216,7 +3216,7 @@ class Service:
         # #321: browser pages of these origins may call /v1/* (CORS; "*" = any page - only with an api_key that
         # matters); empty = no CORS headers at all, as before
         self.cors_origins: list[str] = []
-        # #321: origins that count as PolyStrata's own page for /settings and MCP tools, e.g. the web app reached through a
+        # #321: origins that count as 4gbVramStrata's own page for /settings and MCP tools, e.g. the web app reached through a
         # reverse proxy or tunnel whose Host differs ("https://strata.example.com"); never a wildcard
         self.trusted_origins: list[str] = []
         # DNS rebinding: extra Host names this server answers to (the config's allowed_hosts, $STRATA_ALLOWED_HOSTS;
@@ -5406,7 +5406,7 @@ def openai_chunks(svc: Service, req: dict, ids, thinking, tools, max_new, cancel
     cid, created = "chatcmpl-" + uuid.uuid4().hex[:24], int(time.time())
     model = svc.model_for(req)
     # llama.cpp's flag, and its default: a client that wants prompt progress asks for it, and nothing changes for one
-    # that does not.  PolyStrata already sends a keep-alive comment on every PP line, so this only fills that line in.
+    # that does not.  4gbVramStrata already sends a keep-alive comment on every PP line, so this only fills that line in.
     want_progress = bool(req.get("return_progress"))
 
     def chunk(delta, finish=None):
@@ -5795,7 +5795,7 @@ def make_handler(svc: Service):
                   f"answers to (add it to \"allowed_hosts\" in the config or STRATA_ALLOWED_HOSTS, or set an API key)",
                   flush=True)
             self._json(403, {"error": {"type": "forbidden", "message":
-                             f"Host {host!r} is not allowed (DNS rebinding protection). Reaching PolyStrata under this "
+                             f"Host {host!r} is not allowed (DNS rebinding protection). Reaching 4gbVramStrata under this "
                              f"name on purpose? Add it to \"allowed_hosts\" in the config (strata-<model>.json) or to "
                              f"the STRATA_ALLOWED_HOSTS environment variable, or set an API key (\"api_key\"), which "
                              f"turns this check off"}})
@@ -6051,7 +6051,7 @@ def make_handler(svc: Service):
                         busy = bool(svc.status.get("busy"))
                         # llama.cpp's name for what the slot's context holds: the running request's prompt size,
                         # kept after it ends (the conversation cache carries it on).  A front-end's context meter
-                        # divides it by n_ctx; without the key it reads 0 % against PolyStrata forever (#562).
+                        # divides it by n_ctx; without the key it reads 0 % against 4gbVramStrata forever (#562).
                         in_use = int(svc.status.get("prompt_tokens") or 0)
                     if getattr(svc.engine, "batch", 0) and hasattr(svc.engine, "slots_view"):
                         # --batch: one entry per slot (the same view /metrics has), not one for the whole engine
@@ -6100,7 +6100,7 @@ def make_handler(svc: Service):
                 return
             if path in ("/unload", "/load") and not self._control_body():
                 return
-            # JSON from PolyStrata's own page only, as /settings: else a plain form POST from any site unloads the model
+            # JSON from 4gbVramStrata's own page only, as /settings: else a plain form POST from any site unloads the model
             if path in ("/unload", "/load") and not self._own_page("the model can be loaded or unloaded"):
                 return
             # the same for the slot files: else any site could overwrite a saved conversation or replace the live one
@@ -6317,7 +6317,7 @@ def make_handler(svc: Service):
                 props["model_path"] = svc.engine.model_path
             version = getattr(svc.engine, "info", {}).get("version")
             if version:
-                props["build_info"] = "PolyStrata " + str(version)
+                props["build_info"] = "4gbVramStrata " + str(version)
             self._json(200, props)
 
         def _control_body(self) -> bool:
@@ -6406,7 +6406,7 @@ def make_handler(svc: Service):
                 self._json(415, {"error": {"message": "send application/json"}})
                 return False
             if self._foreign_origin():
-                self._json(403, {"error": {"message": f"{what} only from PolyStrata's own page (or an origin in the "
+                self._json(403, {"error": {"message": f"{what} only from 4gbVramStrata's own page (or an origin in the "
                                                       f"config's trusted_origins)"}})
                 return False
             return True
@@ -6423,7 +6423,7 @@ def make_handler(svc: Service):
             self._json(200, runconfig.view(cfg, svc.config_path))
 
         def _config_post(self):
-            """#564: change a few documented keys of the run config - JSON from PolyStrata's own page only, as
+            """#564: change a few documented keys of the run config - JSON from 4gbVramStrata's own page only, as
             /settings (the key is checked before); every other key of the file stays as it is."""
             body = self._body()
             if not self._own_page("the run config can be changed"):
@@ -6461,7 +6461,7 @@ def make_handler(svc: Service):
             """A web page of another origin must not have a file on this computer read as an image.  Without an
             api_key, _foreign_page refuses such a page unless cors_origins lets it in - and a page cors_origins lets
             in (["*"]: every page) could name any file and, CORS allowing, read what the model says about it.  data:
-            and http(s) images are the page's own to send; files come from PolyStrata's own page, a trusted origin or a
+            and http(s) images are the page's own to send; files come from 4gbVramStrata's own page, a trusted origin or a
             client that is no browser.  ValueError (a 400)."""
             if self._foreign_origin() and any(not src.startswith(("data:", "http://", "https://"))
                                               for src in images_of(messages)):
@@ -7574,7 +7574,7 @@ def default_model_name(cfg: dict) -> str:
 
 def shutdown(svc: Service, httpd, hub=None) -> None:
     """Ctrl+C / SIGTERM: stop serving, then end the engine and the vision encoder that run now - after a switch not the
-    ones the server started with (#37) - and the MCP servers PolyStrata started."""
+    ones the server started with (#37) - and the MCP servers 4gbVramStrata started."""
     engine, vision = svc.engine, svc.vision
     closers = [httpd.shutdown, getattr(engine, "close", None), vision.shutdown if vision else None,
                hub.close if hub is not None else None]
@@ -7784,7 +7784,7 @@ def main() -> int:
         print(f"[strata] starting {len(hub.servers)} MCP server{'s' * (len(hub.servers) != 1)} for the web app's "
               f"chat: {', '.join(hub.servers)}", flush=True)
         hub.start()
-        atexit.register(hub.close)                      # the servers PolyStrata started end with it
+        atexit.register(hub.close)                      # the servers 4gbVramStrata started end with it
     svc.start_warm()                                    # before serve(): a first request finds its stop event
     httpd = serve(svc, host=a.host, port=a.port)
     svc.start_idle_unload()
@@ -7806,7 +7806,7 @@ def main() -> int:
                   "to the config (clients send it as their API key; the web page asks for it)", flush=True)
         if os.name == "nt":
             print("       nothing arrives? Windows Firewall blocks it until allowed: accept its prompt for Python, or run "
-                  "in an admin PowerShell:\n         New-NetFirewallRule -DisplayName \"PolyStrata " + str(a.port) + "\" "
+                  "in an admin PowerShell:\n         New-NetFirewallRule -DisplayName \"4gbVramStrata " + str(a.port) + "\" "
                   "-Direction Inbound -Protocol TCP -LocalPort " + str(a.port) + " -Action Allow -Profile Private\n"
                   "       (and set this network to Private in Windows' network settings)", flush=True)
     if a.open and cfg.get("open_browser") is not False:   # #609: the config's "open_browser": false wins (an older

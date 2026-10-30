@@ -1,4 +1,4 @@
-"""tools/image/qimage.py - Qwen-Image-2.1-Turbo for PolyStrata's image endpoint: stable-diffusion.cpp (sd-cli) at a pinned
+"""tools/image/qimage.py - Qwen-Image-2.1-Turbo for 4gbVramStrata's image endpoint: stable-diffusion.cpp (sd-cli) at a pinned
 commit, built for this PC's GPU, and the model's three files at pinned Hugging Face revisions.
 
 setup.py (--images qwen-image) and tools/image/install.py use these pieces; serve/images.py runs the result.
@@ -195,7 +195,7 @@ def image_config(backend: str, quant: str, exe: Path, models_dir: Path, *, uma: 
            "llm": str(local_path(models_dir, "llm")), "args": default_args(backend), "gpu_policy": policy,
            "uma": bool(uma), "sd_cpp": SD_CPP_COMMIT[:7]}
     if backend in NATIVE_BACKENDS:
-        cfg["native"] = bool(native)       # PolyStrata's DiT runner (--model-args qwen_image_2_1_native=1)
+        cfg["native"] = bool(native)       # 4gbVramStrata's DiT runner (--model-args qwen_image_2_1_native=1)
     if gpu is not None:
         cfg["gpu"] = gpu
     if lib_dirs:

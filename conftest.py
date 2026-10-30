@@ -1,5 +1,5 @@
 """pytest: setup.py's data-folder migration (#198) saves the data folder it settled on in the user's settings file
-(%APPDATA%\PolyStrata\settings.json, ~/.config/polystrata/settings.json) and can MOVE model files from a folder it finds there.
+(%APPDATA%\4gbVramStrata\settings.json, ~/.config/polystrata/settings.json) and can MOVE model files from a folder it finds there.
 A test that reaches it must never touch the real file, so the whole session gets its own config home."""
 import os
 import tempfile

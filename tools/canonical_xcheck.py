@@ -42,7 +42,7 @@ import gguf_reader as G                                    # noqa: E402
 from gguf_writer import dequantize_q2_0                    # noqa: E402
 from load import _dequant_flat                             # noqa: E402
 
-# default: $STRATA_SHARD1, else the development layout (<PolyStrata>/Q2_0 beside <PolyStrata>/Public/Engine)
+# default: $STRATA_SHARD1, else the development layout (<4gbVramStrata>/Q2_0 beside <4gbVramStrata>/Public/Engine)
 SHARD1 = os.environ.get("STRATA_SHARD1") or os.path.join(os.path.dirname(os.path.dirname(REPO)), "Q2_0",
                                                           "Qwen3.8-Flash-Next-GSQ-RCO-Q2_0-00001-of-00002.gguf")
 

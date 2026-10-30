@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check that no code reachable on an AVX2-only CPU can contain wider-ISA instructions (#795).
 
-PolyStrata compiles a few translation units for AVX-512 (expert.cpp, iq_avx512.cpp) and some for AVX2 + AVX-VNNI
+4gbVramStrata compiles a few translation units for AVX-512 (expert.cpp, iq_avx512.cpp) and some for AVX2 + AVX-VNNI
 (q2_avx2.cpp, iq_avx2.cpp); the engine picks them at run time.  Two things go wrong when that is done carelessly,
 and both end in an illegal instruction on the CPU that lacks the feature:
 

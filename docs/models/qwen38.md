@@ -75,11 +75,11 @@ sizes are faster. Larger sizes are a bit smarter.
 - **[Swift 1.5](../MODELS.md#swift-15):** a fine-tune that thinks for a much shorter time before it answers. You
   get the answer sooner, at about the same quality.
 - **[Unsloth UD-IQ4_XS](../MODELS.md#unsloth-ud-iq4_xs):** Unsloth's ~4-bit version, between IQ3_S and
-  UD-Q4_K_XL in quality. A 94 GB download. With less than ~80 GB of RAM, PolyStrata reads part of it from the SSD
+  UD-Q4_K_XL in quality. A 94 GB download. With less than ~80 GB of RAM, 4gbVramStrata reads part of it from the SSD
   while it answers, so it is slower there (an NVMe SSD helps).
 - **[Unsloth UD-Q4_K_XL, UD-Q5_K_XL, UD-Q6_K_XL and Q8_0](../MODELS.md#unsloths-files-ud-iq4_xs-to-q8_0):**
   4- to 8-bit, closer to the full model (93-95% the same next token as Q8_0). Fast where every expert fits in RAM
-  (~88 GB for UD-Q4_K_XL up to ~136 GB for Q8_0); with less RAM PolyStrata reads part of them from the SSD while it
+  (~88 GB for UD-Q4_K_XL up to ~136 GB for Q8_0); with less RAM 4gbVramStrata reads part of them from the SSD while it
   answers, which is much slower (7-8.5 tokens/s for UD-Q4_K_XL on a 64 GB PC).
 - **[OrcaRouter's Uncensored IQ3_XXS](../MODELS.md#orcarouter-uncensored-iq3_xxs):** you set it up by hand. It is
   not in the installer's menu.

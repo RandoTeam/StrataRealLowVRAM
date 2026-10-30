@@ -1,4 +1,4 @@
-// serve/web/app.js - the PolyStrata web app: Chat, Monitor, About. No framework, no network beyond this server.
+// serve/web/app.js - the 4gbVramStrata web app: Chat, Monitor, About. No framework, no network beyond this server.
 // The Monitor tab rebuilds PR #22's dashboard idea (code-martin) on the server's own /metrics.
 "use strict";
 

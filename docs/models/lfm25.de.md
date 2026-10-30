@@ -36,10 +36,10 @@ Gemessen wie [Qwen3.6-35B-A3B](qwen36.de.md), auf denselben zwei PCs, mit einem 
 Auf dem Laptop füllt Q8_0 die 32 GB RAM, deshalb ist es dort langsam; die Workstation hält jede Größe ganz.
 
 Auf dem Laptop las llama.cpp b11540 mit `--n-cpu-moe 25`, der besten der dort ausprobierten Einstellungen, einen
-Prompt von 32,000 Tokens mit 530 Tokens/s und schrieb danach mit 53; PolyStrata las ihn mit 3,540 und schrieb mit 71
+Prompt von 32,000 Tokens mit 530 Tokens/s und schrieb danach mit 53; 4gbVramStrata las ihn mit 3,540 und schrieb mit 71
 bis 73. Auf der Workstation las llama-bench 29,816 Tokens mit 13,300 Tokens/s bei llama.cpps Standard-Batch von 512
-und mit 23,600 bei 2,048, so schnell wie PolyStrata, und schrieb Token für Token mit 455 Tokens/s, nach diesem Prompt
-mit 369; PolyStrata schreibt mit 452 und 387. Einen Prompt von etwa 124,000 Tokens in einem Kontext von 128K las und
+und mit 23,600 bei 2,048, so schnell wie 4gbVramStrata, und schrieb Token für Token mit 455 Tokens/s, nach diesem Prompt
+mit 369; 4gbVramStrata schreibt mit 452 und 387. Einen Prompt von etwa 124,000 Tokens in einem Kontext von 128K las und
 beantwortete die Workstation in 8,7 Sekunden; der Laptop las ihn in 45 Sekunden.
 
 ## Was du brauchst

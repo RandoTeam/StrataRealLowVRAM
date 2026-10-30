@@ -1,6 +1,6 @@
 """serve/runconfig.py - #564: the web page's Settings view of the run config (strata-<model>.json).
 
-A short list of documented keys can be read and changed from PolyStrata's own page (GET / POST /config).  Everything
+A short list of documented keys can be read and changed from 4gbVramStrata's own page (GET / POST /config).  Everything
 else in the file - the keys setup writes, the network and security keys (host, api_key, cors_origins,
 trusted_origins, allowed_hosts), the MCP servers and before_load (which run programs), sampling keys not listed
 here - is kept as it is: a change touches only the keys it names (as setup run again keeps the user's keys, #629).

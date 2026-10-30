@@ -37,7 +37,7 @@ MAGIC, VERSION = b"STRP", 1
 def read_profile(path, n_expert=N_EXPERT):
     blob = Path(path).read_bytes()
     if blob[:4] != MAGIC:
-        raise SystemExit(f"{path}: not a PolyStrata profile")
+        raise SystemExit(f"{path}: not a 4gbVramStrata profile")
     ver, nl, ne, slots, n = struct.unpack_from("<5I", blob, 4)
     if (nl, ne) != (N_LAYER, n_expert):
         raise SystemExit(f"{path}: {nl}x{ne}, not {N_LAYER}x{n_expert}")

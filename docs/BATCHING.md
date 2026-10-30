@@ -1,6 +1,6 @@
 # Several requests at once (batch slots)
 
-By default PolyStrata serves **one request at a time**: the others wait in the server's queue. With `"parallel": N`
+By default 4gbVramStrata serves **one request at a time**: the others wait in the server's queue. With `"parallel": N`
 (the engine's `--batch N`, also spelled `--slots N`) the engine keeps up to N conversations open and decodes them
 **together**: every verify window then carries one token of each conversation, so the dense weights, the shared
 expert, the head and every routed expert two conversations share are read once per window for all of them.

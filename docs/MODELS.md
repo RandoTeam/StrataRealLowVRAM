@@ -1,6 +1,6 @@
 # Which model? Sizes, versions and what fits
 
-This page is about [Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next), which PolyStrata runs in
+This page is about [Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next), which 4gbVramStrata runs in
 several **sizes** (the same model, compressed more or less) and several **versions** (the original, a coding
 version, a fine-tune). The installer recommends one for your PC; this page explains the choice. The other model,
 GLM 5.3 Flash, has a page of its own: [GLM.md](GLM.md). Back to the [README](../README.md).
@@ -53,7 +53,7 @@ A card with more VRAM is faster, because more of the model fits on the GPU: an R
 RX 9060 XT, RX 6900 XT) are in [AMD_HIP.md](AMD_HIP.md#rdna4-gfx1201).
 
 Every PC is different: `START-HERE.bat --calibrate` measures a few engine settings on yours and keeps the fastest
-(about 15-30 minutes, longer on a slow card; on the PC above it made the Coder 7% faster; NVIDIA cards for now). Measured PolyStrata on your own
+(about 15-30 minutes, longer on a slow card; on the PC above it made the Coder 7% faster; NVIDIA cards for now). Measured 4gbVramStrata on your own
 PC? See [Community benchmark results](COMMUNITY_BENCHMARKS.md) for a report template and how to share your results
 in a pull request.
 

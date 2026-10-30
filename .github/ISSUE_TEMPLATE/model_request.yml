@@ -1,5 +1,5 @@
 name: Model request
-description: Ask for a model PolyStrata does not run yet
+description: Ask for a model 4gbVramStrata does not run yet
 title: "[Model]: "
 labels: ["enhancement"]
 body:
@@ -49,4 +49,4 @@ body:
     id: why
     attributes:
       label: Why this model?
-      description: Benchmarks against a model PolyStrata already runs, or what you would use it for.
+      description: Benchmarks against a model 4gbVramStrata already runs, or what you would use it for.

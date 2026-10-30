@@ -1,7 +1,7 @@
-# How does PolyStrata work?
+# How does 4gbVramStrata work?
 
 Models like Qwen3.8-Flash-Next normally run on servers with hundreds of gigabytes of graphics memory. Your graphics
-card has 12-24 GB. PolyStrata makes it fit by **sharing the work across your whole PC** - the same idea as a kitchen, where
+card has 12-24 GB. 4gbVramStrata makes it fit by **sharing the work across your whole PC** - the same idea as a kitchen, where
 the things you use all the time stay on the counter and the rest waits in the pantry. Back to the
 [README](../README.md#how-does-it-work).
 
@@ -49,7 +49,7 @@ This works the same on NVIDIA (CUDA) and AMD (HIP) cards: the same engine, compi
 
 **Long texts are read in big pieces** (up to 8,192 tokens - pieces of words - at a time), which is why a long
 document or code base is read at over 1,000 tokens per second. The experts of the next layer stream to the GPU over
-PCIe while the current layer's attention runs. After the first message, PolyStrata keeps the conversation and reads only
+PCIe while the current layer's attention runs. After the first message, 4gbVramStrata keeps the conversation and reads only
 what is new, so follow-ups start in seconds.
 
 ## More
@@ -59,8 +59,8 @@ The [details](DETAILS.md#how-it-works) explain every part and its numbers, and t
 
 ## Credits
 
-- PolyStrata is built on [Strata](https://github.com/Niko1221/Strata) by Niko1221 and its contributors. The Qwen
-  engine, the installer, the server and the web app are that project's work. PolyStrata adds the engine for GLM 5.3
+- 4gbVramStrata is built on [Strata](https://github.com/Niko1221/Strata) by Niko1221 and its contributors. The Qwen
+  engine, the installer, the server and the web app are that project's work. 4gbVramStrata adds the engine for GLM 5.3
   Flash ([GLM.md](GLM.md)), whose file is from
   [neuralll](https://huggingface.co/neuralll/GLM-5.3-Flash-GSQ-RCO-3.0bit-Q4Kattn-GGUF).
 - Model: [Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next) by the Qwen team; compressed versions by
@@ -75,7 +75,7 @@ The [details](DETAILS.md#how-it-works) explain every part and its numbers, and t
 
 ## License
 
-PolyStrata is open source under the [MIT License](../LICENSE). A few parts carry their own licenses: `third_party/ggml`
+4gbVramStrata is open source under the [MIT License](../LICENSE). A few parts carry their own licenses: `third_party/ggml`
 (MIT, llama.cpp / ggml), the web app's font (SIL Open Font License 1.1) and the experimental speed projection's
 vector in `data/experimental-speed-projection` (Qwen Community License 1.0, from the model's activations). The
 models are not part of this repository; each model's own license applies to its files.

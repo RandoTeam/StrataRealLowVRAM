@@ -6,7 +6,7 @@
 
 ## 速度有多快？
 
-由 PolyStrata 在两台电脑上测得，用一段短对话和一个 3 万到 3.2 万个 token 的提示：左边是一台 8 GB 显卡的笔记本，显卡放不下的专家由处理器来算；右边是一台工作站，显卡放得下整个模型。
+由 4gbVramStrata 在两台电脑上测得，用一段短对话和一个 3 万到 3.2 万个 token 的提示：左边是一台 8 GB 显卡的笔记本，显卡放不下的专家由处理器来算；右边是一台工作站，显卡放得下整个模型。
 
 <table>
 <tr><th>NVIDIA：RTX 4070 Laptop（8 GB）、Core i7-14700HX、32 GB 内存</th><th>NVIDIA：RTX 5090（32 GB）、Xeon Platinum 8470Q（25 vCPU）、120 GB 内存</th></tr>

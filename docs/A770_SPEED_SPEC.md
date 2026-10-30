@@ -3,7 +3,7 @@
 ## Objective and completion criteria
 
 Achieve **at least 20 generated tokens/second in decode on the local Intel Arc
-A770 running PolyStrata**, with reproducible benchmark evidence and correct output.
+A770 running 4gbVramStrata**, with reproducible benchmark evidence and correct output.
 This specification describes the next optimization campaign; it does not claim
 that the target has already been met.
 
@@ -30,7 +30,7 @@ Completion requires:
 
 ## Verified baseline and hardware
 
-- Worktree: a local PolyStrata v0.1.40.3 checkout.
+- Worktree: a local 4gbVramStrata v0.1.40.3 checkout.
 - Current source baseline: `501f675727ae8a54abed3ec467de1cbfbecd03ea`, branch
   `a770-speed-upstream`, based on upstream `main` at `fb58e0d` when last checked.
 - Existing upstream work: correctness PR #1602 and draft performance PR #1710.
@@ -489,7 +489,7 @@ Arcint reference checkout: a local temporary checkout, reviewed revision
 Arcint's headline A770 coder numbers use a different model/configuration.
 Its Flash-Next results are mainly on a B60. Treat those numbers as evidence for
 candidate techniques, not predictions for this A770 workload. Several arcint
-ideas already originated in PolyStrata; audit existing equivalents before porting.
+ideas already originated in 4gbVramStrata; audit existing equivalents before porting.
 
 ## Execution record
 

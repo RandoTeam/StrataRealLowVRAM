@@ -6,7 +6,7 @@ Voltar para [README.pt-BR.md](../../README.pt-BR.md)
 
 ## Qual é a velocidade?
 
-Medido para o PolyStrata numa estação de trabalho, com uma conversa curta e um prompt de 29K tokens.
+Medido para o 4gbVramStrata numa estação de trabalho, com uma conversa curta e um prompt de 29K tokens.
 
 <table>
 <tr><th>NVIDIA: RTX 5090 (32 GB), Xeon Platinum 8470Q (25 vCPU), 120 GB de RAM</th></tr>

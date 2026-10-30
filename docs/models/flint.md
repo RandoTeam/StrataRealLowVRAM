@@ -35,12 +35,12 @@ experts from the SSD, which is what makes them slow there, and the installer tak
 workstation's card holds UD-Q4_K_XL and UD-Q3_K_XL whole; UD-Q6_K_XL was not run there.
 
 On the laptop llama.cpp with `--fit on`, the fastest of the settings tried there, read a prompt of 29,442 tokens at
-390 tokens/s and wrote after it at 35; PolyStrata read it at 1,950 to 2,010 and wrote at 49 to 52
+390 tokens/s and wrote after it at 35; 4gbVramStrata read it at 1,950 to 2,010 and wrote at 49 to 52
 ([the runs](../../bench/results/2026-10-24-laptop-flint-llamacpp-a37cc46/README.md)).
 
 On the workstation llama-bench of llama.cpp read 29,816 tokens at 7,790 tokens/s with its default batch of 512 and
-at 12,470 with 2,048, where PolyStrata reads at 12,910-12,940; one token at a time llama.cpp wrote at 222 tokens/s and at
-188 after that prompt, PolyStrata at 249-256 and 212-213. A prompt of 124,122 tokens in a 128K context was read and
+at 12,470 with 2,048, where 4gbVramStrata reads at 12,910-12,940; one token at a time llama.cpp wrote at 222 tokens/s and at
+188 after that prompt, 4gbVramStrata at 249-256 and 212-213. A prompt of 124,122 tokens in a 128K context was read and
 answered in 20 seconds, and the three facts hidden in it were found.
 
 ## What you need

@@ -63,7 +63,7 @@ following decode rates:
 | 0.25 | 117 | 124 |
 | 0.10 | 112 | 118 |
 
-## Measured in PolyStrata (2026-10-13)
+## Measured in 4gbVramStrata (2026-10-13)
 
 The numbers above are the fork author's, on his RTX 5090 and 128 GB. These were measured here, on the ready-made GPTQ
 pack (`--family nvfp4 --model NVFP4`).

@@ -1,6 +1,6 @@
 # GLM 5.3 Flash (`strata-poly`)
 
-PolyStrata adds a second engine, `strata-poly`, that runs GLM 5.3 Flash. It sits beside `strata`, which still runs
+4gbVramStrata adds a second engine, `strata-poly`, that runs GLM 5.3 Flash. It sits beside `strata`, which still runs
 Qwen3.8-Flash-Next as before. The server, the web app and the API are the same for both: a run config names the
 engine it starts.
 
@@ -43,7 +43,7 @@ and 37 with `-ub 2048` and `-ub 4096`. A larger batch reads a prompt faster ther
 the tuned runs end where the stock one did. On that machine the engine of 2f9d0e4d read the two prompts at 629 to
 634 and 799 to 802 tokens/s and wrote 42 to 53 tokens/s after them with the draft block, 44 to 48 without.
 
-The README's row for 3.0BIT is PolyStrata's own benchmark through the server, the test every model of this engine
+The README's row for 3.0BIT is 4gbVramStrata's own benchmark through the server, the test every model of this engine
 gets ([BACKENDS.md](BACKENDS.md#a-prompt-of-30000-tokens)), with the engine of the ready-made release: a short chat
 written at 59 to 66 tokens/s, and a prompt of 29,154 tokens read whole at 820 to 824, with the first token after
 36 s and the answer after it written at 62 to 64. The build before read a prompt of 28,354 tokens there at 784 to
@@ -119,7 +119,7 @@ draft block, 2.8 GB, once for every size that needs it. The web app is at
 
 On the test machine, with the file already on the disk, this took about five minutes.
 
-Setup writes the run config `strata-glm-3.0bit.json` and `run-glm-3.0bit.sh` into the PolyStrata folder, the engine into
+Setup writes the run config `strata-glm-3.0bit.json` and `run-glm-3.0bit.sh` into the 4gbVramStrata folder, the engine into
 `engine-poly/`, and the tokenizer and the expert profile into the data folder. The profile starts as the counts in
 `data/expert-profile-glm.txt`, which come from the test runs here, and the engine updates it after an answer, every
 10 seconds at most, and when it stops.
@@ -147,7 +147,7 @@ Then write a run config, `glm.json`:
 ```json
 {
   "exe": "build/strata-poly",
-  "cwd": "/path/to/PolyStrata",
+  "cwd": "/path/to/4gbVramStrata",
   "args": ["--model", "/models/GLM-5.3-Flash-GSQ-RCO-3.0bit-q4kattn.gguf",
            "--max-context", "32768",
            "--expert-profile", "glm.profile",

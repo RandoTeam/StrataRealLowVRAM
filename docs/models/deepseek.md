@@ -6,7 +6,7 @@ Back to [README.md](../../README.md)
 
 ## How fast is it?
 
-Measured for PolyStrata on the same workstation as [GLM 5.3 Flash](glm.md), with a short chat and a 30K-token prompt.
+Measured for 4gbVramStrata on the same workstation as [GLM 5.3 Flash](glm.md), with a short chat and a 30K-token prompt.
 
 <table>
 <tr><th>NVIDIA: RTX 5090 (32 GB), Xeon Platinum 8470Q (25 vCPU), 120 GB RAM</th></tr>

@@ -6,7 +6,7 @@
 
 ## どのくらい速い？
 
-PolyStrata が[GLM 5.3 Flash](glm.ja.md) と同じワークステーションで、短いチャットと 30K トークンのプロンプトで測った値です。
+4gbVramStrata が[GLM 5.3 Flash](glm.ja.md) と同じワークステーションで、短いチャットと 30K トークンのプロンプトで測った値です。
 
 <table>
 <tr><th>NVIDIA: RTX 5090 (32 GB), Xeon Platinum 8470Q (25 vCPU), 120 GB RAM</th></tr>

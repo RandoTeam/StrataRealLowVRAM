@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PolyStrata from a terminal: which models are installed, a chat with one of them, and a benchmark.
+"""4gbVramStrata from a terminal: which models are installed, a chat with one of them, and a benchmark.
 
     python polystrata.py --list-models
     python polystrata.py --model <name>                chat with it; /model in the chat changes it
@@ -42,7 +42,7 @@ class Server:
                 raise SystemExit(f"polystrata: {out.get('error', {}).get('message', 'the server did not load the model')}")
             return
         if code:
-            raise SystemExit(f"polystrata: port {port} answers, but not as PolyStrata; use --port")
+            raise SystemExit(f"polystrata: port {port} answers, but not as 4gbVramStrata; use --port")
         print(f"starting {entry['id']} on port {port} (a first start takes a minute or two) ...", flush=True)
         out = subprocess.DEVNULL if quiet else None
         self.child = subprocess.Popen([sys.executable, str(ROOT / "serve" / "server.py"), "--engine", "strata",

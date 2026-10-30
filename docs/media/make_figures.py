@@ -1,4 +1,4 @@
-"""docs/media/make_figures.py - the README's "How does it work?" illustrations, in the PolyStrata app's style: its colors
+"""docs/media/make_figures.py - the README's "How does it work?" illustrations, in the 4gbVramStrata app's style: its colors
 (serve/web/tokens.css), its icons (serve/web/sprite.svg) and its font (Outfit, embedded, SIL OFL 1.1).  Light and dark
 follow the reader's system setting.
 
@@ -47,7 +47,7 @@ text,.ink{fill:#eef1f3}.bg{fill:#0e1113}.card{fill:#161a1d;stroke:#2a3036}.soft{
 MODELS = {
     "": dict(
         head="The model is made of 24,576 small specialists - “experts”.",
-        sub=("For each word it writes, it asks only 10 of them. PolyStrata keeps the busy ones",
+        sub=("For each word it writes, it asks only 10 of them. 4gbVramStrata keeps the busy ones",
              "on your graphics card and the rest in RAM - so it runs on a normal PC."),
         at_work=(10, "10 at work for one word"),
         gpu=("Small but very fast: 12-24 GB",
@@ -66,7 +66,7 @@ MODELS = {
     ),
     "glm": dict(
         head="The model is made of 12,096 small specialists - “experts”.",
-        sub=("Each word needs only 8 of the 288 in a layer. PolyStrata keeps the busy ones",
+        sub=("Each word needs only 8 of the 288 in a layer. 4gbVramStrata keeps the busy ones",
              "on your graphics card and the rest in RAM - so one PC runs it, not a server."),
         at_work=(8, "8 of a layer's 288 at work"),
         gpu=("It has run on a 32 GB card",
@@ -76,7 +76,7 @@ MODELS = {
              ["Holds the other ~9,600 experts.", "When a word needs one of", "them, the CPU does it - at once"],
              "the experts the card lacks", 18),
         ssd=("The model's file: 79-114 GB",
-             ["PolyStrata uses the file where", "it is: no second copy. A start", "takes seconds once it is in RAM"],
+             ["4gbVramStrata uses the file where", "it is: no second copy. A start", "takes seconds once it is in RAM"],
              "read once, at the first start", (0, 1, 2, 3, 4, 5)),
         guess=("A block of the model made for guessing proposes the next words. The model checks all the "
                "guesses in one go",
@@ -85,7 +85,7 @@ MODELS = {
     ),
     "qwen36": dict(
         head="The model is made of 10,240 small specialists - “experts”.",
-        sub=("Each word needs only 8 of the 256 in a layer. PolyStrata keeps the busy ones",
+        sub=("Each word needs only 8 of the 256 in a layer. 4gbVramStrata keeps the busy ones",
              "on your graphics card and the rest in RAM - so it runs on a normal PC."),
         at_work=(8, "8 of a layer's 256 at work"),
         gpu=("8 GB or more; 24 GB holds all",
@@ -95,7 +95,7 @@ MODELS = {
              ["Holds the experts the card", "lacks. When a word needs one,", "the CPU does it - at once"],
              "the experts the card lacks", 18),
         ssd=("The model's file: 13-23 GB",
-             ["PolyStrata uses the file where", "it is: no second copy, and no", "lookup table to build"],
+             ["4gbVramStrata uses the file where", "it is: no second copy, and no", "lookup table to build"],
              "read once, at the first start", (0, 1, 2, 3, 4, 5)),
         guess=("The model's own draft block, which is in its file, guesses the next words. The model checks all "
                "the guesses in one go",
@@ -104,7 +104,7 @@ MODELS = {
     ),
     "ornith": dict(
         head="The model is made of 10,240 small specialists - “experts”.",
-        sub=("Each word needs only 8 of the 256 in a layer. PolyStrata keeps the busy ones",
+        sub=("Each word needs only 8 of the 256 in a layer. 4gbVramStrata keeps the busy ones",
              "on your graphics card and the rest in RAM - so it runs on a normal PC."),
         at_work=(8, "8 of a layer's 256 at work"),
         gpu=("8 GB or more; 24 GB holds all",
@@ -114,7 +114,7 @@ MODELS = {
              ["Holds the experts the card", "lacks. When a word needs one,", "the CPU does it - at once"],
              "the experts the card lacks", 18),
         ssd=("The model's file: 14-24 GB",
-             ["PolyStrata uses the file where", "it is: no second copy, and no", "lookup table to build"],
+             ["4gbVramStrata uses the file where", "it is: no second copy, and no", "lookup table to build"],
              "read once, at the first start", (0, 1, 2, 3, 4, 5)),
         guess=("The model's own draft block, which is in its file, guesses the next words. The model checks all "
                "the guesses in one go",
@@ -123,7 +123,7 @@ MODELS = {
     ),
     "gemma4": dict(
         head="The model is made of 3,840 small specialists - “experts”.",
-        sub=("Each word needs only 8 of the 128 in a layer. PolyStrata keeps the busy ones",
+        sub=("Each word needs only 8 of the 128 in a layer. 4gbVramStrata keeps the busy ones",
              "on your graphics card and the rest in RAM - so it runs on a normal PC."),
         at_work=(8, "8 of a layer's 128 at work"),
         gpu=("8 GB or more; 16 GB holds all",
@@ -133,7 +133,7 @@ MODELS = {
              ["Holds the experts the card", "lacks. When a word needs one,", "the CPU does it - at once"],
              "the experts the card lacks", 18),
         ssd=("The model's file: 11-17 GB",
-             ["PolyStrata uses the file where", "it is: no second copy, and no", "lookup table to build"],
+             ["4gbVramStrata uses the file where", "it is: no second copy, and no", "lookup table to build"],
              "read once, at the first start", (0, 1, 2, 3, 4, 5)),
         guess=("Google's small draft model for it, a file of 0.5 GB, guesses the next words. The model checks all "
                "the guesses in one go",
@@ -143,7 +143,7 @@ MODELS = {
     # LFM2.5 guesses only from what the conversation repeats: it has no figure of its guesses
     "lfm25": dict(
         head="The model is made of 2,432 small specialists - “experts”.",
-        sub=("Each word needs only 4 of the 64 in a layer. PolyStrata keeps the busy ones",
+        sub=("Each word needs only 4 of the 64 in a layer. 4gbVramStrata keeps the busy ones",
              "on your graphics card and the rest in RAM - so it runs on a normal PC."),
         at_work=(4, "4 of a layer's 64 at work"),
         gpu=("8 GB or more; 24 GB holds 4-bit",
@@ -153,13 +153,13 @@ MODELS = {
              ["Holds the experts the card", "lacks. When a word needs one,", "the CPU does it - at once"],
              "the experts the card lacks", 18),
         ssd=("The model's file: 11-25 GB",
-             ["PolyStrata uses the file where", "it is: no second copy, and no", "lookup table to build"],
+             ["4gbVramStrata uses the file where", "it is: no second copy, and no", "lookup table to build"],
              "read once, at the first start", (0, 1, 2, 3, 4, 5)),
     ),
     # Flint has no draft block either
     "flint": dict(
         head="The model is made of 12,032 small specialists - “experts”.",
-        sub=("Each word needs only 6 of the 256 in a layer. PolyStrata keeps the busy ones",
+        sub=("Each word needs only 6 of the 256 in a layer. 4gbVramStrata keeps the busy ones",
              "on your graphics card and the rest in RAM - so it runs on a normal PC."),
         at_work=(6, "6 of a layer's 256 at work"),
         gpu=("8 GB or more; 32 GB holds 4-bit",
@@ -169,13 +169,13 @@ MODELS = {
              ["Holds the experts the card", "lacks. When a word needs one,", "the CPU does it - at once"],
              "the experts the card lacks", 18),
         ssd=("The model's file: 18-42 GB",
-             ["PolyStrata uses the file where", "it is: no second copy, and no", "lookup table to build"],
+             ["4gbVramStrata uses the file where", "it is: no second copy, and no", "lookup table to build"],
              "read once, at the first start", (0, 1, 2, 3, 4, 5)),
     ),
     # Kolibri 1 has no draft block either: its file has none, so it answers one token at a time
     "kolibri": dict(
         head="The model is made of 19,200 small specialists - “experts”.",
-        sub=("Each word needs only 6 of the 384 in a layer. PolyStrata keeps the busy ones",
+        sub=("Each word needs only 6 of the 384 in a layer. 4gbVramStrata keeps the busy ones",
              "on your graphics card and the rest in RAM - so one PC runs it, not a server."),
         at_work=(6, "6 of a layer's 384 at work"),
         gpu=("It has run on a 12 GB card",
@@ -185,7 +185,7 @@ MODELS = {
              ["Holds the other ~13,200 experts.", "When a word needs one of", "them, the CPU does it - at once"],
              "the experts the card lacks", 36),
         ssd=("The model's file: 29-48 GB",
-             ["PolyStrata uses the file where", "it is: no second copy, and no", "lookup table to build"],
+             ["4gbVramStrata uses the file where", "it is: no second copy, and no", "lookup table to build"],
              "read once, at the first start", (0, 1, 2, 3, 4, 5)),
     ),
 }
@@ -264,7 +264,7 @@ def how_it_works(m):
                 yy = cy + 190 + r * 17
                 b.append(rect(x + 20, yy, cw - 40, 11, 4, "warn" if r in m["ssd"][3] else "soft"))
             b.append(text(x + 20, cy + 306, dlabel, 12, 500, "muted"))
-    return svg(W, H, "".join(b), "How PolyStrata splits the model between your graphics card, RAM and SSD")
+    return svg(W, H, "".join(b), "How 4gbVramStrata splits the model between your graphics card, RAM and SSD")
 
 
 def guess_and_check(m):

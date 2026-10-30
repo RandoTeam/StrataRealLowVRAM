@@ -6,7 +6,7 @@ Voltar para [README.pt-BR.md](../../README.pt-BR.md)
 
 ## Qual é a velocidade?
 
-Medido pelo PolyStrata em dois PCs, com uma conversa curta e um prompt de 30,000 a 32,000 tokens: à esquerda um
+Medido pelo 4gbVramStrata em dois PCs, com uma conversa curta e um prompt de 30,000 a 32,000 tokens: à esquerda um
 notebook com uma placa de 8 GB, onde o processador calcula os experts que não cabem na placa, e à direita uma estação
 de trabalho cuja placa guarda o modelo inteiro.
 

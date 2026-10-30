@@ -5,10 +5,10 @@ Cyber-Tiel-Coder-35B-A3B, Qwen3.6-35B, Ornith 1.5 · 131K Context Engine · Free
 
 <p align="center"><img src="docs/media/speed_lowvram.svg" width="860" alt="4gbVramStrata tokens per second on 4 GB VRAM GPU"></p>
 
-<p align="center"><img src="docs/media/claude-code-demo.gif" width="820" alt="Claude Code in a terminal beside PolyStrata's API Monitor"><br>
+<p align="center"><img src="docs/media/claude-code-demo.gif" width="820" alt="Claude Code in a terminal beside 4gbVramStrata's API Monitor"><br>
 <sub>Claude Code on Cyber-Tiel-Coder-35B-A3B UD-Q4_K_XL, on a budget laptop with a 4 GB GeForce RTX 3050 card, in real time: runs locally with 131K context window.</sub></p>
 
-PolyStrata runs large AI models on a normal PC, models that usually need a server. They chat, write code and work
+4gbVramStrata runs large AI models on a normal PC, models that usually need a server. They chat, write code and work
 with your apps and coding agents. Nothing leaves your PC.
 
 It runs twelve models, on two engines:
@@ -16,7 +16,7 @@ It runs twelve models, on two engines:
 - **[Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next)** on an NVIDIA or AMD graphics card with
   12 GB or more, on Windows or Linux. It also reads pictures. Its engine is the Strata project's, unchanged.
 
-The other eleven run on an engine written for PolyStrata, with one NVIDIA card or [two](docs/MULTI_GPU.md#the-strata-poly-models): on Linux, and all but GLM 5.3 Flash and
+The other eleven run on an engine written for 4gbVramStrata, with one NVIDIA card or [two](docs/MULTI_GPU.md#the-strata-poly-models): on Linux, and all but GLM 5.3 Flash and
 DeepSeek V4 Flash on Windows too. They are experimental: they have run on one PC with a 32 GB card, and the eight smaller ones on a laptop
 with an 8 GB card as well.
 
@@ -43,7 +43,7 @@ with an 8 GB card as well.
 
 The server can change between installed models while it runs ([how](docs/BACKENDS.md#changing-the-model)).
 
-PolyStrata is built on [Strata](https://github.com/Niko1221/Strata) by Niko1221.
+4gbVramStrata is built on [Strata](https://github.com/Niko1221/Strata) by Niko1221.
 Why it is a separate repo, AMD and smaller cards, fine-tunes and other questions: [FAQ](docs/FAQ.md).
 
 ## How fast is it?
@@ -117,12 +117,12 @@ Laptop: RTX 4070 Laptop (8 GB), Core i7-14700HX, 32 GB RAM. Workstation: RTX 509
 
 Qwen3.8-Flash-Next runs on the Strata project's engine and was measured by that project on a PC with an RTX 5070 (12 GB) and 64 GB of RAM: IQ2_XS writes at 79 and reads a 32K prompt at 2,090 ([every size](docs/models/qwen38.md)).
 
-The eleven models of PolyStrata's own engine were measured with its benchmark, which you can run on your PC:
+The eleven models of 4gbVramStrata's own engine were measured with its benchmark, which you can run on your PC:
 `python polystrata.py benchmark --model <name> --prompt-tokens 24000`
 ([what it sends and prints](docs/BACKENDS.md#benchmark)).
 What others measured on their own cards, and how to compare with llama.cpp on yours:
 [community results](docs/COMMUNITY_BENCHMARKS.md#the-models-polystrata-adds).
-On the laptop PolyStrata read prompts 2.7 to 3.5 times as fast as llama.cpp b11540 and wrote 1.5 to 1.8 times
+On the laptop 4gbVramStrata read prompts 2.7 to 3.5 times as fast as llama.cpp b11540 and wrote 1.5 to 1.8 times
 as fast, with Qwen3.6 and with Tiel Coder ([the two runs](docs/COMMUNITY_BENCHMARKS.md#comparing-with-llamacpp)).
 
 ## What you need
@@ -153,11 +153,11 @@ What Qwen3.6, Clover, Ornith 1.5, Gemma 4, Tiel Coder and MiniCPM-V each need an
 Do you use an AI coding assistant (Claude Code, Cursor, Codex, GitHub Copilot, ...)? Paste this into it:
 
 ```text
-Set up PolyStrata on this PC for me: https://github.com/VecSzn/PolyStrata - follow docs/AI_SETUP.md in that repository.
+Set up 4gbVramStrata on this PC for me: https://github.com/VecSzn/PolyStrata - follow docs/AI_SETUP.md in that repository.
 ```
 
 It checks your graphics card, RAM and disk and picks the model that fits. Then it installs and starts it and tells
-you how to connect your apps. AI tools can also install, start and stop PolyStrata through its
+you how to connect your apps. AI tools can also install, start and stop 4gbVramStrata through its
 [MCP server](docs/MCP_SERVER.md).
 
 ### 1-Click Launch on 4 GB VRAM (Windows)
@@ -172,7 +172,7 @@ For preconfigured low-memory 131k environments, launch directly via dedicated ba
 **Windows:** double-click **`START-HERE.bat`**. **Linux:** run **`./setup.sh`** in the repository folder.
 
 **Mac (Apple Silicon, M1 to M5, macOS 15 or newer):** install Apple's Command Line Tools once
-(`xcode-select --install` in Terminal; Xcode itself is not needed). Then open Terminal in the PolyStrata folder and run
+(`xcode-select --install` in Terminal; Xcode itself is not needed). Then open Terminal in the 4gbVramStrata folder and run
 **`./setup.sh`**. It builds the Mac engine on your Mac (about 7 minutes), asks the same questions, downloads the model
 and starts it. Next time, `./setup.sh` starts it right away. Which size fits your Mac and how fast it is:
 [docs/MAC.md](docs/MAC.md). The Mac engine runs Qwen3.8-Flash-Next only; the other eleven models need an NVIDIA or AMD
@@ -186,17 +186,17 @@ The installer finds your card and sets up the right engine for it. It asks you a
 
 Press Enter each time for the recommended answer. Then it downloads the model (about 70 GB for Qwen3.8-Flash-Next,
 79 to 114 GB for GLM 5.3 Flash, 91 GB for DeepSeek V4 Flash, 29 to 48 GB for Kolibri 1, 11 to 42 GB for the other eight) and starts it. If the download stops, run it again:
-it continues where it left off. Your browser opens the PolyStrata app at `http://127.0.0.1:8080`.
+it continues where it left off. Your browser opens the 4gbVramStrata app at `http://127.0.0.1:8080`.
 
 All twelve are in the installer's list of models. `./setup.sh --family glm`, `deepseek`, `lfm25`, `flint`, `qwen36`, `clover`, `ornith`,
 `gemma4`, `tiel`, `minicpmv` or `kolibri` goes straight to one ([what it asks and writes](docs/GLM.md#install)).
 
 > **While the model starts, your PC can be slow or stop responding for 1-3 minutes** (longest the first time).
-> PolyStrata loads 35-55 GB into your RAM and locks part of it for the graphics card. This is normal. Wait, and don't
-> close the window. The window shows what PolyStrata is doing.
+> 4gbVramStrata loads 35-55 GB into your RAM and locks part of it for the graphics card. This is normal. Wait, and don't
+> close the window. The window shows what 4gbVramStrata is doing.
 
 **Next time**, run `START-HERE.bat` (or `./setup.sh`) again. It starts right away and downloads nothing twice. Close
-its window to stop the model. `UPDATE.bat` (`./update.sh`) updates PolyStrata without starting it. Updating, Docker,
+its window to stop the model. `UPDATE.bat` (`./update.sh`) updates 4gbVramStrata without starting it. Updating, Docker,
 several cards, where the files go and every option: [docs/INSTALL.md](docs/INSTALL.md).
 
 **Is it fast on your PC?** Run `BENCH.bat` (`./bench.sh`): about 5-10 minutes, it measures chat, 4K/16K prompts and an agent-style session with your own settings and writes a report to share ([how](docs/COMMUNITY_BENCHMARKS.md#run-the-benchmark)).
@@ -256,8 +256,8 @@ More: [where your chats are stored](docs/INSTALL.md#where-things-are-stored), [t
 ### Optional: more speed on one card when the whole model fits in RAM
 
 Two opt-in settings (by RubenTorney, #1904 and #1905). They help when you run one graphics card and your RAM holds
-every expert (PolyStrata's arena mode, for example Q2_0 or IQ3_XXS on a 64 GB PC). Open your config,
-`strata-<model>.json` in the PolyStrata data folder ([where](docs/INSTALL.md#where-things-are-stored)), and add:
+every expert (4gbVramStrata's arena mode, for example Q2_0 or IQ3_XXS on a 64 GB PC). Open your config,
+`strata-<model>.json` in the 4gbVramStrata data folder ([where](docs/INSTALL.md#where-things-are-stored)), and add:
 
 - **Faster decode:** `"--adapt-async", "1"` to the `"args"` list. The expert cache then updates on a helper thread
   instead of pausing the answer. Measured on an RTX 5070 (Windows, Q2_0): +4-5% decode, +7-10% on code and long
@@ -271,26 +271,26 @@ every expert (PolyStrata's arena mode, for example Q2_0 or IQ3_XXS on a 64 GB PC
 "env": { "STRATA_PIN_BY_NEED": "1" }
 ```
 
-Restart PolyStrata (`START-HERE.bat` or `./setup.sh`) after the change. To undo, remove the two entries.
+Restart 4gbVramStrata (`START-HERE.bat` or `./setup.sh`) after the change. To undo, remove the two entries.
 
 ## Something went wrong?
 
-- **My PC froze the first time PolyStrata started.** This is normal while it loads the model. Wait, and don't close the
+- **My PC froze the first time 4gbVramStrata started.** This is normal while it loads the model. Wait, and don't close the
   window. Still frozen after 10 minutes? Restart the PC, close other programs and try again, or pick a smaller size.
 - **It stopped while downloading or installing.** Run `START-HERE.bat` (or `./setup.sh`) again. It continues where
   it stopped.
 - **It's very slow and the disk light keeps blinking, or it says "the engine stopped unexpectedly".** Your PC does
   not have enough free RAM. Close other programs (browsers use a lot), or pick a smaller size (Q2_0 or IQ2_XS).
-- **It says port 8080 is already in use.** PolyStrata is already running. Look for its window.
+- **It says port 8080 is already in use.** 4gbVramStrata is already running. Look for its window.
 
 More problems and their fixes: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md). Still stuck? Open an
-[issue](https://github.com/VecSzn/PolyStrata/issues) and attach `strata-<model>.log` from the PolyStrata folder. Found a
+[issue](https://github.com/VecSzn/PolyStrata/issues) and attach `strata-<model>.log` from the 4gbVramStrata folder. Found a
 security problem? Report it privately: [SECURITY.md](SECURITY.md).
 
 ## How does it work?
 
 Models like these usually run on servers with hundreds of gigabytes of graphics memory. Your graphics card has
-8-32 GB. PolyStrata makes the model fit by **sharing the work across your whole PC**. Think of a kitchen: the things
+8-32 GB. 4gbVramStrata makes the model fit by **sharing the work across your whole PC**. Think of a kitchen: the things
 you use all the time stay on the counter, and the rest waits in the pantry.
 
 Each model's diagram and how it works: [docs/HOW_IT_WORKS_MODELS.md](docs/HOW_IT_WORKS_MODELS.md).
@@ -312,11 +312,11 @@ Clover-35B-A3B-Preview is by [DiffuSpace](https://huggingface.co/Diffuspace/Clov
 Ornith 1.5 is by ornith-ai, in
 [mudler](https://huggingface.co/mudler/Ornith-1.5-35B-A3B-APEX-MTP-GGUF)'s APEX quantization. Tiel Coder 35B-A3B is Ornith 1.5 in
 [peculiar-ragdoll](https://huggingface.co/peculiar-ragdoll/Tiel-Coder-35B-A3B-GGUF-MTP)'s quantization;
-[u/Sensitive_Song4219](https://www.reddit.com/r/LocalLLM/comments/1x22inc/comment/pf3r111/) found that it runs on PolyStrata.
+[u/Sensitive_Song4219](https://www.reddit.com/r/LocalLLM/comments/1x22inc/comment/pf3r111/) found that it runs on 4gbVramStrata.
 MiniCPM-V 4.7 35B-A3B is by [OpenBMB](https://huggingface.co/openbmb/MiniCPM-V-4.7-35B-A3B-gguf), in their own
-quantization; [iMilnb](https://github.com/iMilnb) brought it to PolyStrata.
-PolyStrata is built on
+quantization; [iMilnb](https://github.com/iMilnb) brought it to 4gbVramStrata.
+4gbVramStrata is built on
 [Strata](https://github.com/Niko1221/Strata) by Niko1221 and its contributors, and uses parts of
 [llama.cpp / ggml](https://github.com/ggml-org/llama.cpp). All credits:
-[docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md#credits). PolyStrata is open source under the [MIT License](LICENSE). A few
+[docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md#credits). 4gbVramStrata is open source under the [MIT License](LICENSE). A few
 parts and every model have their own licenses ([which ones](docs/HOW_IT_WORKS.md#license)).

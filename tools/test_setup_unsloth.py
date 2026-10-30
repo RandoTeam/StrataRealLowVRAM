@@ -547,13 +547,13 @@ class IQ4XS(Base):
         self.assertEqual(code, 1, out)
         self.assertNotIn("[ok] RAM", out)
         self.assertIn("[!]  RAM: 4 GB (less than", out)
-        self.assertIn("This PC cannot run PolyStrata yet", out)
-        self.assertNotIn("This PC can run PolyStrata", out)
+        self.assertIn("This PC cannot run 4gbVramStrata yet", out)
+        self.assertNotIn("This PC can run 4gbVramStrata", out)
         # 16 GB fits no size of Qwen3.8-Flash-Next, and it fits sizes of the smaller models
         code, out, _ = self.main(["--check"], ram=16.0, m=X)
         self.assertEqual(code, 0, out)
         self.assertIn("[!]  RAM: 16 GB (less than", out)
-        self.assertIn("This PC can run PolyStrata", out)
+        self.assertIn("This PC can run 4gbVramStrata", out)
 
     def test_engine_0138(self):
         code, out, cfg = self.main(["--context", "8192"], version="0.1.37", m=X)

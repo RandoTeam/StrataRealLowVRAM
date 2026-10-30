@@ -34,10 +34,10 @@
 安装程序在那里默认选 UD-Q3_K_XL。工作站的显卡能放下 UD-Q4_K_XL 和 UD-Q3_K_XL 的整个模型；UD-Q6_K_XL 没在工作站上跑。
 
 在笔记本上，llama.cpp 用 `--fit on`（那里试过的设置里最快的）读 29,442 个 token 的提示是 390 token/s，之后写答案 35；
-PolyStrata 读它是 1,950 到 2,010，写答案 49 到 52（[测量记录](../../bench/results/2026-10-24-laptop-flint-llamacpp-a37cc46/README.md)）。
+4gbVramStrata 读它是 1,950 到 2,010，写答案 49 到 52（[测量记录](../../bench/results/2026-10-24-laptop-flint-llamacpp-a37cc46/README.md)）。
 
-在工作站上，llama.cpp 的 llama-bench 用默认的 512 批大小读 29,816 个 token 是 7,790 token/s，用 2,048 是 12,470，PolyStrata 是 12,910-12,940；
-逐个 token 写答案，llama.cpp 是 222 token/s，读完那个提示之后 188，PolyStrata 是 249-256 和 212-213。在 128K 上下文里，124,122 个 token 的提示
+在工作站上，llama.cpp 的 llama-bench 用默认的 512 批大小读 29,816 个 token 是 7,790 token/s，用 2,048 是 12,470，4gbVramStrata 是 12,910-12,940；
+逐个 token 写答案，llama.cpp 是 222 token/s，读完那个提示之后 188，4gbVramStrata 是 249-256 和 212-213。在 128K 上下文里，124,122 个 token 的提示
 20 秒读完并答完，藏在里面的三条信息都找到了。
 
 ## 你需要什么

@@ -6,7 +6,7 @@
 
 ## 速度有多快？
 
-由 PolyStrata 在一台工作站上测得，用一段短对话和一个 29K token 的提示。
+由 4gbVramStrata 在一台工作站上测得，用一段短对话和一个 29K token 的提示。
 
 <table>
 <tr><th>NVIDIA：RTX 5090（32 GB）、Xeon Platinum 8470Q（25 vCPU）、120 GB 内存</th></tr>

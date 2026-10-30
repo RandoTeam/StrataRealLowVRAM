@@ -7,7 +7,7 @@ también un bloque de tokens de una vez. Solo lee texto.
 
 ## ¿Qué velocidad tiene?
 
-Medido por PolyStrata en el portátil, con un chat corto y un prompt de 32,000 tokens. Su tarjeta tiene 8 GB, y el
+Medido por 4gbVramStrata en el portátil, con un chat corto y un prompt de 32,000 tokens. Su tarjeta tiene 8 GB, y el
 procesador calcula los expertos que no caben en la tarjeta.
 
 <table>
@@ -28,11 +28,11 @@ RAM, y eso lo hace lento e irregular. La estación de trabajo con la RTX 5090 no
 
 Qwen3.6-35B-A3B escribe más rápido en el mismo portátil, 94 a 100 tokens/s, porque su archivo tiene un bloque de
 borrador que adivina las palabras siguientes con el trabajo de una capa. Los archivos de Clover no lo tienen. Clover
-puede adivinar él mismo un bloque de palabras, pero eso vuelve a ejecutar el modelo entero, y PolyStrata lo deja
+puede adivinar él mismo un bloque de palabras, pero eso vuelve a ejecutar el modelo entero, y 4gbVramStrata lo deja
 apagado: en una tarjeta que guardaba todos los expertos, las respuestas llegaron antes sin él
 ([medido](../BACKENDS.md#clover-35b-a3b-preview), en inglés).
 
-En una RTX PRO 6000 que guardaba todos los expertos de Q3_K_M, PolyStrata eligió el mismo token siguiente que llama.cpp
+En una RTX PRO 6000 que guardaba todos los expertos de Q3_K_M, 4gbVramStrata eligió el mismo token siguiente que llama.cpp
 (el soporte `clover_moe` de su pull request 31306) en 127 de 128 pasos después de un prompt corto, y en 125 de 128
 después de 5,573 tokens.
 

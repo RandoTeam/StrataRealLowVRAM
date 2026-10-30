@@ -64,7 +64,7 @@ def install(ram, found, argv, answers=None, extra=(), avx512=False, configs=()):
     """setup.main() on a mocked PC -> (exit code, printed text, the written config or None, the questions asked).
     answers: None = --yes (a question fails the run), "" = Enter for every question, a list of answers in order, or
     {words of a question: its answer} (Enter for the others).
-    extra: more patches (mock.patch objects).  configs: (name, dict) run configs already in the PolyStrata folder."""
+    extra: more patches (mock.patch objects).  configs: (name, dict) run configs already in the 4gbVramStrata folder."""
     with tempfile.TemporaryDirectory() as tmp:
         t = Path(tmp)
         (t / "data" / "mtp" / "rt").mkdir(parents=True)

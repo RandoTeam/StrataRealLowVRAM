@@ -1,7 +1,7 @@
-# Installing PolyStrata for a user (instructions for AI agents)
+# Installing 4gbVramStrata for a user (instructions for AI agents)
 
 This page is written for an AI coding assistant (Claude Code, Cursor, Codex, GitHub Copilot, ...) that a user asked to
-set up PolyStrata on their PC. PolyStrata runs the Qwen3.8-Flash-Next model locally on one NVIDIA or AMD graphics card plus
+set up 4gbVramStrata on their PC. 4gbVramStrata runs the Qwen3.8-Flash-Next model locally on one NVIDIA or AMD graphics card plus
 system RAM, and serves an OpenAI- and Anthropic-compatible API on `http://127.0.0.1:8080`. The human-oriented
 version of everything below is [INSTALL.md](INSTALL.md).
 
@@ -13,7 +13,7 @@ Work through the steps in order. Tell the user what you are doing in plain words
   access from other devices, use `--host 0.0.0.0` **together with** `--api-key <a long random secret>`, and give the
   user the key. Never put a tunnel or port forward in front of a server without a key.
 - Do not change the user's system beyond what setup does (setup installs Python for the user account if needed,
-  and everything else inside the PolyStrata folder and its `PolyStrata-data` folder). Ask before installing drivers.
+  and everything else inside the 4gbVramStrata folder and its `4gbVramStrata-data` folder). Ask before installing drivers.
 - The model download is ~70 GB (94 GB for Unsloth's UD-IQ4_XS, 111 GB for UD-Q4_K_XL). Confirm the user is fine with that before you
   start, especially on a metered connection.
 - Setup is long-running (an hour or more on a slow connection). Run it in the background or with a long timeout and
@@ -23,7 +23,7 @@ Work through the steps in order. Tell the user what you are doing in plain words
 ## 1. Check the PC
 
 The quickest way is setup's own check, which prints the GPU(s), driver, RAM, CPU, free disk and whether this PC can run
-PolyStrata, and installs nothing except Python and the `.venv` it needs to run (step 2 gets the repository first):
+4gbVramStrata, and installs nothing except Python and the `.venv` it needs to run (step 2 gets the repository first):
 
 ```
 Windows:  START-HERE.bat --check
@@ -54,14 +54,14 @@ Requirements (details: [INSTALL.md](INSTALL.md#what-you-need)):
 
 If the PC does not meet them, say which part is missing and stop.
 
-## 2. Get PolyStrata
+## 2. Get 4gbVramStrata
 
 ```
 git clone https://github.com/VecSzn/PolyStrata.git
 ```
 
 Without git: download https://github.com/VecSzn/PolyStrata/archive/refs/heads/main.zip and unzip it. Pick a drive with
-enough free space: the model files go to a `PolyStrata-data` folder **next to** the PolyStrata folder (or `--data-dir <path>`
+enough free space: the model files go to a `4gbVramStrata-data` folder **next to** the 4gbVramStrata folder (or `--data-dir <path>`
 on another drive).
 
 ## 3. Pick the model
@@ -118,7 +118,7 @@ takes Q4_K_M, Q2_K on a PC with little RAM, or Q3_K_M by name. The support is ne
 
 ## 4. Run setup without questions
 
-From the PolyStrata folder (Windows: in `cmd`, or `cmd /c START-HERE.bat ...` from PowerShell):
+From the 4gbVramStrata folder (Windows: in `cmd`, or `cmd /c START-HERE.bat ...` from PowerShell):
 
 ```
 Windows:  START-HERE.bat --yes --family qwen --model IQ2_XS --no-start
@@ -167,7 +167,7 @@ Notes:
 - It downloads about 70 GB from Hugging Face; how long depends on their connection (at 100 Mbit/s roughly 1.5-2
   hours). It can be stopped and continues where it left off.
 - Then it prepares the model for their PC (a few minutes) and, on AMD on Linux, compiles the engine.
-- **When the model starts, the PC can be slow or stop responding for 1-3 minutes** (longest the first time): PolyStrata
+- **When the model starts, the PC can be slow or stop responding for 1-3 minutes** (longest the first time): 4gbVramStrata
   loads 35-55 GB into RAM and locks part of it for the graphics card. That is normal; they should not close the window.
 - Nothing leaves their PC: the model runs locally.
 
@@ -202,7 +202,7 @@ curl http://127.0.0.1:8080/v1/chat/completions -H "Content-Type: application/jso
 ```
 
 With an API key, add `-H "Authorization: Bearer <key>"`. The server window prints a `ready: http://127.0.0.1:8080/v1`
-line when it is ready; the engine log is `strata-<model>.log` in the PolyStrata folder.
+line when it is ready; the engine log is `strata-<model>.log` in the 4gbVramStrata folder.
 
 ## 8. Connect the user's apps
 
@@ -213,11 +213,11 @@ line when it is ready; the engine log is `strata-<model>.log` in the PolyStrata 
 - **Codex CLI and other Responses API apps:** `http://127.0.0.1:8080/v1/responses` (stateless; Codex's
   `config.toml`: [DETAILS.md](DETAILS.md#the-responses-api-and-codex-cli)).
 - **Claude Code:** `ANTHROPIC_BASE_URL=http://127.0.0.1:8080`, `ANTHROPIC_MODEL` set to a Claude model name it knows
-  (PolyStrata ignores the name), and any `ANTHROPIC_AUTH_TOKEN` (or the configured key). Add
+  (4gbVramStrata ignores the name), and any `ANTHROPIC_AUTH_TOKEN` (or the configured key). Add
   `"fit_max_tokens": true` to `strata-<model>.json`: Claude Code asks for 32,000 tokens of answer in every request,
   and the server refuses a request whose prompt leaves less room than that in the context.
 - **Thinking level:** `"reasoning_effort": "none" | "low" | "medium" | "high"` (default high).
-- PolyStrata answers one request at a time; `"parallel": N` in the model's config (or setup `--parallel N`) decodes up to
+- 4gbVramStrata answers one request at a time; `"parallel": N` in the model's config (or setup `--parallel N`) decodes up to
   N together ([BATCHING.md](BATCHING.md)). API details: [DETAILS.md](DETAILS.md#using-it).
 
 ## 9. When something fails
@@ -226,7 +226,7 @@ line when it is ready; the engine log is `strata-<model>.log` in the PolyStrata 
 | --- | --- |
 | `the NVIDIA driver is too old` | The user updates the driver (NVIDIA App or nvidia.com/drivers) and restarts; rerun setup. |
 | Download or install stopped | Rerun the same setup command; it continues. |
-| `port 8080 is already in use` | PolyStrata is already running (check `/health`), or use `--port 8081`. |
+| `port 8080 is already in use` | 4gbVramStrata is already running (check `/health`), or use `--port 8081`. |
 | Very slow, disk busy, or "the engine stopped unexpectedly" | Not enough free RAM: close programs, or set up a smaller size (`--setup --model Q2_0` or IQ2_XS). |
 | `ExpertCache: cudaMalloc(...) failed: out of memory` with free VRAM (Windows) | The page file is off or tiny: set a fixed size (Custom size, the same initial and maximum size, e.g. 65536 MB) and restart; a page file Windows grows on demand ("System managed") may not grow in time (#60). |
 | `prompt ... exceeds the context` | Rerun setup with `--setup --context <bigger>`. |
@@ -238,6 +238,6 @@ collect `strata-<model>.log` and the setup output, and suggest an issue at https
 
 ## Alternative: the MCP server
 
-PolyStrata also has an MCP server, so an AI tool can check, install, start and stop PolyStrata through tool calls
+4gbVramStrata also has an MCP server, so an AI tool can check, install, start and stop 4gbVramStrata through tool calls
 (`strata_status`, `strata_models`, `strata_install`, `strata_start`, `strata_stop`, `strata_logs`) instead of the
 shell commands above. See [MCP_SERVER.md](MCP_SERVER.md).

@@ -1,6 +1,6 @@
 # Models and backends
 
-PolyStrata runs more than one model family. This page says which, how the engine is put together so that it can,
+4gbVramStrata runs more than one model family. This page says which, how the engine is put together so that it can,
 how a model is recognized, how to add one, and how to change the model that answers.
 
 One model is in memory at a time. The measurements below are from one machine: an RTX 5090 (32 GB), 24 threads of
@@ -1169,7 +1169,7 @@ one check that expected reasoning where GLM gave none.
 The tokenizers give llama.cpp's ids on the same prompts (27 to 8001 tokens) for Qwen3.6, Ornith and Gemma 4.
 
 Pictures were checked the same way, greedy and up to 64 tokens, on three prompts: one picture; two pictures of
-different shapes with text between and after them; a picture, an answer and a second question. PolyStrata's
+different shapes with text between and after them; a picture, an answer and a second question. 4gbVramStrata's
 server code rendered each prompt. llama.cpp's server got it as text with its media marker where a picture goes
 and encoded the pictures itself; the engine got the ids and `strata-vision`'s rows. Both read the same number of
 prompt tokens.

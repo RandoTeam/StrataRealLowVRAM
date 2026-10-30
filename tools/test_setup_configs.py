@@ -36,7 +36,7 @@ class ModelConfigs(unittest.TestCase):
         self.dir = Path(tmp.name)
         self.config = write(self.dir, "strata-iq3_s.json", CONFIG)
         self.shared = write(self.dir, "strata-iq3_s.shared-settings.json", SHARED)
-        # previous_config also looks into the PolyStrata folders next to this checkout: keep the real ones out
+        # previous_config also looks into the 4gbVramStrata folders next to this checkout: keep the real ones out
         patch = mock.patch.object(setup, "other_installs", return_value=[])
         patch.start()
         self.addCleanup(patch.stop)

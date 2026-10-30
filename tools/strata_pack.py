@@ -1,4 +1,4 @@
-"""PolyStrata P1.S6/S7 - the pack builder and verifier.
+"""4gbVramStrata P1.S6/S7 - the pack builder and verifier.
 
 This is `strata-pack build` / `strata-pack verify` / `strata-pack info`.  It is the Python implementation of
 `docs/pack-format.md`; the C++ `tools/strata-pack` is a port of it, and if the two disagree the C++ is wrong.

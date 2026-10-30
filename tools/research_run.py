@@ -1,4 +1,4 @@
-"""A scripted research run against a running PolyStrata server: one long document, then many different questions.
+"""A scripted research run against a running 4gbVramStrata server: one long document, then many different questions.
 
 Reads the document once, then asks each question and reports, per question, the time to the first streamed token and
 the whole request, and the run's total.  Greedy (temperature 0), so two runs of the same file give the same answers and

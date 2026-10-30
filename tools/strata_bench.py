@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One command that measures this PolyStrata install the way it is used, and writes a report you can share.
+"""One command that measures this 4gbVramStrata install the way it is used, and writes a report you can share.
 
     BENCH.bat                      (Windows)        ./bench.sh        (Linux)        python tools/strata_bench.py
 
@@ -64,7 +64,7 @@ BURST_MAX_TOKENS = 128
 
 # --------------------------------------------------------------------------------------------------------- redaction
 def redactor(extra: list[str] = (), key: str = ""):
-    """-> f(text) -> text with this machine's home folders, user and host names, the PolyStrata folder, IP addresses and the
+    """-> f(text) -> text with this machine's home folders, user and host names, the 4gbVramStrata folder, IP addresses and the
     API key replaced.  Applied to everything that is written or printed from the server's or the machine's own text."""
     subs: list[tuple[re.Pattern, str]] = []
 
@@ -833,7 +833,7 @@ def render_readme(res: dict) -> str:
          f"- CPU: {mc.get('cpu') or 'not read'} ({mc.get('cpu_cores') or '?'} cores, {mc.get('cpu_threads') or '?'} threads); "
          f"installed RAM: {mc.get('ram_gib') or '?'} GiB; storage: not measured",
          f"- OS: {mc.get('os')}; GPU driver: {mc.get('gpu_driver') or 'not read'}; CUDA: {mc.get('cuda') or 'not read'}",
-         f"- PolyStrata: project {mc.get('strata_version') or '?'}, commit {mc.get('strata_commit') or 'not a git checkout'}; "
+         f"- 4gbVramStrata: project {mc.get('strata_version') or '?'}, commit {mc.get('strata_commit') or 'not a git checkout'}; "
          f"engine {mc.get('engine_version') or 'not read'}",
          "- Background workloads and power limits: not recorded", "",
          "## Model and configuration", "",
@@ -847,7 +847,7 @@ def render_readme(res: dict) -> str:
     if env:
         L += ["Environment of the config: " + ", ".join(f"`{k}={v}`" for k, v in env.items()), ""]
     L += ["## Method", "",
-          f"Run by `{p['command']}` against the HTTP API of a PolyStrata server "
+          f"Run by `{p['command']}` against the HTTP API of a 4gbVramStrata server "
           f"({'started by the benchmark from the install configuration' if p['started_server'] else 'already running'}); model loading is not "
           f"timed. One warm-up chat and a 1K prompt are discarded first. Every prompt starts with a unique tag, so the conversation "
           f"cache cannot help the fresh-prompt tests.", "",
@@ -943,7 +943,7 @@ def server_base(host, port) -> str:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="Measure this PolyStrata install and write a shareable report (see the top of this file).")
+    ap = argparse.ArgumentParser(description="Measure this 4gbVramStrata install and write a shareable report (see the top of this file).")
     ap.add_argument("--config", help="the model config to run (default: the newest strata-*.json of this folder)")
     ap.add_argument("--url", help="use the server already running at this address (http://127.0.0.1:8080) instead of starting one")
     ap.add_argument("--port", type=int, help="the port to start the server on (default: the config's)")
@@ -985,7 +985,7 @@ def main(argv=None) -> int:
                   f"{names}", file=sys.stderr)
             return 2
         if cfg_path is None or not cfg_path.is_file():
-            print("No PolyStrata model is set up in this folder: run START-HERE.bat (Windows) or ./setup.sh (Linux) first, "
+            print("No 4gbVramStrata model is set up in this folder: run START-HERE.bat (Windows) or ./setup.sh (Linux) first, "
                   "or give --url of a running server.", file=sys.stderr)
             return 2
         cfg = json.loads(cfg_path.read_text(encoding="utf-8-sig"))
@@ -999,13 +999,13 @@ def main(argv=None) -> int:
     started = False
     try:
         if is_strata(base, key):
-            say(f"Using the PolyStrata server already running at {base}.")
+            say(f"Using the 4gbVramStrata server already running at {base}.")
         elif a.url:
-            print(f"No PolyStrata server answers at {base}.", file=sys.stderr)
+            print(f"No 4gbVramStrata server answers at {base}.", file=sys.stderr)
             return 2
         else:
             if try_json(base, "/health", key, 3) is not None:
-                print(f"Port {port} is used by something that is not PolyStrata: pass --port N.", file=sys.stderr)
+                print(f"Port {port} is used by something that is not 4gbVramStrata: pass --port N.", file=sys.stderr)
                 return 2
             log_path = Path(tempfile.gettempdir()) / f"strata-bench-{os.getpid()}.log"
             say(f"Starting {cfg_path.name} on port {port} (loading takes 1-3 minutes; the PC may be slow meanwhile) ...")

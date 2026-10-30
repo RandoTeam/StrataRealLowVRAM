@@ -1,6 +1,6 @@
 """tools/mtp_rt.py - plan v0.3 P6: the MTP draft layer's runtime files, from the packed MTP GGUF.
 
-    python tools/mtp_rt.py --gguf <PolyStrata>/mtp-bf16/mtp-q2_0.gguf --out <PolyStrata>/mtp-bf16/rt
+    python tools/mtp_rt.py --gguf <4gbVramStrata>/mtp-bf16/mtp-q2_0.gguf --out <4gbVramStrata>/mtp-bf16/rt
 
 Writes
   experts.bin   512 routed experts in the engine's blob layout (`include/strata/kernels/cpu/expert.hpp`): gate/up

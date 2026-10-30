@@ -7,7 +7,7 @@ Retour à [README.fr.md](../../README.fr.md)
 
 ## Quelle est sa vitesse ?
 
-Mesuré par PolyStrata sur le portable, avec une courte discussion et un prompt de 32,000 tokens. Sa carte a 8 Go, et le
+Mesuré par 4gbVramStrata sur le portable, avec une courte discussion et un prompt de 32,000 tokens. Sa carte a 8 Go, et le
 processeur calcule les experts que la carte ne peut pas contenir.
 
 <table>
@@ -28,11 +28,11 @@ ce qui le rend lent et irrégulier. La station de travail avec la RTX 5090 n'a p
 
 Qwen3.6-35B-A3B écrit plus vite sur le même portable, 94 à 100 tokens/s, parce que son fichier a un bloc de brouillon
 qui devine les mots suivants pour le travail d'une couche. Les fichiers de Clover n'en ont pas. Clover peut deviner
-lui-même un bloc de mots, mais cela refait tourner tout le modèle, et PolyStrata le laisse désactivé : sur une carte qui
+lui-même un bloc de mots, mais cela refait tourner tout le modèle, et 4gbVramStrata le laisse désactivé : sur une carte qui
 contenait tous les experts, les réponses arrivaient plus tôt sans lui ([mesures](../BACKENDS.md#clover-35b-a3b-preview),
 en anglais).
 
-Sur une RTX PRO 6000 qui contenait tous les experts de Q3_K_M, PolyStrata a choisi le même token suivant que llama.cpp
+Sur une RTX PRO 6000 qui contenait tous les experts de Q3_K_M, 4gbVramStrata a choisi le même token suivant que llama.cpp
 (la prise en charge `clover_moe` de sa pull request 31306) à 127 étapes sur 128 après un prompt court, et à 125 sur
 128 après 5,573 tokens.
 

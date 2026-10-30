@@ -3,7 +3,7 @@
 Voltar para [README.pt-BR.md](../README.pt-BR.md)
 
 Modelos como este normalmente rodam em servidores com centenas de gigabytes de memória de vídeo. Sua placa de vídeo
-tem 8-32 GB. O PolyStrata faz o modelo caber **dividindo o trabalho pelo PC inteiro**. Pense numa cozinha: o que você
+tem 8-32 GB. O 4gbVramStrata faz o modelo caber **dividindo o trabalho pelo PC inteiro**. Pense numa cozinha: o que você
 usa o tempo todo fica na bancada, e o resto espera na despensa.
 
 ## Qwen3.8-Flash-Next

@@ -6,7 +6,7 @@ Back to [README.md](../../README.md)
 
 ## How fast is it?
 
-Measured for PolyStrata on two PCs, with a short chat and a prompt of 30,000 to 32,000 tokens: on the left a laptop
+Measured for 4gbVramStrata on two PCs, with a short chat and a prompt of 30,000 to 32,000 tokens: on the left a laptop
 whose card has 8 GB, where the processor runs the experts the card has no room for, and on the right a workstation
 whose card holds the whole model.
 

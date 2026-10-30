@@ -1,5 +1,5 @@
 name: Bug report
-description: Something in PolyStrata doesn't work as documented
+description: Something in 4gbVramStrata doesn't work as documented
 title: "[Bug]: "
 labels: ["bug"]
 body:
@@ -18,7 +18,7 @@ body:
   - type: input
     id: hardware
     attributes:
-      label: PolyStrata version, GPU, OS
+      label: 4gbVramStrata version, GPU, OS
       description: The engine version is on the About tab, or in `GET /v1/status` under `engine`.
       placeholder: "0.1.31 · RTX 5070 12GB · Windows 11"
     validations:
@@ -27,7 +27,7 @@ body:
     id: log
     attributes:
       label: Engine log
-      description: Drag in `strata-<model>.log` from your PolyStrata folder. Drag and drop works directly into this box.
+      description: Drag in `strata-<model>.log` from your 4gbVramStrata folder. Drag and drop works directly into this box.
     validations:
       required: false
   - type: markdown

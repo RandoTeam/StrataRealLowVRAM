@@ -1,4 +1,4 @@
-/* PolyStrata web app - layout on top of tokens.css + components.css (the PolyStrata UI kit). Colours, type, radii and
+/* 4gbVramStrata web app - layout on top of tokens.css + components.css (the 4gbVramStrata UI kit). Colours, type, radii and
    shadows come only from the kit's tokens. */
 [hidden] { display: none !important; }
 html, body { height: 100%; }

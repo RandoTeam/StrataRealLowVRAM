@@ -1,11 +1,11 @@
-"""tools/nvfp4_convert.py - a ModelOpt NVFP4 Qwen3.8-Flash-Next checkpoint -> a GGUF PolyStrata can pack.
+"""tools/nvfp4_convert.py - a ModelOpt NVFP4 Qwen3.8-Flash-Next checkpoint -> a GGUF 4gbVramStrata can pack.
 
     python tools/nvfp4_convert.py --model <ModelOpt NVFP4 dir> --outfile <model.gguf>
 
 This is llama.cpp's own converter (third_party/llama.cpp at the commit setup.py pins), run with the type policy
-PolyStrata's engine needs. The converter already repacks ModelOpt NVFP4 experts into ggml's block_nvfp4 without loss
+4gbVramStrata's engine needs. The converter already repacks ModelOpt NVFP4 experts into ggml's block_nvfp4 without loss
 (tools/nvfp4_verify.py proves it bit for bit) and writes each expert's weight_scale_2 as a separate F32 tensor
-`blk.N.ffn_{gate,up,down}_exps.scale`, one value per expert. What it does not know is PolyStrata's layout:
+`blk.N.ffn_{gate,up,down}_exps.scale`, one value per expert. What it does not know is 4gbVramStrata's layout:
 
   * the small projections the residual, router, GDN, QSA and PLE kernels read as BF16 (iq_pack.BF16_PROJECTIONS)
     must be BF16 - the converter would otherwise write routers and indexer projections as F32, which iq_pack
@@ -40,7 +40,7 @@ from conversion import qwen4exp as Q4  # noqa: E402
 
 T = gguf.GGMLQuantizationType
 
-# PolyStrata reads these as BF16 (tools/iq_pack.py BF16_PROJECTIONS + BF16_OUTPUT, and the routers).
+# 4gbVramStrata reads these as BF16 (tools/iq_pack.py BF16_PROJECTIONS + BF16_OUTPUT, and the routers).
 BF16_SUFFIXES = (
     "hc_attn_down.weight", "hc_attn_up.weight", "hc_attn_inject.weight",
     "hc_ffn_down.weight", "hc_ffn_up.weight", "hc_ffn_inject.weight",

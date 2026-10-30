@@ -1,11 +1,11 @@
 # AGENTS.md
 
-> **This branch is RandoTeam/4gbVramStrata `main` (PolyStrata line).** Release script: `tools/package_release_131k.py`
+> **This branch is RandoTeam/4gbVramStrata `main` (4gbVramStrata line).** Release script: `tools/package_release_131k.py`
 > (`4gbVramStrata-v0.1.45-131k-win-x64`). Origin is canonical (`RandoTeam/4gbVramStrata`); `poly-upstream` is the
 > primary donor, `strata-upstream` secondary; `old-StrataRealLowVRAM` is an archive, do not use its URLs.
-> Experimental Strata 0.2.0 port lives on `feature/strata-020-poly-131k` (`tools/package_portable.py` there).
+> The experimental 0.2.0-based port lives on `feature/strata-020-poly-131k` (`tools/package_portable.py` there).
 
-PolyStrata runs the Qwen3.8-Flash-Next mixture-of-experts model (and its Coder, Swift 1.5 and Unsloth variants) on a
+4gbVramStrata runs the Qwen3.8-Flash-Next mixture-of-experts model (and its Coder, Swift 1.5 and Unsloth variants) on a
 normal PC: one NVIDIA or AMD graphics card plus system RAM, on Windows or Linux. It has a C++/CUDA/HIP engine
 (`src/`, `include/`), a Python server with an OpenAI- and Anthropic-compatible API and a web app (`serve/`), and a
 one-click installer (`setup.py`, started by `START-HERE.bat` / `setup.sh`).
@@ -14,11 +14,11 @@ A second engine, `strata-poly` (`src/poly/`), runs GLM 5.3 Flash and three small
 Linux with one NVIDIA card: [docs/GLM.md](docs/GLM.md), [docs/BACKENDS.md](docs/BACKENDS.md). The Qwen engine, the installer, the server and the web app come from
 [Strata](https://github.com/Niko1221/Strata).
 
-## Installing PolyStrata for a user
+## Installing 4gbVramStrata for a user
 
 Follow **[docs/AI_SETUP.md](docs/AI_SETUP.md)**: check the PC, pick the model by RAM, run setup non-interactively,
 start and verify the server, and connect the user's apps. Never expose the server beyond `127.0.0.1` without
-`--api-key`. As an alternative to shell commands, PolyStrata's MCP server ([docs/MCP_SERVER.md](docs/MCP_SERVER.md))
+`--api-key`. As an alternative to shell commands, 4gbVramStrata's MCP server ([docs/MCP_SERVER.md](docs/MCP_SERVER.md))
 offers the same steps as tools.
 
 ## Working on the code
@@ -27,7 +27,8 @@ offers the same steps as tools.
   the [paper](docs/paper/Strata-Paper.pdf).
 - AMD (HIP) build and validation: [docs/AMD_HIP.md](docs/AMD_HIP.md); multi-GPU: [docs/MULTI_GPU.md](docs/MULTI_GPU.md).
 - Text taken from the Strata project names that project. After merging from it,
-  `python tools/polystrata_names.py` writes PolyStrata again; its first lines say what it leaves alone.
+  `python tools/brand_names.py` writes 4gbVramStrata again; its first lines say what it leaves alone.
+  (The donor's `tools/polystrata_names.py` is kept for merges.)
 - Setup's own tests run without a GPU or downloads: `python tools/test_setup_<name>.py` (for example
   `tools/test_setup_amd.py`, `tools/test_setup_choices.py`).
 - Keep the docs' style: plain words, measured numbers with what they were measured on, no claims without a

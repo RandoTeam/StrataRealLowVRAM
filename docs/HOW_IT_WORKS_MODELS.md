@@ -3,7 +3,7 @@
 Back to [README.md](../README.md)
 
 Models like these usually run on servers with hundreds of gigabytes of graphics memory. Your graphics card has
-8-32 GB. PolyStrata makes the model fit by **sharing the work across your whole PC**. Think of a kitchen: the things
+8-32 GB. 4gbVramStrata makes the model fit by **sharing the work across your whole PC**. Think of a kitchen: the things
 you use all the time stay on the counter, and the rest waits in the pantry.
 
 ## Qwen3.8-Flash-Next

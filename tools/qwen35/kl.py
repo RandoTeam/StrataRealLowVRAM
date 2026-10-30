@@ -1,7 +1,7 @@
 """tools/qwen35/kl.py - teacher-forced KL for Qwen3.6-35B-A3B (NEW-MODELS-PLAN.md T1/T2): on one token sequence per
 prompt (the prompt + llama.cpp GPU's greedy answer, from a parity.py run), the next-token distributions of
 llama.cpp HIP (the reference P), llama.cpp CPU (the noise floor) and strata-q36ref.  Reported: mean KL(P || Q) and
-the top-1 agreement over all steps, per engine; the plan's gate is PolyStrata's KL within 1.5x of the floor.
+the top-1 agreement over all steps, per engine; the plan's gate is 4gbVramStrata's KL within 1.5x of the floor.
 
     python tools/qwen35/kl.py --ref BIN --dump BIN --model GGUF --parity DIR --out DIR [--lock "..."] [--cpu-lock "..."]
 """

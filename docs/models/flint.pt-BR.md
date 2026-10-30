@@ -35,12 +35,12 @@ os experts do SSD de novo e de novo, e por isso são lentos lá; o instalador es
 estação de trabalho guarda inteiros o UD-Q4_K_XL e o UD-Q3_K_XL; o UD-Q6_K_XL não rodou lá.
 
 No notebook o llama.cpp com `--fit on`, o mais rápido dos ajustes testados lá, leu um prompt de 29,442 tokens a 390
-tokens/s e escreveu depois a 35; o PolyStrata o leu a 1,950-2,010 e escreveu a 49-52
+tokens/s e escreveu depois a 35; o 4gbVramStrata o leu a 1,950-2,010 e escreveu a 49-52
 ([as medições](../../bench/results/2026-10-24-laptop-flint-llamacpp-a37cc46/README.md)).
 
 Na estação de trabalho o llama-bench do llama.cpp leu 29,816 tokens a 7,790 tokens/s com o lote padrão de 512 e a
-12,470 com 2,048, o PolyStrata a 12,910-12,940; token a token o llama.cpp escreveu a 222 tokens/s e a 188 depois desse
-prompt, o PolyStrata a 249-256 e 212-213. Um prompt de 124,122 tokens em um contexto de 128K foi lido e respondido em 20
+12,470 com 2,048, o 4gbVramStrata a 12,910-12,940; token a token o llama.cpp escreveu a 222 tokens/s e a 188 depois desse
+prompt, o 4gbVramStrata a 249-256 e 212-213. Um prompt de 124,122 tokens em um contexto de 128K foi lido e respondido em 20
 segundos, e os três fatos escondidos nele foram encontrados.
 
 ## Do que você precisa

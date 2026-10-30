@@ -7,7 +7,7 @@ write a block of tokens at once. It reads text only.
 
 ## How fast is it?
 
-Measured for PolyStrata on the laptop, with a short chat and a prompt of 32,000 tokens. Its card has 8 GB, and the
+Measured for 4gbVramStrata on the laptop, with a short chat and a prompt of 32,000 tokens. Its card has 8 GB, and the
 processor runs the experts the card has no room for.
 
 <table>
@@ -28,10 +28,10 @@ there, which is what makes it slow and uneven. The workstation with the RTX 5090
 
 Qwen3.6-35B-A3B writes faster on the same laptop, 94 to 100 tokens/s, because its file has a draft block that guesses
 the next words for one layer's work. Clover's files have none. Clover can guess a block of words itself, but that runs
-the whole model once more, and PolyStrata leaves it off: on a card that held every expert the answers came sooner
+the whole model once more, and 4gbVramStrata leaves it off: on a card that held every expert the answers came sooner
 without it ([measured](../BACKENDS.md#clover-35b-a3b-preview)).
 
-On an RTX PRO 6000 that held every expert of Q3_K_M, PolyStrata picked the same next token as llama.cpp (the
+On an RTX PRO 6000 that held every expert of Q3_K_M, 4gbVramStrata picked the same next token as llama.cpp (the
 `clover_moe` support of its pull request 31306) at 127 of 128 steps after a short prompt and at 125 of 128 after
 5,573 tokens.
 

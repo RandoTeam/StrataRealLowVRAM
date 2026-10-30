@@ -6,7 +6,7 @@ Zurück zu [README.de.md](../../README.de.md)
 
 ## Wie schnell ist es?
 
-Gemessen für PolyStrata auf einer Workstation, mit einem kurzen Chat und einem Prompt von 29K Tokens.
+Gemessen für 4gbVramStrata auf einer Workstation, mit einem kurzen Chat und einem Prompt von 29K Tokens.
 
 <table>
 <tr><th>NVIDIA: RTX 5090 (32 GB), Xeon Platinum 8470Q (25 vCPU), 120 GB RAM</th></tr>

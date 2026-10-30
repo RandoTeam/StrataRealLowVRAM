@@ -123,7 +123,7 @@ def read_profile(path):
     with open(path, "rb") as f:
         blob = f.read()
     if blob[:4] != MAGIC:
-        raise SystemExit(f"{path}: not a PolyStrata profile")
+        raise SystemExit(f"{path}: not a 4gbVramStrata profile")
     ver, nl, ne, slots, n = struct.unpack_from("<5I", blob, 4)
     if ver != VERSION or n > slots:
         raise SystemExit(f"{path}: version {ver}, {n} ranked of {slots} slots")

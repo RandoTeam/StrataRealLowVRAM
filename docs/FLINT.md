@@ -23,7 +23,7 @@ else UD-Q3_K_XL; the others are chosen by name (`--model Q8_0`). Every file is p
 
 ## How fast
 
-The README's numbers are PolyStrata's own benchmark through the server, the test every model of this engine gets
+The README's numbers are 4gbVramStrata's own benchmark through the server, the test every model of this engine gets
 ([BACKENDS.md](BACKENDS.md#a-prompt-of-30000-tokens)): `polystrata.py benchmark --prompt-tokens 24000`, a short chat
 and a prompt built from this repository's documents, 256 tokens written after each, three runs a size and the last
 two below, with the run configs setup writes for each machine.
@@ -62,22 +62,22 @@ UD-Q6_K_XL did not fit on the workstation's disk beside the other three, and was
 ### Against llama.cpp
 
 On the workstation, `llama-bench` of llama.cpp a37cc46104 (the first with Flint), every layer on the card and flash
-attention on, UD-Q4_K_XL; PolyStrata's engine with the same tokens, one at a time (`--window 1`):
+attention on, UD-Q4_K_XL; 4gbVramStrata's engine with the same tokens, one at a time (`--window 1`):
 
-| | PolyStrata | llama.cpp, batch of 512 (its default) | llama.cpp, batch of 2,048 |
+| | 4gbVramStrata | llama.cpp, batch of 512 (its default) | llama.cpp, batch of 2,048 |
 | --- | ---: | ---: | ---: |
 | Reads 29,816 tokens | 12,906 to 12,936 tokens/s (10,326 to 10,374 with a batch of 1,024) | 7,794 | 12,470 |
 | Writes, one token at a time | 249 to 256 tokens/s | 222 | |
 | Writes after 29,816 tokens, one at a time | 212 to 213 tokens/s | 188 | |
 
-PolyStrata reads the prompt 3% to 4% faster than llama.cpp with a batch of 2,048 (11,843 in its first run after the
+4gbVramStrata reads the prompt 3% to 4% faster than llama.cpp with a batch of 2,048 (11,843 in its first run after the
 build) and 1.66 times as fast as with llama.cpp's default. One token at a time it writes 12% to 15% faster after a
 short prompt and 13% faster after 29,816 tokens.
 
 On the laptop, UD-Q3_K_XL through each server with the same prompts
 ([the runs](../bench/results/2026-10-24-laptop-flint-llamacpp-a37cc46/README.md)):
 
-| | PolyStrata | llama.cpp a37cc46104, `--fit on` | llama.cpp, `--n-cpu-moe 36` |
+| | 4gbVramStrata | llama.cpp a37cc46104, `--fit on` | llama.cpp, `--n-cpu-moe 36` |
 | --- | ---: | ---: | ---: |
 | Reads 3,566 tokens | 1,682 to 1,773 tokens/s | 402 to 406 | 392 to 409 |
 | Writes after them | 63 to 69 tokens/s | 42.3 to 43.2 | 39.6 to 43.9 |
@@ -105,7 +105,7 @@ On the workstation, UD-Q4_K_XL with a context of 131,072 read and answered the 1
 server in 20.4 s and found all three facts (39.6 s before 372f4ece). Flint always thinks, and its thinking quoted
 the three sentences before it answered; it wrote 170 tokens in all.
 
-On the 8 GB laptop, PolyStrata's benchmark with the context raised in setup's run config, twice each:
+On the 8 GB laptop, 4gbVramStrata's benchmark with the context raised in setup's run config, twice each:
 
 | Size | Context | Prompt | First token, s | Reads, tokens/s | Writes after it |
 | --- | ---: | ---: | ---: | ---: | ---: |

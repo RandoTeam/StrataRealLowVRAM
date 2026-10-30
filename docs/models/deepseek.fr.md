@@ -6,7 +6,7 @@ Retour à [README.fr.md](../../README.fr.md)
 
 ## Quelle est sa vitesse ?
 
-Mesuré pour PolyStrata sur la même station de travail que [GLM 5.3 Flash](glm.fr.md), avec une courte discussion et un prompt de 30K tokens.
+Mesuré pour 4gbVramStrata sur la même station de travail que [GLM 5.3 Flash](glm.fr.md), avec une courte discussion et un prompt de 30K tokens.
 
 <table>
 <tr><th>NVIDIA : RTX 5090 (32 Go), Xeon Platinum 8470Q (25 vCPU), 120 Go de RAM</th></tr>

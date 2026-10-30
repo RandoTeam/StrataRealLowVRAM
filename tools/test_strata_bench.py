@@ -1,5 +1,5 @@
 """Tests for tools/strata_bench.py with a fake engine behind a real HTTP server: the suite runner, the redaction, the report
-writing and the comparison.  Light: no GPU, no PolyStrata server, a few seconds."""
+writing and the comparison.  Light: no GPU, no 4gbVramStrata server, a few seconds."""
 from __future__ import annotations
 
 import contextlib
@@ -23,7 +23,7 @@ def text_of(messages) -> str:
 
 
 class FakeStrata(ThreadingHTTPServer):
-    """Speaks the parts of the PolyStrata API the benchmark reads.  The conversation cache is the longest common prefix with the
+    """Speaks the parts of the 4gbVramStrata API the benchmark reads.  The conversation cache is the longest common prefix with the
     previous prompt (4 characters = 1 token)."""
     daemon_threads = True
 
@@ -62,7 +62,7 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path == "/v1/models":
             self.send_json({"object": "list", "data": [{"id": "fake", "meta": {"n_ctx": s.ctx}}]})
         elif self.path == "/props":
-            self.send_json({"total_slots": 4, "model_alias": "fake-model", "build_info": "PolyStrata 9.9.9"})
+            self.send_json({"total_slots": 4, "model_alias": "fake-model", "build_info": "4gbVramStrata 9.9.9"})
         elif self.path == "/v1/status":
             self.send_json({"machine": {"gpu": {"name": "NVIDIA GeForce RTX 9999", "total_mib": 12288}, "ram": {"total_gib": 64.0}},
                             "engine": "9.9.9", "vram": {"free_mib": 1000}})
@@ -209,7 +209,7 @@ class RedactionTests(unittest.TestCase):
         self.assertEqual(out["n"], 3)
 
     def test_config_view_drops_secrets_and_cuts_paths(self):
-        cfg = {"exe": r"C:\Users\me\PolyStrata\engine\strata.exe", "args": ["--native", "/home/me/models/m-IQ3_XXS.gguf", "--ctx", "65536"],
+        cfg = {"exe": r"C:\Users\me\4gbVramStrata\engine\strata.exe", "args": ["--native", "/home/me/models/m-IQ3_XXS.gguf", "--ctx", "65536"],
                "api_key": "hunter2", "model_name": "Fake Model", "log": "/tmp/x.log", "port": 8080,
                "env": {"STRATA_FOO": "/home/me/z", "PATH": "/usr/bin", "STRATA_TOKEN": "t"}}
         v = B.config_view(cfg)

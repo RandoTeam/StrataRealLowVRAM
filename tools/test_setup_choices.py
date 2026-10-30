@@ -93,7 +93,7 @@ class GgufDirShards(unittest.TestCase):
 
 
 class GgufDirUnsupported(unittest.TestCase):
-    """#444: --gguf-dir with GGUFs PolyStrata cannot run (Unsloth's UD-IQ3_XXS, UD-Q2_K_XL) says so, names the files it
+    """#444: --gguf-dir with GGUFs 4gbVramStrata cannot run (Unsloth's UD-IQ3_XXS, UD-Q2_K_XL) says so, names the files it
     runs (ISTA-DASLab's GSQ-RCO, the Coder's, Unsloth's UD-Q4_K_XL) and the --family/--model of the usable ones."""
     UD = ["Qwen3.8-Flash-Next-UD-IQ3_XXS-%05d-of-00003.gguf" % i for i in range(1, 4)] + \
          ["Qwen3.8-Flash-Next-UD-Q2_K_XL-%05d-of-00003.gguf" % i for i in range(1, 4)]
@@ -119,7 +119,7 @@ class GgufDirUnsupported(unittest.TestCase):
 
     def test_an_unsloth_ud_file_is_not_taken_for_a_gsq_rco_size(self):
         msg, hint = self.problem(self.UD)                   # IQ3_XXS: UD-IQ3_XXS has the size in its name
-        self.assertEqual(msg, "Qwen3.8-Flash-Next-UD-IQ3_XXS-00001-of-00003.gguf is UD-IQ3_XXS, a GGUF PolyStrata "
+        self.assertEqual(msg, "Qwen3.8-Flash-Next-UD-IQ3_XXS-00001-of-00003.gguf is UD-IQ3_XXS, a GGUF 4gbVramStrata "
                               "cannot run")
         self.assertIn("ISTA-DASLab's GSQ-RCO files", hint)
         self.assertIn("Unsloth's UD-IQ4_XS, UD-Q4_K_XL, UD-Q5_K_XL, UD-Q6_K_XL and Q8_0 only", hint)
@@ -147,7 +147,7 @@ class GgufDirUnsupported(unittest.TestCase):
         self.assertIn("has no IQ3_XXS model file", out)
         self.assertIn("choose one of: UD-IQ4_XS, UD-Q4_K_XL, UD-Q5_K_XL, UD-Q6_K_XL, Q8_0 (or IQ3_XXS: --family qwen --model IQ3_XXS, --family swift --model "
                       "IQ3_XXS)", out)
-        self.assertIn("PolyStrata runs ISTA-DASLab's GSQ-RCO files", out)
+        self.assertIn("4gbVramStrata runs ISTA-DASLab's GSQ-RCO files", out)
 
 
 class ReadOnlyGgufDir(unittest.TestCase):

@@ -27,7 +27,7 @@ at 30720 can reuse more of that prefix,
 without changing how the original prompt was computed. The benefit depends
 on the request and the branch position; it is not a universal speed increase.
 
-This is a separate conservative alternative to the PolyStrata-2080Ti Daily's
+This is a separate conservative alternative to the 4gbVramStrata-2080Ti Daily's
 checkpoint-grid patch. The grid changes chunk boundaries to reach exact
 checkpoint intervals and failed its local paired numerical gate. This option
 does not claim that the original grid patch has been fixed or validated.

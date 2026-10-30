@@ -1,6 +1,6 @@
 """serve/images.py - image generation (Qwen-Image-2.1-Turbo) through stable-diffusion.cpp's sd-cli.
 
-POST /v1/images/generations takes OpenAI's request shape (prompt, size, n, response_format b64_json|url) plus PolyStrata's
+POST /v1/images/generations takes OpenAI's request shape (prompt, size, n, response_format b64_json|url) plus 4gbVramStrata's
 own fields seed and steps.  Each request runs one `sd-cli` process with the arguments the model's card gives for
 stable-diffusion.cpp (8 steps, CFG 1, euler, Turbo's sigmas, --diffusion-fa) and returns the PNG files that process
 wrote, unchanged: an image from the API is byte for byte the image plain sd-cli writes with the same arguments.
@@ -21,7 +21,7 @@ The config's "images" section (written by setup --images, tools/image/install.py
    "llm": "...Qwen3-VL-8B-Instruct-UD-Q4_K_XL.gguf", "quant": "Q8_0", "args": ["--diffusion-fa"],
    "gpu_policy": "auto", "reload": "lazy"|"eager", "max_n": 4, "max_side": 2048, "timeout_s": 3600,
    "lib_dirs": [...], "uma": false, "need_mib": null, "out_dir": null, "keep_files": 64,
-   "native": false}   (native: PolyStrata's own DiT runner, tools/image/sdcpp_native; CUDA / HIP builds)
+   "native": false}   (native: 4gbVramStrata's own DiT runner, tools/image/sdcpp_native; CUDA / HIP builds)
 """
 from __future__ import annotations
 
@@ -123,7 +123,7 @@ def sd_cli_args(cfg: dict, job: dict, out_pattern: str) -> list[str]:
         cmd += ["-b", str(job["n"])]
     cmd += ["-o", out_pattern]
     cmd += [str(a) for a in (cfg.get("args") or [])]
-    if cfg.get("native") is True:                   # PolyStrata's DiT runner inside sd-cli (CUDA / HIP builds)
+    if cfg.get("native") is True:                   # 4gbVramStrata's DiT runner inside sd-cli (CUDA / HIP builds)
         cmd += ["--model-args", "qwen_image_2_1_native=1"]
     return cmd
 

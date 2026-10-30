@@ -1,5 +1,5 @@
 #!/bin/sh
-# Entry point for the PolyStrata container. The engine is compiled during docker
+# Entry point for the 4gbVramStrata container. The engine is compiled during docker
 # build and lives in the image, so the first start only downloads the model.
 # The install config is kept on the /data volume so a recreated container skips
 # the setup pass and goes straight to serving.

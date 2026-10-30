@@ -1,4 +1,4 @@
-# Kubernetes (Prometheus Operator): PolyStrata behind a Service whose port is named "http".
+# Kubernetes (Prometheus Operator): 4gbVramStrata behind a Service whose port is named "http".
 # The API key lives in a Secret (key "key"), sent as a bearer token.
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor

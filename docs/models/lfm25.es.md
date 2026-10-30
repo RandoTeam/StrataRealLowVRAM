@@ -36,9 +36,9 @@ Medido como [Qwen3.6-35B-A3B](qwen36.es.md), en los mismos dos PC, con un prompt
 En el portátil Q8_0 llena los 32 GB de RAM, y por eso va lento allí; la estación de trabajo guarda entero cada tamaño.
 
 En el portátil llama.cpp b11540 con `--n-cpu-moe 25`, el mejor de los ajustes probados allí, leyó un prompt de 32,000
-tokens a 530 tokens/s y escribió después a 53; PolyStrata lo leyó a 3,540 y escribió a 71-73. En la estación de
+tokens a 530 tokens/s y escribió después a 53; 4gbVramStrata lo leyó a 3,540 y escribió a 71-73. En la estación de
 trabajo llama-bench leyó 29,816 tokens a 13,300 tokens/s con el lote por defecto de llama.cpp, de 512, y a 23,600 con
-2,048, tan rápido como PolyStrata, y escribió token a token a 455 tokens/s, y a 369 después de ese prompt; PolyStrata
+2,048, tan rápido como 4gbVramStrata, y escribió token a token a 455 tokens/s, y a 369 después de ese prompt; 4gbVramStrata
 escribe a 452 y 387. Un prompt de unos 124,000 tokens en un contexto de 128K se leyó y respondió en 8,7 segundos en la
 estación de trabajo; el portátil lo leyó en 45 segundos.
 

@@ -31,7 +31,7 @@ first layers in RAM, as `--n-cpu-moe` keeps them. The experts of ten layers are 
 beside the rest of the model at this context. That column is the faster of two runs; the other wrote 24 to 26
 tokens/s and read the prompt at 72.
 
-The README's row is PolyStrata's own benchmark through the server, the test every model of this engine gets
+The README's row is 4gbVramStrata's own benchmark through the server, the test every model of this engine gets
 ([BACKENDS.md](BACKENDS.md#a-prompt-of-30000-tokens)), as setup installs the model: a short chat written at 56
 tokens/s, and a prompt of 29,750 tokens read whole at 1,038 to 1,040, with the first token after 29 s and the
 answer after it written at 39 to 44: the second and third of three runs, as for the other models. The first, with
@@ -69,7 +69,7 @@ without asking.
 On the test machine, with the files already on the disk, this took about four minutes: two for the compile, one and a
 half for the files' SHA-256.
 
-Setup writes the run config `strata-dsv4-ud-iq2_xxs.json` and `run-dsv4-ud-iq2_xxs.sh` into the PolyStrata folder.
+Setup writes the run config `strata-dsv4-ud-iq2_xxs.json` and `run-dsv4-ud-iq2_xxs.sh` into the 4gbVramStrata folder.
 No expert profile is shipped: the engine starts one at the first start and keeps it up to date.
 
 ## Long contexts

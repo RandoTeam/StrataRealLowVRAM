@@ -6,7 +6,7 @@ Retour à [README.fr.md](../../README.fr.md)
 
 ## Quelle est sa vitesse ?
 
-Mesuré pour PolyStrata sur une station de travail, avec une courte discussion et un prompt de 29K tokens.
+Mesuré pour 4gbVramStrata sur une station de travail, avec une courte discussion et un prompt de 29K tokens.
 
 <table>
 <tr><th>NVIDIA : RTX 5090 (32 Go), Xeon Platinum 8470Q (25 vCPU), 120 Go de RAM</th></tr>

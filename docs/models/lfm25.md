@@ -37,9 +37,9 @@ On the laptop Q8_0 fills the 32 GB of RAM, which is what makes it slow there; th
 whole.
 
 With `--n-cpu-moe 25`, the best of the settings tried on the laptop, llama.cpp b11540 read a prompt of 32,000 tokens
-there at 530 tokens/s and wrote after it at 53; PolyStrata read it at 3,540 and wrote at 71 to 73. On the workstation
+there at 530 tokens/s and wrote after it at 53; 4gbVramStrata read it at 3,540 and wrote at 71 to 73. On the workstation
 llama-bench read 29,816 tokens at 13,300 tokens/s with llama.cpp's default batch of 512 and at 23,600 with 2,048, as
-fast as PolyStrata, and wrote one token at a time at 455 tokens/s and at 369 after that prompt, where PolyStrata
+fast as 4gbVramStrata, and wrote one token at a time at 455 tokens/s and at 369 after that prompt, where 4gbVramStrata
 writes at 452 and 387. A prompt of about 124,000 tokens in a 128K context was read and answered in 8.7 seconds on the
 workstation; the laptop read it in 45 seconds.
 
