@@ -1,5 +1,10 @@
 # AGENTS.md
 
+> **This branch is RandoTeam/4gbVramStrata `main` (PolyStrata line).** Release script: `tools/package_release_131k.py`
+> (`4gbVramStrata-v0.1.45-131k-win-x64`). Origin is canonical (`RandoTeam/4gbVramStrata`); `poly-upstream` is the
+> primary donor, `strata-upstream` secondary; `old-StrataRealLowVRAM` is an archive, do not use its URLs.
+> Experimental Strata 0.2.0 port lives on `feature/strata-020-poly-131k` (`tools/package_portable.py` there).
+
 PolyStrata runs the Qwen3.8-Flash-Next mixture-of-experts model (and its Coder, Swift 1.5 and Unsloth variants) on a
 normal PC: one NVIDIA or AMD graphics card plus system RAM, on Windows or Linux. It has a C++/CUDA/HIP engine
 (`src/`, `include/`), a Python server with an OpenAI- and Anthropic-compatible API and a web app (`serve/`), and a

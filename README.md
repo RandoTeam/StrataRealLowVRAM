@@ -1,9 +1,9 @@
-<h1 align="center">StrataRealLowVRAM</h1>
+<h1 align="center">4gbVramStrata</h1>
 
 <p align="center"><b>Run massive 35B MoE models on ordinary PCs with 4 GB VRAM</b><br>
 Cyber-Tiel-Coder-35B-A3B, Qwen3.6-35B, Ornith 1.5 · 131K Context Engine · Free and Open Source</p>
 
-<p align="center"><img src="docs/media/speed_lowvram.svg" width="860" alt="StrataRealLowVRAM tokens per second on 4 GB VRAM GPU"></p>
+<p align="center"><img src="docs/media/speed_lowvram.svg" width="860" alt="4gbVramStrata tokens per second on 4 GB VRAM GPU"></p>
 
 <p align="center"><img src="docs/media/claude-code-demo.gif" width="820" alt="Claude Code in a terminal beside PolyStrata's API Monitor"><br>
 <sub>Claude Code on Cyber-Tiel-Coder-35B-A3B UD-Q4_K_XL, on a budget laptop with a 4 GB GeForce RTX 3050 card, in real time: runs locally with 131K context window.</sub></p>
@@ -45,7 +45,7 @@ A token is about ¾ of a word.
 - **Writes answers:** how fast the reply appears in a short chat. 60 tokens per second is faster than you can read.
 - **Reads your prompt:** how fast it takes in what you send (a document, code or a chat history).
 
-### 4 GB VRAM Low-Memory Benchmark (StrataRealLowVRAM 131K Engine)
+### 4 GB VRAM Low-Memory Benchmark (4gbVramStrata 131K Engine)
 
 > [!IMPORTANT]
 > **Verified Model Coverage Notice:**  
@@ -472,7 +472,7 @@ For preconfigured low-memory 131k environments, launch directly via dedicated ba
 
 ### Or do it yourself
 
-[Download StrataRealLowVRAM](https://github.com/RandoTeam/StrataRealLowVRAM/archive/refs/heads/main.zip) and unzip it (or `git clone` it).
+[Download 4gbVramStrata](https://github.com/RandoTeam/4gbVramStrata/archive/refs/heads/main.zip) and unzip it (or `git clone` it).
 **Windows:** double-click **`START-HERE.bat`**. **Linux:** run **`./setup.sh`** in the repository folder.
 
 **Mac (Apple Silicon, M1 to M5, macOS 15 or newer):** install Apple's Command Line Tools once

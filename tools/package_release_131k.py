@@ -5,7 +5,7 @@ import zipfile
 
 def package_release():
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    release_name = "StrataRealLowVRAM-v0.1.45-131k-win-x64"
+    release_name = "4gbVramStrata-v0.1.45-131k-win-x64"
     dist_dir = os.path.join(root, "dist")
     stage_dir = os.path.join(dist_dir, release_name)
     zip_path = os.path.join(dist_dir, f"{release_name}.zip")
