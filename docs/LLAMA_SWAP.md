@@ -5,6 +5,11 @@ request names, stopping the others to free the GPU. PolyStrata works as one of i
 get it running; it was tested with llama-swap's default stop behaviour, PolyStrata 0.1.39 (Coder IQ1_M on a Tesla V100) and
 clients reaching the machine by its host name.
 
+With PolyStrata models only, PolyStrata can do the switching itself: `"switch_on_request": true` in the config it starts
+with lists every installed model in `/v1/models` and loads the one a request names, on one port, with the web page and
+its Host check as usual ([DETAILS.md](DETAILS.md#using-it), "Switching models on request"). llama-swap stays the way to
+put PolyStrata next to other servers (llama.cpp, vLLM, ...).
+
 ## The entry
 
 Set PolyStrata up as usual first (`./setup.sh --no-start ...`), then point llama-swap at the server directly. The start script

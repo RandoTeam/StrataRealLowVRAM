@@ -21,6 +21,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <deque>
+#include <functional>
 #include <iostream>
 #include <mutex>
 #include <random>
@@ -51,6 +52,7 @@ using strata::poly::CacheOptions;
 using strata::poly::Conversations;
 using strata::poly::Engine;
 using strata::poly::Guesses;
+using strata::poly::KvFmt;
 using strata::poly::Options;
 using Clock = std::chrono::steady_clock;
 
@@ -62,12 +64,18 @@ double ms_since(Clock::time_point t) { return std::chrono::duration<double, std:
 constexpr double kProfileSaveMs = 10000.0;
 
 // The most tokens of a window whose guesses are the block's: the token the model has and three guesses, each
-// from the one before.  A repeat of the conversation may fill a longer window (Options::window).
+// from the one before.  A repeat of the conversation may fill a longer window (Options::window), and so may a
+// model whose guesses come together (Engine::guesses_at_once()).
 constexpr int kBlockWindow = 4;
 
 // A window longer than that is for a copy: a repeat of the conversation whose match is this many tokens or more.
 // A repeat of a few tokens is in any text, and what followed it there is seldom what follows here for long.
 constexpr int kCopyMatch = 8;
+
+// With batch slots a prompt is read in pieces: between two, a BYIELD can stop the read and the slots write for half
+// the time the piece took.  A piece is a call (max_rows()) while slots write, so that they are not held up long,
+// and this many calls while none does, as Strata's engine reads its chunks.
+constexpr int kPiece = 8;
 
 struct Sampling {
     float temperature = 0.f;   // 0: the most likely token
@@ -265,6 +273,28 @@ public:
         q_.pop_front();
         return s;
     }
+    /// The next line when there is one.
+    bool try_pop(std::string& s) {
+        std::lock_guard<std::mutex> l(m_);
+        if (q_.empty()) return false;
+        s = std::move(q_.front());
+        q_.pop_front();
+        return true;
+    }
+    /// The lines waiting that start with `head`, out of the queue, the others left in their order.
+    std::vector<std::string> take(const char* head) {
+        std::lock_guard<std::mutex> l(m_);
+        std::vector<std::string> out;
+        for (auto it = q_.begin(); it != q_.end();) {
+            if (it->rfind(head, 0) == 0) {
+                out.push_back(std::move(*it));
+                it = q_.erase(it);
+            } else {
+                ++it;
+            }
+        }
+        return out;
+    }
 
     std::atomic<bool> stop{false};
 
@@ -293,6 +323,7 @@ private:
 struct CacheFlags {
     CacheOptions o;
     long long min_free_mib = 2560;   // parking leaves this much physical RAM free
+    bool park_auto = false;          // --conversation-cache-mib auto: park_mib from the RAM free once loaded
 };
 
 struct Session {
@@ -314,6 +345,7 @@ struct Session {
     strata::spec::SuffixDrafter repeats;
     strata::spec::DraftPolicy policy;
     Guesses guesses;                      // whether the block is asked in a round, and for how many (guesses.hpp)
+    int piece_calls = kPiece;             // generate()'s pieces when it is given `between`
 
     Session(Engine& e, std::vector<int32_t> eos_ids, const CacheFlags& f, int lookup)
         : engine(e), eos(std::move(eos_ids)), flags(f), kept(e, with_floor(f)),
@@ -334,6 +366,7 @@ struct Session {
 
     struct Result {
         int64_t produced = 0, resume = 0, read = 0;
+        int64_t gave_way = -1;   // where `between` stopped the read
         int64_t guessed = 0, guessed_right = 0;
         double prompt_ms = 0, decode_ms = 0;
         const char* finish = "length";
@@ -341,10 +374,12 @@ struct Session {
 
     // Reads the prompt and generates.  on_token gets every token, the end-of-sequence one included.  The rows of
     // the prompt's pictures have ids below zero (take_pictures()); `pad` is the token they stand in for.
+    // `between`, when given, reads the prompt in pieces of piece_calls calls and is asked after each but the last
+    // one, with where the read is: false stops it there, as a cancel does, and the conversation holds what was read.
     template<class OnToken, class OnProgress>
     Result generate(const std::vector<int32_t>& ids, const Pictures& pictures, int32_t pad, int64_t turn_at,
                     int64_t max_new, const Sampling& s, const std::atomic<bool>& stop, OnToken on_token,
-                    OnProgress on_progress) {
+                    OnProgress on_progress, const std::function<bool(int64_t)>* between = nullptr) {
         Result r;
         const int64_t n = (int64_t) ids.size();
         Clock::time_point t0 = Clock::now(), shown = t0;   // bringing a parked conversation back is prompt time
@@ -376,7 +411,8 @@ struct Session {
                 break;
             }
             const bool last = i == n - 1;
-            const int64_t room = std::min<int64_t>(n - 1 - i, text ? engine.max_read() : engine.max_rows());
+            const int64_t most = between ? (int64_t) piece_calls * engine.max_rows() : INT64_MAX;
+            const int64_t room = std::min<int64_t>({n - 1 - i, text ? engine.max_read() : engine.max_rows(), most});
             const int64_t m = last ? 1 : text ? room : engine.whole(i, kept.until_checkpoint(i, room));
             kept.before(i, last);
             if (text && !last) {
@@ -399,6 +435,7 @@ struct Session {
                     break;
                 }
             } else {
+                if (last) engine.end_read();   // the last token, as the answer's, with the whole expert cache
                 engine.eval(ids.data() + i, (int) m, last);
             }
             kept.read(ids.data() + i, m);
@@ -408,7 +445,13 @@ struct Session {
                 on_progress(i, n, ms_since(t0), false);
                 shown = Clock::now();
             }
+            if (between && i < n - 1 && !(*between)(i)) {
+                r.gave_way = i;
+                r.finish = "cancel";
+                break;
+            }
         }
+        engine.end_read();
         kept.prompt_was(n);
         r.prompt_ms = ms_since(t0);
         if (std::strcmp(r.finish, "cancel") == 0) return r;
@@ -438,6 +481,7 @@ struct Session {
         };
         if (max_new > 0) {
             int32_t w[strata::spec::DraftPolicy::kMaxT], d[strata::spec::DraftPolicy::kMaxT];
+            const int block_window = engine.guesses_at_once() ? most : kBlockWindow;
             int32_t t = pick(engine.logits());   // picked, and not shown yet
             while (show(t)) {
                 // t goes into the model now, and with it guesses at what follows when there are any that pay
@@ -445,7 +489,7 @@ struct Session {
                 const bool room = engine.pos() + most <= engine.max_context();
                 const int offered = look && room ? repeats.propose(most - 1, w + 1) : 0;
                 const int match = repeats.last_match();
-                const int widest = match >= kCopyMatch ? most : std::min(most, kBlockWindow);   // this round's window
+                const int widest = match >= kCopyMatch ? most : std::min(most, block_window);   // this round's window
                 const int k = std::min(offered, widest - 1);
                 // A repeat that fills the window, from a match of a length that has been right nine times in ten,
                 // is taken as it is: the block would mostly say the same, and asking it takes time.  Otherwise the
@@ -459,7 +503,7 @@ struct Session {
                 strata::spec::DraftPolicy::Pick use = policy.choose(1, k, match);
                 if (ask) {
                     int n_d = 0;
-                    for (int32_t from = t; n_d < std::min(most, kBlockWindow) - 1 && guesses.wants(n_d); from = d[n_d++]) {
+                    for (int32_t from = t; n_d < std::min(most, block_window) - 1 && guesses.wants(n_d); from = d[n_d++]) {
                         float p = 0.f;
                         const Clock::time_point asked_at = Clock::now();
                         d[n_d] = engine.draft(from, n_d, &p);
@@ -542,14 +586,28 @@ bool parse_gen(const std::string& line, long long& max_new, Sampling& s, int32_t
     return parse_ids(p, ids);
 }
 
+// A batch slot (--batch): a request that goes on in a sequence of its own, slot b in sequence b + 1, written with
+// the others a token each at a time (Engine::step()).  Its prompt is read in sequence 0, which the conversation
+// cache knows, and copied over.
+struct Slot {
+    bool active = false, stop = false;
+    int32_t next = 0;               // picked and not fed yet
+    long long produced = 0, max_new = 0;
+    Sampling s;
+    std::mt19937_64 rng{std::random_device{}()};
+    std::vector<int32_t> held;      // what its sequence has read: the prompt and the tokens fed since
+    Clock::time_point t0;
+};
+
 int serve(Session& ss) {
     Engine& engine = ss.engine;
+    std::vector<Slot> slots((size_t) engine.sequences() - 1);
     std::printf("INFO context=%d expert_slots=%d expert_cache_mib=%lld pool_workers=%d conversation_cache_mib=%lld "
                 "conversation_cache_slots=%d conversation_cache_min_free_mib=%lld vram_free_mib=%lld vram_elastic=1 "
-                "engine=" STRATA_VERSION "\n",
+                "batch_slots=%d engine=" STRATA_VERSION "\n",
                 engine.max_context(), engine.cached_experts(), (long long) (engine.cached_gib() * 1024.0),
                 engine.threads(), (long long) ss.flags.o.park_mib, ss.flags.o.park_slots, ss.flags.min_free_mib,
-                (long long) engine.vram_free_mib());
+                (long long) engine.vram_free_mib(), (int) slots.size());
     std::printf("READY %d stop\n", engine.max_context());
     std::fflush(stdout);
 
@@ -557,11 +615,140 @@ int serve(Session& ss) {
     Pictures pictures;    // the engine reads the last request's until the next one's are set
     // the experts' use (--expert-profile): as if it was last saved long ago, so that the first answer saves it
     Clock::time_point saved = Clock::now() - std::chrono::milliseconds((long long) kProfileSaveMs);
+    const auto writing = [&] {
+        return std::any_of(slots.begin(), slots.end(), [](const Slot& sl) { return sl.active; });
+    };
+    // A token for every slot that writes: BT <slot> <token> each, and BDONE <slot> <produced> <finish> <ms> for a
+    // slot that ends with it.  False when the engine failed, which leaves it in no known state.
+    Sampler slot_sampler;
+    std::vector<int> seqs;
+    std::vector<int32_t> feed;
+    std::vector<size_t> which;
+    const auto step = [&] {
+        seqs.clear();
+        feed.clear();
+        which.clear();
+        for (size_t b = 0; b < slots.size(); ++b)
+            if (slots[b].active) {
+                seqs.push_back((int) b + 1);
+                feed.push_back(slots[b].next);
+                which.push_back(b);
+            }
+        try {
+            engine.step(seqs.data(), feed.data(), (int) seqs.size());
+        } catch (const std::exception& e) {
+            std::fprintf(stderr, "strata-poly: batch: %s\n", e.what());
+            std::printf("ERR %s\n", e.what());
+            std::fflush(stdout);
+            return false;
+        }
+        for (size_t i = 0; i < which.size(); ++i) {
+            Slot& sl = slots[which[i]];
+            sl.held.push_back(feed[i]);
+            const int32_t t = (int32_t) slot_sampler.pick(engine.logits_of((int) i), engine.n_vocab(), sl.s, sl.held, sl.rng);
+            ++sl.produced;
+            std::printf("BT %zu %d\n", which[i], (int) t);
+            const char* fin = ss.is_eos(t) ? "stop" : sl.stop ? "cancel" : sl.produced >= sl.max_new ? "length"
+                            : (long long) sl.held.size() + 2 > engine.max_context() ? "length" : nullptr;
+            if (fin) {
+                std::printf("BDONE %zu %lld %s %.1f\n", which[i], sl.produced, fin, ms_since(sl.t0));
+                sl.active = false;
+            }
+            sl.next = t;
+        }
+        std::fflush(stdout);
+        return true;
+    };
+    // A prompt that goes on from what a slot's sequence holds, further than from what sequence 0 holds, starts
+    // from a copy of that: a request that left its slot to write alone again (with guesses), or the next turn of
+    // a conversation a slot answered.
+    const auto from_slot = [&](const std::vector<int32_t>& ids) {
+        const auto common = [&](const std::vector<int32_t>& a) {
+            size_t n = 0;
+            while (n < a.size() && n < ids.size() && a[n] == ids[n]) ++n;
+            return n;
+        };
+        size_t best = slots.size(), most = common(ss.kept.seq());
+        for (size_t b = 0; b < slots.size(); ++b) {
+            const std::vector<int32_t>& h = slots[b].held;
+            if (!h.empty() && h.size() < ids.size() && common(h) == h.size() && h.size() > most) best = b, most = h.size();
+        }
+        if (best == slots.size()) return;
+        engine.bind(0);
+        ss.kept.leave();
+        engine.copy_seq((int) best + 1, 0);
+        ss.kept.adopt(slots[best].held);
+    };
+    // Between two pieces of a prompt read (Session::generate()): BSTOPs that came meanwhile, a BYIELD <slot> that
+    // stops the read there to wait in that slot (YIELDED <slot> <tokens read>), and the slots' tokens for half the
+    // time the piece took.  A read gives way only to a slot that does not write, with text alone, and with more than
+    // a piece left: the rest is read the same way after it.
+    int admit = -1, gives_to = -1;
+    long long ids_n = 0;
+    bool text = true, failed = false;
+    Clock::time_point piece_t0;
+    const std::function<bool(int64_t)> between = [&](int64_t at) {
+        for (const std::string& l : lines.take("BSTOP ")) {
+            const int b = std::atoi(l.c_str() + 6);
+            if (b >= 0 && b < (int) slots.size()) slots[(size_t) b].stop = true;
+        }
+        int to = -1;
+        for (const std::string& l : lines.take("BYIELD")) to = l.size() > 7 ? std::atoi(l.c_str() + 7) : -1;
+        if (to >= 0 && to < (int) slots.size() && !slots[(size_t) to].active && (admit < 0 || to == admit) && text &&
+            ids_n - at > (long long) engine.max_rows()) {
+            gives_to = to;
+            return false;
+        }
+        const double piece_ms = ms_since(piece_t0);
+        const Clock::time_point t0 = Clock::now();
+        while (writing() && ms_since(t0) < 0.5 * piece_ms)
+            if (!step()) {
+                failed = true;
+                throw std::runtime_error("a batch step failed");
+            }
+        ss.piece_calls = writing() ? 1 : kPiece;
+        piece_t0 = Clock::now();
+        return true;
+    };
     for (;;) {
-        const std::string line = lines.pop();
+        std::string line;
+        if (!writing()) {
+            line = lines.pop();
+        } else if (!lines.try_pop(line)) {
+            if (!step()) return 1;
+            continue;
+        }
         if (line == "QUIT") break;
         if (line.empty()) continue;
+        // BSTOP <slot>: the slot ends with its next token.  BYIELD: a long read gives way to a shorter one in the
+        // other engine only; this one reads it to its end.
+        if (line.rfind("BSTOP ", 0) == 0) {
+            const int b = std::atoi(line.c_str() + 6);
+            if (b >= 0 && b < (int) slots.size()) slots[(size_t) b].stop = true;
+            continue;
+        }
+        if (line.rfind("BYIELD", 0) == 0) continue;
         lines.stop.store(false);   // a STOP that came between requests is stale
+        // BGEN <slot> <max_new> ... reads the prompt and picks its first token as GEN 1 does, then the request goes
+        // on in that slot (BADM <slot> 1), or ends there (BADM <slot> 0)
+        admit = -1;
+        gives_to = -1;
+        long long admit_max = 0;
+        if (line.rfind("BGEN ", 0) == 0 || line.rfind("BGENI ", 0) == 0) {
+            const bool img = line[4] == 'I';
+            char* e1 = nullptr;
+            const long b = std::strtol(line.c_str() + (img ? 6 : 5), &e1, 10);
+            char* e2 = nullptr;
+            const long long mn = std::strtoll(e1, &e2, 10);
+            if (b < 0 || b >= (long) slots.size() || slots[(size_t) b].active || mn < 1 || e2 == e1) {
+                std::printf("ERR BGEN: no such free slot (--batch %d) or a bad max_new\n", (int) slots.size());
+                std::fflush(stdout);
+                continue;
+            }
+            admit = (int) b;
+            admit_max = mn;
+            line = std::string(img ? "GENI 1" : "GEN 1") + e2;
+        }
         long long max_new = 0;
         Sampling s;
         std::vector<int32_t> ids;
@@ -571,6 +758,11 @@ int serve(Session& ss) {
         // VRAM [reserve_mib], the server's POST /v1/vram: the expert cache sized again between requests, to leave
         // that much VRAM to other programs; alone, back to what the engine started with
         if (line.rfind("VRAM", 0) == 0 && (line.size() == 4 || line[4] == ' ')) {
+            if (writing()) {
+                std::printf("ERR VRAM: not while batch slots are writing\n");
+                std::fflush(stdout);
+                continue;
+            }
             char* end = nullptr;
             const bool bare = line.find_first_not_of(' ', 4) == std::string::npos;
             const long long reserve = bare ? -1 : std::strtoll(line.c_str() + 4, &end, 10);
@@ -582,7 +774,11 @@ int serve(Session& ss) {
             try {
                 const Clock::time_point t0 = Clock::now();
                 const int before = engine.cached_experts();
+                // The operator's resize is the one thing a freeze gives way to (STRATA_FREEZE_EXPERTS):
+                // the cache it leaves is what every request after reads, and stays frozen again.
+                engine.unfreeze_experts();
                 engine.resize_cache((int) reserve);
+                engine.refreeze_experts();
                 const long long free_mib = (long long) engine.vram_free_mib();
                 std::fprintf(stderr, "strata-poly: VRAM %d MiB kept free: the expert cache %d -> %d of %d experts "
                                      "(%.2f of %.2f GiB), %lld MiB free now, in %.0f ms\n",
@@ -634,7 +830,14 @@ int serve(Session& ss) {
         const strata::poly::Stats before = engine.stats();
         int64_t resume = 0;
         Session::Result r;
+        int32_t first = -1;   // the token BGEN's read picks
         try {
+            engine.bind(0);
+            from_slot(ids);
+            ids_n = n;
+            text = pictures.at.empty();
+            ss.piece_calls = writing() ? 1 : kPiece;
+            piece_t0 = Clock::now();
             const int had = engine.cached_experts();
             if (engine.mind_vram())
                 std::fprintf(stderr, "strata-poly: the expert cache %d -> %d experts (%.2f GiB) for the VRAM free "
@@ -642,7 +845,8 @@ int serve(Session& ss) {
                              had, engine.cached_experts(), engine.cached_gib(), (long long) engine.vram_free_mib());
             r = ss.generate(
                 ids, pictures, pad, turn_at, max_new, s, lines.stop,
-                [](int32_t t) {
+                [&](int32_t t) {
+                    first = t;
                     std::printf("T %d\n", (int) t);
                     std::fflush(stdout);
                 },
@@ -655,8 +859,16 @@ int serve(Session& ss) {
                                     ms > 0.0 ? 1000.0 * (double) (at - resume) / ms : 0.0);
                     }
                     std::fflush(stdout);
-                });
+                },
+                slots.empty() ? nullptr : &between);
+            if (r.gave_way >= 0) {
+                engine.copy_seq(0, gives_to + 1);
+                slots[(size_t) gives_to] = Slot{};
+                slots[(size_t) gives_to].held = ss.kept.seq();
+                std::printf("YIELDED %d %lld\n", gives_to, (long long) r.gave_way);
+            }
         } catch (const std::exception& e) {
+            if (failed) return 1;   // step() said ERR: the slots' sequences are in no known state
             // the engine's state is unknown now: the conversation it was reading is lost
             ss.kept.drop();
             try { engine.reset(); } catch (const std::exception&) {}
@@ -664,6 +876,17 @@ int serve(Session& ss) {
             std::fflush(stdout);
             continue;
         }
+        // STRATA_REQUEST_LINES=1: one stdout line per finished request, like Strata's own engine (the same summary, to
+        // the log on stderr so echo_requests picks it up): prompts, cached, fresh tokens read, and both rates.  Any
+        // drafts go in the tail (the server reads them from that; DONE below is what it uses for its figures).
+        const double pp = r.prompt_ms > 0 ? 1000.0 * r.read / r.prompt_ms : 0.0;
+        const double tg = r.decode_ms > 0 ? 1000.0 * r.produced / r.decode_ms : 0.0;
+        std::fprintf(stderr, "strata serve: prompt %lld tokens = %lld reused + %lld read in %.0f ms (%.1f tok/s), %lld generated in %.0f ms (%.1f tok/s)",
+                     n, (long long) r.resume, (long long) r.read, r.prompt_ms, pp, (long long) r.produced, r.decode_ms, tg);
+        if (r.guessed > 0)   // MTP drafts: the ones guessed right of the total guesses made
+            std::fprintf(stderr, ", drafts accepted %lld of %lld\n", (long long) r.guessed_right, (long long) r.guessed);
+        else
+            std::fprintf(stderr, "\n");
         // DONE <generated> <prompt> <prompt ms> <decode ms> <finish> <drafts accepted> <drafts offered> <reused>
         //      <experts from VRAM> <experts> <RAM blobs> <file blobs> <file MB> <prompt tokens read> <offloaded>
         const strata::poly::Stats& now = engine.stats();
@@ -674,6 +897,32 @@ int serve(Session& ss) {
                     r.prompt_ms, r.decode_ms, r.finish, (long long) r.guessed_right, (long long) r.guessed,
                     (long long) r.resume, hits, hits + misses, (long long) r.read);
         std::fflush(stdout);
+        if (admit >= 0) {
+            Slot& sl = slots[(size_t) admit];
+            const bool goes_on = std::strcmp(r.finish, "length") == 0 && first >= 0 && admit_max > 1 &&
+                                 n + 2 <= engine.max_context();
+            sl = Slot{};
+            try {
+                engine.copy_seq(0, admit + 1);
+                sl.held = ss.kept.seq();
+            } catch (const std::exception& e) {
+                std::fprintf(stderr, "strata-poly: batch: %s\n", e.what());
+                std::printf("ERR %s\n", e.what());
+                std::fflush(stdout);
+                return 1;
+            }
+            if (goes_on) {
+                sl.active = true;
+                sl.next = first;
+                sl.produced = 1;
+                sl.max_new = admit_max;
+                sl.s = s;
+                if (s.seed != 0) sl.rng.seed(s.seed + 1);
+                sl.t0 = Clock::now();
+            }
+            std::printf("BADM %d %d\n", admit, goes_on ? 1 : 0);
+            std::fflush(stdout);
+        }
         if (ms_since(saved) >= kProfileSaveMs) {
             try {
                 engine.save_profile();
@@ -732,6 +981,60 @@ int once(Session& ss, const std::vector<int32_t>& ids, const Pictures& pictures,
     return 0;
 }
 
+// --check-batch K: K prompts, the --tokens one without its first 0, 1, ... K-1 tokens, each answered greedily on
+// its own and then all of them together in their own sequences (Engine::step()).  Returns 1 when a token differs.
+int check_batch(Engine& engine, const std::vector<int32_t>& ids, int k, long long max_new) {
+    const auto read = [&](const std::vector<int32_t>& p) {
+        engine.reset();
+        for (size_t i = 0; i < p.size(); i += (size_t) engine.max_rows()) {
+            const int m = (int) std::min(p.size() - i, (size_t) engine.max_rows());
+            engine.eval(p.data() + i, m, i + (size_t) m == p.size());
+        }
+        return (int32_t) strata::poly::most_likely(engine.logits(), engine.n_vocab());
+    };
+    std::vector<std::vector<int32_t>> want((size_t) k), got((size_t) k);
+    std::vector<int> seqs((size_t) k);
+    std::vector<int32_t> next((size_t) k);
+    for (int j = 0; j < k; ++j) {
+        const std::vector<int32_t> p(ids.begin() + j, ids.end());
+        engine.bind(0);
+        int32_t t = read(p);
+        for (long long n = 0; n < max_new; ++n) {
+            want[(size_t) j].push_back(t);
+            engine.eval(&t, 1, true);
+            t = (int32_t) strata::poly::most_likely(engine.logits(), engine.n_vocab());
+        }
+    }
+    const Clock::time_point t0 = Clock::now();
+    for (int j = 0; j < k; ++j) {
+        seqs[(size_t) j] = j + 1;
+        engine.bind(j + 1);
+        next[(size_t) j] = read(std::vector<int32_t>(ids.begin() + j, ids.end()));
+    }
+    engine.bind(0);
+    const double read_ms = ms_since(t0);
+    const Clock::time_point t1 = Clock::now();
+    for (long long n = 0; n < max_new; ++n) {
+        for (int j = 0; j < k; ++j) got[(size_t) j].push_back(next[(size_t) j]);
+        engine.step(seqs.data(), next.data(), k);
+        for (int j = 0; j < k; ++j)
+            next[(size_t) j] = (int32_t) strata::poly::most_likely(engine.logits_of(j), engine.n_vocab());
+    }
+    const double step_ms = ms_since(t1);
+    int rc = 0;
+    for (int j = 0; j < k; ++j) {
+        size_t same = 0;
+        while (same < want[(size_t) j].size() && want[(size_t) j][same] == got[(size_t) j][same]) ++same;
+        std::fprintf(stderr, "check-batch: sequence %d: the first %zu of %lld tokens as on its own\n", j + 1, same,
+                     max_new);
+        if (same < want[(size_t) j].size()) rc = 1;
+    }
+    std::fprintf(stderr, "check-batch: %d prompts read in %.0f ms, %lld steps of %d tokens in %.0f ms (%.1f tok/s "
+                         "together)\n",
+                 k, read_ms, max_new, k, step_ms, step_ms > 0 ? 1000.0 * (double) (max_new * k) / step_ms : 0.0);
+    return rc;
+}
+
 void usage() {
     std::fprintf(stderr,
                  "usage: strata-poly --model FILE.gguf (--serve | --tokens ID,ID,... [--max-new N])\n"
@@ -764,6 +1067,12 @@ void usage() {
                  "                         as a CUDA graph and replayed)\n"
                  "  --kv-whole             give the attention caches VRAM for the whole context at load (default: as\n"
                  "                         the conversation grows, the expert cache having the rest until then)\n"
+                 "  --kv fmt               the K and V attention caches' format, opt-in: fp16 (default,\n"
+                 "                         unchanged); q8_0 (ggml Q8_0 blocks: half the KV VRAM, slightly\n"
+                 "                         different answers; qwen35moe's and kolibri1's); int8 / int8k (Gemma 4's:\n"
+                 "                         the same Q8_0 rule with the codes and their deltas in two arrays, so a\n"
+                 "                         reader takes four codes to a load; int8k keeps the keys' side\n"
+                 "                         quantized and the values' in fp16)\n"
                  "  --expert-swaps N       while an answer is written, up to N experts it keeps using are on their way\n"
                  "                         into VRAM, in place of cached ones it uses less (default 64, 0 = the cache\n"
                  "                         stays as it was loaded)\n"
@@ -773,6 +1082,9 @@ void usage() {
                  "                         of them are copied after the layer has routed\n"
                  "  --stage-ahead N        from N tokens, a batch copies those experts before it routes (default 1024,\n"
                  "                         0 = never)\n"
+                 "  --stage-read-mib N     a prompt read of several batches grows the staging buffer to N MiB (at\n"
+                 "                         most a layer's experts) with VRAM the expert cache lends it until the\n"
+                 "                         answer starts (default 0 = never)\n"
                  "  --cpu-share F          under that, the share of those experts the CPU computes meanwhile, the\n"
                  "                         ones the fewest tokens chose (default: as the times say; 0 = none)\n"
                  "  --prompt-cache N       checkpoints kept of a conversation, about 150 MB of RAM each (default 6;\n"
@@ -780,11 +1092,18 @@ void usage() {
                  "  --prompt-cache-every N a checkpoint every N prompt tokens, besides the one at a prompt's end\n"
                  "                         (default 2048, 0 = none)\n"
                  "  --conversation-cache-mib N   RAM for parked conversations, so that several can take turns\n"
-                 "                         without being read again (default 0 = off)\n"
+                 "                         without being read again (default 0 = off; auto: 40%% of the RAM free\n"
+                 "                         once loaded, above the floor below, at most 8192)\n"
                  "  --conversation-cache-slots N        parked conversations at most (default 4)\n"
                  "  --conversation-cache-min-tokens N   a conversation shorter than this is not parked (default 1024)\n"
                  "  --conversation-cache-min-free-mib N park only while this much physical RAM stays free (default\n"
                  "                         2560)\n"
+                 "  --batch N              N answers written together, each in a sequence of its own with its own\n"
+                 "                         state and attention rows (default 0 = one at a time; at most 8);\n"
+                 "                         --slots N is the same\n"
+                 "  --check-batch K        with --tokens and --batch K or more: K prompts answered on their own and\n"
+                 "                         then together, compared token by token (takes --kv-whole, so the expert\n"
+                 "                         cache stays as it is)\n"
                  "  --eos-ids ID,ID,...    tokens that end a reply (default: the GGUF's eos, eot and eom)\n"
                  "  --temperature F --top-k N --top-p F --min-p F --seed N   sampling for --tokens (default greedy)\n"
                  "  --images FILE          with --tokens: the prompt's pictures, as strata-vision writes them\n"
@@ -796,7 +1115,16 @@ void usage() {
                  "  --tail-skip N          an expert outside VRAM that every token of a window ranks at place N+1\n"
                  "                         or later among its experts is left out: faster, and the answers move a\n"
                  "                         little (default 0 = none is; setup gives Qwen3.6 6)\n"
-                 "environment: STRATA_ROUTE_TAIL_SKIP=N  in place of --tail-skip (0 turns it off)\n");
+                 "  --skip-weight F        in place of --tail-skip: an expert outside VRAM that every token of a\n"
+                 "                         window weighs under F of its experts' weight is left out (default 0 = off)\n"
+                 "  --cache-bias F         qwen35moe: a token's router scores get F added for each expert in VRAM\n"
+                 "                         before it picks, as it comes a few at a time; the weights stay the\n"
+                 "                         router's own: fewer experts on the CPU, and the answers move (default 0\n"
+                 "                         = off)\n"
+                 "environment: STRATA_ROUTE_TAIL_SKIP=N  in place of --tail-skip (0 turns it off)\n"
+                 "environment: STRATA_FREEZE_EXPERTS=1  hold the split of the routed experts between the card\n"
+                 "                         and the CPU still, so the same request gives the same greedy answer\n"
+                 "                         bit for bit; with guesses on, add --window 1 for a repeat everywhere\n");
 }
 
 }  // namespace
@@ -820,7 +1148,7 @@ int main(int argc, char** argv) {
     Sampling s;
     bool want_serve = false;
     long long max_new = 32;
-    int top_probs = 0, lookup = 3, image_pad = -1;
+    int top_probs = 0, lookup = 3, image_pad = -1, check = 0;
     std::string images;
     std::vector<int32_t> ids, eos, follow;
     for (int i = 1; i < argc; ++i) {
@@ -842,21 +1170,42 @@ int main(int argc, char** argv) {
         else if (a == "--any-node") o.stay_near = false;
         else if (a == "--no-graphs") o.graphs = false;
         else if (a == "--kv-whole") o.kv_grow = false;
+        else if (a == "--kv") {
+            const std::string fmt = val();
+            if (fmt == "fp16") o.kv_format = KvFmt::kFp16;
+            else if (fmt == "q8_0") o.kv_format = KvFmt::kQ8_0;
+            else if (fmt == "int8") o.kv_format = KvFmt::kInt8;
+            else if (fmt == "int8k") o.kv_format = KvFmt::kInt8K;
+            else {
+                std::fprintf(stderr, "strata-poly: --kv %s: unknown format (use fp16, q8_0, int8 or int8k)\n",
+                             fmt.c_str());
+                std::exit(2);
+            }
+        }
         else if (a == "--window") o.window = std::atoi(val());
         else if (a == "--lookup") lookup = std::atoi(val());
         else if (a == "--no-draft") o.draft = false;
         else if (a == "--draft-model") o.draft_model = val();
         else if (a == "--expert-swaps") o.expert_swaps = std::atoi(val());
         else if (a == "--tail-skip") o.tail_skip = std::atoi(val());
+        else if (a == "--skip-weight") o.skip_weight = (float) std::atof(val());
+        else if (a == "--cache-bias") o.cache_bias = (float) std::atof(val());
         else if (a == "--layer-split") o.layer_split = val();
+        else if (a == "--batch" || a == "--slots") o.batch = std::atoi(val());
+        else if (a == "--check-batch") check = std::atoi(val());
         else if (a == "--draft-vocab") o.draft_vocab = std::atoi(val());
         else if (a == "--prompt-batch") o.prompt_batch = std::atoi(val());
         else if (a == "--stage-mib") o.stage_mib = std::atoi(val());
         else if (a == "--stage-ahead") o.stage_ahead = std::atoi(val());
+        else if (a == "--stage-read-mib") o.stage_read_mib = std::atoi(val());
         else if (a == "--cpu-share") o.cpu_share = (float) std::atof(val());
         else if (a == "--prompt-cache") cache.o.checkpoints = std::atoi(val());
         else if (a == "--prompt-cache-every") cache.o.every = std::atoll(val());
-        else if (a == "--conversation-cache-mib") cache.o.park_mib = std::atoll(val());
+        else if (a == "--conversation-cache-mib") {
+            const std::string v = val();
+            cache.park_auto = v == "auto";
+            cache.o.park_mib = cache.park_auto ? 0 : std::atoll(v.c_str());
+        }
         else if (a == "--conversation-cache-slots") cache.o.park_slots = std::atoi(val());
         else if (a == "--conversation-cache-min-tokens") cache.o.park_min = std::atoll(val());
         else if (a == "--conversation-cache-min-free-mib") cache.min_free_mib = std::atoll(val());
@@ -885,6 +1234,14 @@ int main(int argc, char** argv) {
         usage();
         return 2;
     }
+    if (o.batch < 0 || o.batch > 8 || check < 0 || check > o.batch || (check > 0 && (int) ids.size() <= check)) {
+        std::fprintf(stderr, "strata-poly: --batch takes 0 to 8, and --check-batch at most --batch prompts, each "
+                             "with tokens left of --tokens\n");
+        return 2;
+    }
+    // --check-batch: K sequences growing together would take VRAM from the expert cache that the single runs had,
+    // and an expert moved to the CPU rounds differently (issue 55).  Their attention rows get VRAM at load instead.
+    if (check > 0) o.kv_grow = false;
     // over --tail-skip, as Strata's engine reads it: =0 turns a model's default off
     if (const char* v = std::getenv("STRATA_ROUTE_TAIL_SKIP")) o.tail_skip = std::atoi(v);
     const long long most = 1LL << 24;   // MiB: 16 TiB
@@ -903,7 +1260,15 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "strata-poly: loaded in %.1f s; %d of %d routed experts in VRAM (%.1f GiB), %d CPU threads\n",
                      ms_since(t0) / 1000.0, engine.cached_experts(), engine.total_experts(), engine.cached_gib(),
                      engine.threads());
-        if (o.tail_skip > 0)
+        if (o.cache_bias > 0)
+            std::fprintf(stderr, "strata-poly: cache bias %.2f: a token that comes a few at a time routes with %.2f "
+                                 "added to the score of each expert in VRAM; the weights stay the router's own\n",
+                         o.cache_bias, o.cache_bias);
+        if (o.skip_weight > 0)
+            std::fprintf(stderr, "strata-poly: skip weight %.3f: an expert outside VRAM that every token of a window "
+                                 "weighs under %.1f%% of its experts' weight is left out (in place of --tail-skip)\n",
+                         o.skip_weight, 100.0 * o.skip_weight);
+        else if (o.tail_skip > 0)
             std::fprintf(stderr, "strata-poly: tail skip %d: an expert outside VRAM that every token of a window ranks "
                                  "at place %d or later among its experts is left out; STRATA_ROUTE_TAIL_SKIP=0 turns "
                                  "it off\n",
@@ -924,12 +1289,27 @@ int main(int argc, char** argv) {
                 const int64_t id = engine.meta_u(key, -1);
                 if (id >= 0 && std::find(eos.begin(), eos.end(), (int32_t) id) == eos.end()) eos.push_back((int32_t) id);
             }
+        // A fixed 8 GiB on a PC whose RAM the model's file already fills pushed that file out of the file cache.
+        // Sized as Strata's engine sizes it (#3493); admit() still keeps min_free_mib free at every park.
+        if (cache.park_auto && want_serve && cache.o.checkpoints > 0 && cache.o.park_slots > 0) {
+            cache.o.park_mib = strata::core::auto_conversation_cache_mib(strata::core::available_host_bytes(),
+                                                                        cache.min_free_mib);
+            if (cache.o.park_mib > 0)
+                std::fprintf(stderr, "strata-poly: conversation cache sized from the free RAM: %lld MiB for up to %d "
+                                     "parked conversations (--conversation-cache-mib N sets it, 0 turns it off)\n",
+                             (long long) cache.o.park_mib, cache.o.park_slots);
+            else
+                std::fprintf(stderr, "strata-poly: conversation cache off: not enough free RAM to park conversations "
+                                     "(--conversation-cache-mib N asks for one anyway)\n");
+        }
         Session ss(engine, eos, cache, lookup);
         int rc = 0;
         if (want_serve) {
             rc = serve(ss);
         } else if ((long long) ids.size() + max_new > engine.max_context()) {
             throw std::runtime_error("the prompt and --max-new together exceed --max-context");
+        } else if (check > 0) {
+            rc = check_batch(engine, ids, check, max_new);
         } else {
             Pictures pictures;
             if (!images.empty()) {

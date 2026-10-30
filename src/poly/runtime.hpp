@@ -22,7 +22,8 @@ namespace strata::poly {
 constexpr uint32_t kTypeF32 = 0, kTypeBF16 = 30;
 constexpr int kMaxUsed = 32;
 constexpr int kSumRows = 32;        // routed experts one launch adds into their tokens' rows (ScaledRows)
-constexpr int kSlots = 8;           // cached experts one launch multiplies (kernels::MmvqSlots)
+constexpr int kSlots = 32;          // the most cached experts one launch multiplies (kernels::MmvqSlots), = kSumRows:
+                                    // 32 where kernels::native_mmvq_slots_wide(), 8 otherwise (engine.cpp)
 constexpr int kCpuRows = 8;         // tokens whose CPU experts one call computes; a window has no more
 // From this many tokens, a call runs its routed experts on the GPU alone and copies the ones that are not cached
 // through VRAM.  Below it, that copy costs more than the CPU takes to compute the few experts.
@@ -152,6 +153,18 @@ public:
         return it == where_.end() ? nullptr : it->second.t;
     }
     const uint8_t* data(const TensorInfo& t) const { return where_.at(t.name).file->tensor_data(t); }
+    /// The file a byte of the mapped model is in, by its place in paths(), and its offset from that file's first
+    /// byte; {-1, 0} when it is in none of them.
+    std::pair<int, uint64_t> place(const uint8_t* p) const {
+        for (size_t i = 0; i < files_.size(); ++i) {
+            const GgufFile& f = *files_[i];
+            if (f.tensors().empty()) continue;
+            const TensorInfo& t = f.tensors()[0];
+            const uintptr_t at = (uintptr_t) p, base = (uintptr_t) (f.tensor_data(t) - f.data_start() - t.offset);
+            if (at >= base && at - base < f.file_size()) return {(int) i, (uint64_t) (at - base)};
+        }
+        return {-1, 0};
+    }
     /// The files' bytes together.
     uint64_t bytes() const {
         uint64_t n = 0;

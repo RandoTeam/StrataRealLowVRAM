@@ -17,7 +17,7 @@ architectures, I'd like this work to go there, and I'm glad to help with that.
 
 Yes. It is built on Strata's own code: its quantized matvec kernels, its GGUF reader, its draft policy and suffix
 drafter, its conversation memory and the llama.cpp MMQ kernels Strata compiles. You can see the list in
-`CMakeLists.txt` (the `strata-poly` target). What is new is the model code for the four architectures and the
+`CMakeLists.txt` (the `strata-poly` target). What is new is the model code for the five architectures and the
 part that decides which experts sit in VRAM and which run on the CPU.
 
 ### How do I know the output is right?
@@ -52,20 +52,23 @@ times as fast (the two runs are linked there).
 
 ### Does it run on Radeon / AMD?
 
-Qwen3.8-Flash-Next, yes: on a Radeon with 12 GB or more it runs through Strata's AMD backend. The five added
-models run on AMD under Linux since 0.1.42-poly.4, as a beta: setup compiles their engine for the card on your PC
-(there is no ready-made AMD engine, so not on Windows), a contributor's port tested with Qwen3.6 UD-Q2_K_XL and
+Qwen3.8-Flash-Next, yes: on a Radeon with 12 GB or more it runs through Strata's AMD backend. The added
+models run on AMD since 0.1.42-poly.4, as a beta: setup compiles their engine for the card on your PC
+(there is no ready-made AMD engine), on Linux with ROCm from your system or AMD's wheels, and on
+Windows with AMD's TheRock wheels as well. A contributor's port was tested with Qwen3.6 UD-Q2_K_XL and
 Ornith APEX-I-Mini on an RX 7600 with 8 GB: 74 and 40 tokens/s in a short chat, 53 and 43 after a 32K prompt,
-read at 481 and 444. Gemma 4, Tiel Coder, LFM2.5 and GLM have not been tried on an AMD card, and setup says so when
-you pick them. I don't have an AMD card myself, so reports from one help; see
+read at 481 and 444. One Windows run, Tiel Coder UD-Q3_K_XL on an RX 9070 XT, wrote at 55 to 75 tokens/s and
+read a 7,376-token prompt at 2,750. GLM 5.3 Flash, DeepSeek V4, Flint and Kolibri 1 have not been tried on an AMD
+card, and setup says so when you pick them. I don't have an AMD card myself, so reports from one help; see
 [AMD_HIP.md](AMD_HIP.md#strata-poly-on-amd-beta).
 
 ### Will it run on a 6 GB card, or 4 GB?
 
 It has only run on 8 GB cards and up. With a context of 32K, Qwen3.6 takes about 5 GB of VRAM beside its experts,
-Ornith about 4 GB, Gemma 4 about 6 GB, Tiel Coder about 5 GB and LFM2.5 about 4 GB. The attention caches are part
-of that and take their share as a conversation grows, so a short chat leaves more room. On a 6 GB card Ornith and
-LFM2.5 are the ones to try; LFM2.5's caches grow the least, 20 KB a token.
+Ornith about 4 GB, Gemma 4 about 6 GB, Tiel Coder about 5 GB, LFM2.5 about 4 GB, Flint about 4 GB and Kolibri 1
+about 4 GB. The
+attention caches are part of that and take their share as a conversation grows, so a short chat leaves more room.
+On a 6 GB card Ornith and LFM2.5 are the ones to try; LFM2.5's caches grow the least, 20 KB a token.
 That is untested. On 4 GB, none of them leaves room for experts.
 
 ### What about older cards like a GTX 1050?
@@ -80,7 +83,7 @@ This engine helps MoE models that don't fit in VRAM. A dense model like Bonsai u
 token, so there are no experts to split, and the 1-bit Bonsai models already fit on a small card. LFM2.5-8B-A1B
 fits whole on an 8 GB card, so plain llama.cpp is fine there. LFM2.5-24B-A2B, the larger one, runs now
 (`--family lfm25`, [LFM.md](LFM.md)). Bigger MoEs are the good fit. DeepSeek V4 Flash runs now (`--family
-deepseek`, [DEEPSEEK.md](DEEPSEEK.md)), and
+deepseek`, [DEEPSEEK.md](DEEPSEEK.md)), and so does Flint 40B-A2.5B (`--family flint`, [FLINT.md](FLINT.md)).
 Ling-2.6-flash (104B, 7.4B active) is on the list. Requests go in the issues, and the ones people ask for most come
 first.
 
@@ -93,7 +96,10 @@ Their numbers are in the
 weights from the GGUF, so a fine-tune that keeps the architecture of Qwen3.6, Ornith 1.5 or Gemma 4 should run.
 Setup only knows the files it offers. To give it another, put the file in a folder under the name of the size
 closest to it, `Qwen3.6-35B-A3B-UD-Q4_K_M.gguf` for a Q4_K_M of Qwen3.6, and run setup with
-`--family qwen36 --model UD-Q4_K_M --gguf-dir <that folder>`.
+`--family qwen36 --model UD-Q4_K_M --gguf-dir <that folder>`. Setup checks that the file is a whole GGUF of the
+family's architecture (`qwen35moe` for Qwen3.6, Ornith 1.5 and Tiel Coder, `gemma4` for Gemma 4), says that it is
+not the file it offers, and uses it as it is; it never deletes a file in that folder. Its RAM and VRAM estimates
+are those of the size whose name the file took.
 
 ### Can I use any GLM 5.3 Flash GGUF?
 
@@ -150,6 +156,25 @@ room for the answer, as LM Studio's rolling window does. The system prompt and t
 window says how many messages it left out. Each request is cut again from the full conversation the app sends, so
 the model has forgotten what was dropped. Claude Code, Codex and OpenCode compact the conversation themselves and do
 not need it. A larger context (`--max-context` in the same file) keeps more of the chat.
+
+### Can the model see what it thought in earlier turns?
+
+With Qwen3.6, Ornith and Tiel Coder, if you ask for it. Their template leaves the thinking of earlier answers out of
+the prompt, so a model that thought of two numbers and said one makes the other up when asked for it later. Add
+`"preserve_thinking": true` to `strata-<model>.json` and restart, or send `"chat_template_kwargs":
+{"preserve_thinking": true}` with a request, as with llama.cpp. The server also remembers the thinking of the
+answers it wrote, so an app that sends an answer back without it (the chat page, Open WebUI) still gets it, as long as
+the answer's text comes back unchanged.
+
+### Can several people use one server at once?
+
+Yes. By default the server answers one request at a time and the others wait their turn. With `"parallel": N` in
+`strata-<model>.json` (or `--parallel N` when you run setup) it answers up to N together, with every model.
+On a card that holds most of the model's experts that writes more tokens a second in all: on an RTX 5090 four
+Qwen3.6 chats at once came at 428 tokens/s together, one alone at 312 to 333. On a small card, where
+most experts run on the CPU, it gains less: on the 8 GB laptop three Qwen3.6 chats at once came at 105 tokens/s
+together, one after the other at 79. How it works, and how to check it on your PC:
+[BATCHING.md](BATCHING.md#the-strata-poly-models).
 
 ### Who maintains it?
 

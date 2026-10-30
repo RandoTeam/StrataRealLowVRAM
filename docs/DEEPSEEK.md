@@ -115,8 +115,14 @@ The engine and its options are GLM's ([GLM.md](GLM.md#how-it-uses-the-card)). Wh
 
 ## What is missing
 
-- The other sizes in Unsloth's repository, from UD-IQ1_S (83 GB) to UD-Q3_K_XL (128 GB). The engine should read
-  them, but only UD-IQ2_XXS has been run, and setup offers no other.
+- Other sizes in setup: of those in Unsloth's repository it offers only UD-IQ2_XXS. A user with 128 GB of RAM ran
+  two more ([issue 21](https://github.com/VecSzn/PolyStrata/issues/21)).
+  UD-IQ3_XXS (104 GB) wrote at 27 to 31 tokens/s and read 512K tokens 4.6% slower than UD-IQ2_XXS.
+  UD-IQ4_XS (137 GB) is larger than that RAM: the rest is read from the disk as it is needed, and it wrote at 2 to
+  3.4 tokens/s with 0.1.44.1-poly.6. llama.cpp b11706 with the experts on the CPU wrote at 8.6 with the same
+  file, and strata-poly at 1.4 to 2.2 against llama.cpp's 9.5 to 10.6 with UD-Q4_K_XL (155 GB), the same
+  prompt on the same PC. The draft model (dspark) slowed llama.cpp down there, to 2.0 to 4.4 tokens/s.
+- A way of running a file larger than the RAM that comes near llama.cpp's speed there (above).
 - Guessing ahead with a draft model. The repository has one for this model (`dspark`, 11 GB), which the engine does
   not run yet. Guesses still come from text the conversation repeats.
 - Windows, by this project: setup asks before it installs it there. A user ran UD-IQ2_XXS on Windows 10 with an

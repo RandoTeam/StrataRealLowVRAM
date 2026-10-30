@@ -5,7 +5,6 @@
 #include "ggml-cpu.h"
 
 #include <algorithm>
-#include <array>
 #include <cmath>
 #include <cstring>
 #include <immintrin.h>
@@ -122,28 +121,6 @@ void Workers::run(int n, const std::function<void(int)>& fn) {
     while (users_.load() != 0) _mm_pause();
 }
 
-// An MXFP4 value is kvalues_mxfp4[nibble] times the block's power of two halved; Q5_0's is (q - 16) times its half.
-bool mxfp4_block_to_q5_0(const uint8_t* src, uint8_t* dst) {
-    constexpr int kLow = -24, kHigh = 15;   // the powers of two a half holds, subnormals included
-    static const int8_t kv[16] = {0, 1, 2, 3, 4, 6, 8, 12, 0, -1, -2, -3, -4, -6, -8, -12};
-    static const auto half = [] {
-        std::array<uint16_t, kHigh - kLow + 1> h{};
-        for (int p = kLow; p <= kHigh; ++p) h[(size_t) (p - kLow)] = ggml_fp32_to_fp16(std::ldexp(1.0f, p));
-        return h;
-    }();
-    const int p = (int) src[0] - 128;
-    if (p < kLow || p > kHigh) return false;
-    std::memcpy(dst, &half[(size_t) (p - kLow)], 2);
-    uint32_t qh = 0;
-    for (int j = 0; j < 16; ++j) {   // nibble j's low half is value j, its high half value j + 16, in both types
-        const int q0 = kv[src[1 + j] & 15] + 16, q1 = kv[src[1 + j] >> 4] + 16;
-        dst[6 + j] = (uint8_t) ((q0 & 15) | (q1 & 15) << 4);
-        qh |= (uint32_t) (q0 >> 4) << j | (uint32_t) (q1 >> 4) << (j + 16);
-    }
-    std::memcpy(dst + 2, &qh, 4);
-    return true;
-}
-
 bool cpu_expert_types_ok(int gu_type, int d_type, int n_embd, int n_ff, std::string& err) {
     init_once();
     for (const int type : {gu_type, d_type}) {
@@ -162,22 +139,27 @@ bool cpu_expert_types_ok(int gu_type, int d_type, int n_embd, int n_ff, std::str
     return true;
 }
 
-void cpu_experts(Workers& workers, const CpuExpert* experts, int n, int rows, int gu_type, int d_type, int n_embd,
-                 int n_ff, const float* x, float limit, bool gelu, float* out,
+void cpu_experts(Workers& workers, const CpuExpert* experts, int n, int rows, int gu_type, int u_type, int d_type,
+                 int n_embd, int n_ff, const float* x, float limit, bool gelu, float* out,
                  const std::function<void()>* meanwhile) {
     init_once();
     const ggml_type_traits_cpu* tg = traits(gu_type);
+    const ggml_type_traits_cpu* tu = traits(u_type);
     const ggml_type_traits_cpu* td = traits(d_type);
     const size_t gu_row = ggml_row_size((ggml_type) gu_type, n_embd);
+    const size_t u_row = ggml_row_size((ggml_type) u_type, n_embd);
     const size_t d_row = ggml_row_size((ggml_type) d_type, n_ff);
     const size_t a_bytes = ggml_row_size(tg->vec_dot_type, n_embd);
+    const size_t au_bytes = ggml_row_size(tu->vec_dot_type, n_embd);
     const size_t h_bytes = ggml_row_size(td->vec_dot_type, n_ff);
+    const bool own_act = tu->vec_dot_type != tg->vec_dot_type;   // up's dot product takes another quantization
 
     // The workers get these through the pointers below: a thread_local named in their code would be their own.
-    static thread_local std::vector<uint8_t> act, hq;
+    static thread_local std::vector<uint8_t> act, act_u, hq;
     static thread_local std::vector<float> h;
     static thread_local std::vector<int> by, run;
     act.resize((size_t) rows * a_bytes);
+    if (own_act) act_u.resize((size_t) rows * au_bytes);
     hq.resize((size_t) n * h_bytes);
     h.resize((size_t) n * n_ff);
     // ggml's quantizers for the activations are scalar: microseconds a row, which on one thread kept the others
@@ -185,6 +167,13 @@ void cpu_experts(Workers& workers, const CpuExpert* experts, int n, int rows, in
     uint8_t* actp = act.data();
     const auto act_from = traits(tg->vec_dot_type)->from_float;
     workers.run(rows, [&](int t) { act_from(x + (size_t) t * n_embd, actp + (size_t) t * a_bytes, n_embd); });
+    uint8_t* actup = actp;
+    if (own_act) {
+        actup = act_u.data();
+        const auto au_from = traits(tu->vec_dot_type)->from_float;
+        workers.run(rows, [&](int t) { au_from(x + (size_t) t * n_embd, actup + (size_t) t * au_bytes, n_embd); });
+    }
+    const size_t au_step = own_act ? au_bytes : a_bytes;
 
     // The uses of one expert next to each other (by), and where each expert's run of them starts (run).
     by.resize((size_t) n);
@@ -209,13 +198,14 @@ void cpu_experts(Workers& workers, const CpuExpert* experts, int n, int rows, in
         const int r0 = (t % gu_tasks) * kRowsPerTask, r1 = std::min(n_ff, r0 + kRowsPerTask);
         for (int r = r0; r < r1; ++r) {
             const uint8_t* gate = e.gate + (size_t) r * gu_row;
-            const uint8_t* up = e.up + (size_t) r * gu_row;
+            const uint8_t* up = e.up + (size_t) r * u_row;
             for (int i = i0; i < i1; ++i) {
                 const int j = byp[i];
                 const uint8_t* a = actp + (size_t) experts[j].row * a_bytes;
+                const uint8_t* au = actup + (size_t) experts[j].row * au_step;
                 float g = 0.f, u = 0.f;
                 tg->vec_dot(n_embd, &g, 0, gate, 0, a, 0, 1);
-                tg->vec_dot(n_embd, &u, 0, up, 0, a, 0, 1);
+                tu->vec_dot(n_embd, &u, 0, up, 0, au, 0, 1);
                 if (gelu) {
                     hp[(size_t) j * n_ff + r] =
                         0.5f * g * (1.f + std::tanh(0.7978845608f * g * (1.f + 0.044715f * g * g))) * u;

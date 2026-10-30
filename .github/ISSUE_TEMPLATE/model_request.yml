@@ -1,0 +1,52 @@
+name: Model request
+description: Ask for a model PolyStrata does not run yet
+title: "[Model]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    value: |
+      The engine reads the same GGUF files as llama.cpp, so a model llama.cpp runs is much less work to add.
+      Give the numbers from the model card or the GGUF. You can let an AI agent fill this in, but check what it
+      writes. There is also a vote for the next model: https://github.com/VecSzn/PolyStrata/issues/16
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      description: Name and link to the model page.
+    validations:
+      required: true
+  - type: input
+    id: gguf
+    attributes:
+      label: GGUF
+      description: Link to a GGUF of it, and the size you would run.
+    validations:
+      required: true
+  - type: dropdown
+    id: llamacpp
+    attributes:
+      label: Does llama.cpp run it?
+      options:
+        - "Yes"
+        - Only with an open llama.cpp PR
+        - "No"
+        - I don't know
+    validations:
+      required: true
+  - type: input
+    id: params
+    attributes:
+      label: Total and active parameters
+      description: "For example: 35B total, 3B active. Total decides the RAM it needs, active how fast it writes."
+    validations:
+      required: true
+  - type: textarea
+    id: arch
+    attributes:
+      label: Architecture
+      description: The architecture name in the GGUF (general.architecture), the attention type (full, sliding window, linear or Mamba layers) and whether it has MTP or draft layers.
+  - type: textarea
+    id: why
+    attributes:
+      label: Why this model?
+      description: Benchmarks against a model PolyStrata already runs, or what you would use it for.

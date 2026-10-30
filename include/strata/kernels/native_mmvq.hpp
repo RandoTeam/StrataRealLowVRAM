@@ -32,6 +32,12 @@ std::size_t native_q8_1_bytes(int n_in, int ncols = 1);
 // graph capture; captured graphs keep the kernels they captured.
 void native_mmvq_set_multi_exact(bool exact);
 bool native_mmvq_multi_exact();
+// B6 (lab, opt-in STRATA_B6_MMVQ_ROWS=1): the exact multi-column layout with the activation blocks of every column
+// loaded once per weight block and reused across the block's rows (bitwise the same sums as the default exact
+// layout). 0 = off (default), 1 = 2 rows per block, 2 / 4 / 8 = that many rows. Q4_K, Q5_K, Q6_K and IQ4_XS only.
+// Set before graph capture.
+void native_mmvq_set_b6_rows(int mode);
+int native_mmvq_b6_rows();
 
 // One quantization may serve multiple weight matrices sharing the same input.
 // Q8_1 stores FP16 scale and FP16 warp sum of the ORIGINAL float inputs; it does
@@ -131,16 +137,22 @@ void native_iq4_nl_mmvq(const void* weights, const void* x_q8_1, float* y,
 void native_iq4_nl_f32(const void* weights, const float* x, void* scratch_q8_1,
                       float* y, int n_in, int n_out, int ncols, void* stream);
 
-// Up to 8 matrices of one format and shape in one launch: matrix i times its own Q8_1 column x[i] into y[i], as
-// native_mmvq(type, w[i], x[i], y[i], n_in, n_out, 1, stream) would each.  A launch costs the calling thread more
+// Up to kMmvqSlotsMax (32) matrices of one format and shape in one launch: matrix i times its own Q8_1 column x[i]
+// into y[i], as native_mmvq(type, w[i], x[i], y[i], n_in, n_out, 1, stream) would each.  A launch costs the calling thread more
 // than a small product costs the card, which is what this saves.  False, with nothing launched: there is no
 // kernel for it (a format native_mmvq() does not take, or a HIP build), and the caller launches them one by one.
+constexpr int kMmvqSlotsMax = 32;   // 8 before: strata-poly's cached experts go 32 a launch where the wide path is on
 struct MmvqSlots {
-    const void* w[8];
-    const void* x[8];
-    float* y[8];
+    const void* w[kMmvqSlotsMax];
+    const void* x[kMmvqSlotsMax];
+    float* y[kMmvqSlotsMax];
 };
 bool native_mmvq_slots(int ggml_type, const MmvqSlots& slots, int count, int n_in, int n_out, void* stream);
+// Whether the slots launches take a warp per row group where a row's blocks fit one warp (an expert's IQ4_XS down
+// projection of 512 values), and strata-poly gives them its cached experts 32 at a time instead of 8.  The same bits
+// either way.  On by default on HIP (measured on an RX 7800 XT), off by default on CUDA (not measured there);
+// STRATA_SLOTS_WARP=0 turns it off, =1 on.
+bool native_mmvq_slots_wide();
 // native_mmvq_slots with the matrices the card picked, so that the launch needs nothing of the host (a decode
 // step's routed experts when every one of them is in VRAM): matrix j is table[ids[j]] + offset bytes, times the
 // Q8_1 column x + (j / x_every) * x_stride bytes, into y + j * y_stride floats.  count may pass 8.  False, with
@@ -160,7 +172,7 @@ bool native_mmvq_ids(int ggml_type, const MmvqIds& ids, int count, int n_in, int
 
 // Storage/dispatch helpers take stable GGML type IDs, avoiding a ggml runtime
 // dependency in the engine: Q4_0=2, Q5_0=6, Q8_0=8, Q2_K=10, Q3_K=11, Q4_K=12, Q5_K=13,
-// Q6_K=14, IQ4_NL=20, IQ4_XS=23, Q2_0=42. Unsupported IDs throw in the byte-count
+// Q6_K=14, IQ4_NL=20, IQ4_XS=23, MXFP4=39, Q2_0=42. Unsupported IDs throw in the byte-count
 // and launch helpers; only the
 // capability query returns false.
 bool native_mmvq_supported(int ggml_type) noexcept;
@@ -179,6 +191,8 @@ constexpr int native_q8_1_il_cp(int ncols) { return ncols <= 2 ? 2 : ncols <= 4 
 std::size_t native_q8_1_il_bytes(int n_in, int ncols);
 // Writes the interleaved copy of 2..4 columns of plain q8_1 blocks (native_quantize_q8_1's, or a fused producer's)
 // to x_il (native_q8_1_il_bytes): the same values in the same bytes.
+/// native_quantize_q8_1 and native_q8_1_interleave in one launch (CUDA): the same bytes in both buffers.
+void native_quantize_q8_1_il(const float* x, void* x_q8_1, void* x_il, int n_in, int ncols, void* stream);
 void native_q8_1_interleave(const void* x_q8_1, void* x_il, int n_in, int ncols, void* stream);
 // True when native_mmvq_il runs its own kernel for this call (IQ4_XS, Q4_K, Q5_K, Q6_K, 2-4 columns, the exact layout).
 bool native_mmvq_il_supported(int ggml_type, int ncols, int n_out);

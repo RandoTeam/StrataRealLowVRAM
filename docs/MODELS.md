@@ -155,4 +155,8 @@ explicit packing conversion and is not an installer menu option.
 You can add another model any time with `SETUP.bat` (the same as `START-HERE.bat --setup`; on Linux
 `./setup.sh --setup`). Files another model shares are not downloaded again (the Coder uses the original's shard 2 and
 vision encoder). With more than one model installed, `START-HERE.bat` asks which one to start; `run-<model>.bat`
-(Linux: `run-<model>.sh`) starts one directly.
+(Linux: `run-<model>.sh`) starts one directly. Once it runs, the chat page's model list switches to another installed
+model without a restart, and each model runs with its own settings
+([DETAILS.md](DETAILS.md#using-it), "Switching models in the web page"). With `"switch_on_request": true` in the
+config it starts with, API clients see every installed model in `/v1/models` too, and a request that names one loads
+it ("Switching models on request").

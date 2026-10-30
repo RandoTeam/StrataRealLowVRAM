@@ -44,7 +44,7 @@ def main() -> int:
         d.mkdir(parents=True, exist_ok=True)
     setup.cmake_build(ROOT, poly, "strata-poly", ["-DSTRATA_ENABLE_CUDA=ON", "-DSTRATA_BUILD_TESTS=OFF",
                                                   f"-DSTRATA_GGML_DIR={llama}", *defs], vcvars, poly / "build.bat")
-    setup.cmake_build(ROOT / "tools" / "vision", vis, "strata-vision", [f"-DLLAMA_DIR={llama}",
+    setup.cmake_build(ROOT / "tools" / "vision", vis, "strata-vision", [f"-DLLAMA_DIR={setup.get_llama_cpp(vision=True)}",
                                                                         "-DSTRATA_VISION_CUDA=ON", *defs],
                       vcvars, vis / "build.bat")
     src = setup.source_hash(setup.ENGINE_SOURCES)
