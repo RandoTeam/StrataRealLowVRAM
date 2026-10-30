@@ -102,17 +102,17 @@ FALLBACK_FAMILIES = {
                                                               "~80 GB of RAM to keep every expert in RAM",
               "tag": "nvfp4-"},
     "glm": {"title": "GLM 5.3 Flash", "about": "another model, with its own engine: Linux, one NVIDIA card (run on "
-                                               "32 GB), 64-128 GB of RAM", "tag": "glm-", "engine": "poly",
+                                               "32 GB), 64-128 GB of RAM", "tag": "glm-", "engine": "fourgbvram",
             "vision": False, "experimental": True},
     "deepseek": {"title": "DeepSeek V4 Flash", "about": "another model on GLM's engine: Linux, one NVIDIA card (run on "
                                                        "32 GB), ~72 GB of RAM beside it; a 91 GB download, no images",
-                 "tag": "dsv4-", "engine": "poly", "vision": False, "experimental": True,
+                 "tag": "dsv4-", "engine": "fourgbvram", "vision": False, "experimental": True,
                  "models": {"UD-IQ2_XXS": {"about": "2-bit i-quant experts (Unsloth Dynamic), 3-bit and MXFP4 where "
                                                     "they write", "download_gb": 90.9, "ram_gb": 72, "arena_gb": 83.9}}},
-    "lfm25": {"title": "LFM2.5-24B-A2B", "about": "on the strata-poly engine: one NVIDIA card, Linux or Windows; a "
+    "lfm25": {"title": "LFM2.5-24B-A2B", "about": "on the strata-fourgbvram engine: one NVIDIA card, Linux or Windows; a "
                                                    "15 GB file, ~20 GB of RAM beside an 8 GB card; four other sizes "
                                                    "too, no images",
-              "tag": "lfm25-", "engine": "poly", "vision": False, "experimental": True,
+              "tag": "lfm25-", "engine": "fourgbvram", "vision": False, "experimental": True,
               "models": {"UD-Q4_K_XL": {"about": "4-bit experts (Unsloth Dynamic), 5- and 6-bit where they write",
                                         "download_gb": 14.9, "ram_gb": 20, "arena_gb": 14.0},
                          "UD-Q3_K_XL": {"about": "3-bit i-quant experts, 4-bit where they write: the least RAM",
@@ -123,10 +123,10 @@ FALLBACK_FAMILIES = {
                                         "download_gb": 21.9, "ram_gb": 27, "arena_gb": 20.9},
                          "Q8_0": {"about": "8-bit throughout: the closest to the model as trained",
                                   "download_gb": 25.5, "ram_gb": 31, "arena_gb": 24.4}}},
-    "flint": {"title": "Flint 40B-A2.5B", "about": "on the strata-poly engine: one NVIDIA card, Linux or Windows; a "
+    "flint": {"title": "Flint 40B-A2.5B", "about": "on the strata-fourgbvram engine: one NVIDIA card, Linux or Windows; a "
                                                     "25 GB file, ~29 GB of RAM beside an 8 GB card; three other sizes "
                                                     "too, no images",
-              "tag": "flint-", "engine": "poly", "vision": False, "experimental": True,
+              "tag": "flint-", "engine": "fourgbvram", "vision": False, "experimental": True,
               "models": {"UD-Q4_K_XL": {"about": "4- and 5-bit experts (Unsloth Dynamic)",
                                         "download_gb": 25.1, "ram_gb": 29, "arena_gb": 23.1},
                          "UD-Q3_K_XL": {"about": "3-bit i-quant experts, 4-bit where they write: the least RAM",
@@ -136,10 +136,10 @@ FALLBACK_FAMILIES = {
                          "Q8_0": {"about": "8-bit throughout: the closest to the model as trained",
                                   "download_gb": 42.3, "ram_gb": 46, "arena_gb": 40.2}}},
     "kolibri": {"title": "Kolibri 1",
-                "about": "on the strata-poly engine, with the kolibri1 patch: Linux or Windows, one or two NVIDIA cards "
+                "about": "on the strata-fourgbvram engine, with the kolibri1 patch: Linux or Windows, one or two NVIDIA cards "
                          "(run on 32 GB, and on 12 GB under Windows); a 48 GB file, ~52 GB of RAM beside an 8 GB "
                          "card; two other sizes too, no images",
-                "tag": "kolibri1-", "engine": "poly", "vision": False, "experimental": True,
+                "tag": "kolibri1-", "engine": "fourgbvram", "vision": False, "experimental": True,
                 "models": {"Q4_K_M": {"about": "4-bit: Q4_K gate/up, Q6_K down on half the layers",
                                       "download_gb": 47.5, "ram_gb": 52, "arena_gb": 45.7},
                            "Q2_K": {"about": "2-bit, the fastest: the least RAM",
@@ -147,20 +147,20 @@ FALLBACK_FAMILIES = {
                            "Q3_K_M": {"about": "3-bit: the least RAM that still reads well",
                                       "download_gb": 37.5, "ram_gb": 42, "arena_gb": 35.8}}},
     # a family with sizes of its own ("models"): two of these have a size of one name
-    "qwen36": {"title": "Qwen3.6-35B-A3B", "about": "on the strata-poly engine: one NVIDIA card, Linux or Windows; a "
+    "qwen36": {"title": "Qwen3.6-35B-A3B", "about": "on the strata-fourgbvram engine: one NVIDIA card, Linux or Windows; a "
                                                      "17 GB file, ~21 GB of RAM beside an 8 GB card; a smaller and a "
                                                      "larger size too",
-               "tag": "qwen36-", "engine": "poly", "vision": True, "experimental": True,
+               "tag": "qwen36-", "engine": "fourgbvram", "vision": True, "experimental": True,
                "models": {"UD-Q3_K_M": {"about": "3-bit experts (Unsloth Dynamic), its draft block in the file",
                                         "download_gb": 17.1, "ram_gb": 21, "arena_gb": 14.6},
                           "UD-Q2_K_XL": {"about": "2- and 3-bit i-quant experts (Unsloth Dynamic): the least RAM",
                                          "download_gb": 12.6, "ram_gb": 17, "arena_gb": 10.8},
                           "UD-Q4_K_M": {"about": "4-bit experts (Unsloth Dynamic), 5- and 6-bit where they write",
                                         "download_gb": 22.7, "ram_gb": 27, "arena_gb": 20.1}}},
-    "clover": {"title": "Clover-35B-A3B-Preview", "about": "on the strata-poly engine: one NVIDIA card, Linux or "
+    "clover": {"title": "Clover-35B-A3B-Preview", "about": "on the strata-fourgbvram engine: one NVIDIA card, Linux or "
                                                             "Windows; a 17 GB file, ~20 GB of RAM beside an 8 GB card; "
                                                             "a smaller and a larger size too, no images",
-               "tag": "clover-", "engine": "poly", "vision": False, "experimental": True,
+               "tag": "clover-", "engine": "fourgbvram", "vision": False, "experimental": True,
                "models": {"Q3_K_M": {"about": "3-bit experts, 4- and 5-bit where they write",
                                      "download_gb": 16.8, "ram_gb": 20, "arena_gb": 15.3},
                           "APEX-I-NANOPLUS": {"about": "2- and 3-bit experts (APEX): the least RAM",
@@ -170,16 +170,16 @@ FALLBACK_FAMILIES = {
     "ornith": {"title": "Ornith 1.5 35B-A3B", "about": "Qwen3.6-35B-A3B's architecture, other weights; a 17 GB file, "
                                                         "~22 GB of RAM beside an 8 GB card; a smaller and a larger "
                                                         "size too", "tag": "ornith-",
-               "engine": "poly", "vision": True, "experimental": True,
+               "engine": "fourgbvram", "vision": True, "experimental": True,
                "models": {"APEX-I-COMPACT": {"about": "3- and 4-bit K-quant experts (APEX), its draft block in the "
                                                       "file", "download_gb": 17.4, "ram_gb": 22, "arena_gb": 15.8},
                           "APEX-I-MINI": {"about": "2- and 3-bit experts (APEX): the least RAM",
                                           "download_gb": 14.4, "ram_gb": 18, "arena_gb": 12.9},
                           "APEX-I-QUALITY": {"about": "4- to 6-bit experts (APEX)",
                                              "download_gb": 23.7, "ram_gb": 28, "arena_gb": 21.6}}},
-    "gemma4": {"title": "Gemma 4 26B-A4B", "about": "on the strata-poly engine too; a 13 GB file, ~18 GB of RAM beside an 8 GB "
+    "gemma4": {"title": "Gemma 4 26B-A4B", "about": "on the strata-fourgbvram engine too; a 13 GB file, ~18 GB of RAM beside an 8 GB "
                                                      "card; a smaller and a larger size too", "tag": "gemma4-",
-               "engine": "poly", "vision": True, "experimental": True,
+               "engine": "fourgbvram", "vision": True, "experimental": True,
                "models": {"UD-Q3_K_M": {"about": "3-bit experts (Unsloth Dynamic), and Google's draft model for it",
                                         "download_gb": 13.2, "ram_gb": 18, "arena_gb": 10.3},
                           "UD-Q2_K_XL": {"about": "2-bit i-quant experts (Unsloth Dynamic): the least RAM; the same "
@@ -191,7 +191,7 @@ FALLBACK_FAMILIES = {
     "tiel": {"title": "Tiel Coder 35B-A3B", "about": "Ornith 1.5 quantized for coding, with the Sharp chat template; a "
                                                     "17 GB file, ~21 GB of RAM beside an 8 GB card; a smaller and a "
                                                     "larger size too", "tag": "tiel-",
-             "engine": "poly", "vision": True, "experimental": True,
+             "engine": "fourgbvram", "vision": True, "experimental": True,
              "models": {"UD-Q3_K_XL": {"about": "3-bit i-quant experts, 4-bit where they write; its draft block in "
                                                 "the file", "download_gb": 17.2, "ram_gb": 21, "arena_gb": 14.6},
                         "UD-IQ3_XXS": {"about": "2-bit i-quant experts, 3-bit where they write: the least RAM",
@@ -201,7 +201,7 @@ FALLBACK_FAMILIES = {
     "minicpmv": {"title": "MiniCPM-V 4.7 35B-A3B", "about": "Qwen3.6-35B-A3B's architecture, OpenBMB's weights, and it "
                                                             "reads pictures too; a 22 GB file, ~25 GB of RAM beside an "
                                                             "8 GB card; a smaller and a larger size too",
-                 "tag": "minicpmv-", "engine": "poly", "vision": True, "experimental": True,
+                 "tag": "minicpmv-", "engine": "fourgbvram", "vision": True, "experimental": True,
                  "models": {"Q4_K_M": {"about": "4-bit experts (K-quant), 5- and 6-bit where they write",
                                        "download_gb": 21.2, "ram_gb": 25, "arena_gb": 19.5},
                             "mix_q3gud_im": {"about": "3- and 4-bit experts (imatrix mix): the least RAM",
@@ -572,7 +572,7 @@ class Strata:
     def settings_path(self) -> Path:
         if WIN:
             return Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming") / "4gbVramStrata" / "settings.json"
-        return Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config") / "polystrata" / "settings.json"
+        return Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config") / "fourgbvramstrata" / "settings.json"
 
     def data_dir(self) -> Path:
         try:
@@ -1304,7 +1304,7 @@ class Tools:
         if n == current or is_inside(n, norm(s.root)) or n == norm(s.root.parent / "4gbVramStrata-data"):
             pass
         else:
-            if not p.name.lower().startswith("polystrata"):
+            if not p.name.lower().startswith("fourgbvramstrata"):
                 raise ToolError(f"data_dir {raw!r}: a new data folder must be named 4gbVramStrata... (e.g. "
                                 f"{Path(p.anchor or '/') / '4gbVramStrata-data'}), so that no other folder is filled with "
                                 "model files")
@@ -1385,9 +1385,9 @@ class Tools:
             model = rec["model"] if rec.get("family") == family else ("IQ3_XXS" if "IQ3_XXS" in sizes and
                                                                      hw.get("ram_gb", 0) >= 60 else next(iter(sizes)))
             S = s.setup_module()
-            if families[family].get("engine") == "poly" and S and hw.get("ram_gb"):   # setup's own pick for this PC
+            if families[family].get("engine") == "fourgbvram" and S and hw.get("ram_gb"):   # setup's own pick for this PC
                 cards = [g["vram_gb"] for g in hw.get("gpus", []) if g.get("usable")]
-                model = S.poly_default(sizes, hw["ram_gb"], max(cards, default=0.0))
+                model = S.fourgbvram_default(sizes, hw["ram_gb"], max(cards, default=0.0))
         elif family is None:
             fams = [f for f in families if model in s.sizes(f)]
             if len(fams) > 1:                   # a family's own size yields to MODELS' (Tiel's UD-Q4_K_XL)
@@ -1407,7 +1407,7 @@ class Tools:
             if d.get("budget") and (not hasattr(s.setup_module(), "unsloth_budget") or
                                                 s.setup_module().unsloth_budget(model, hw.get("ram_gb") or 0.0)):
                 context = 8192 if vram < 14 else 32768
-            if families[family].get("engine") == "poly":
+            if families[family].get("engine") == "fourgbvram":
                 context = 32768                         # the one it was measured with, setup's own default
         if vision in ("yes", "gpu", "cpu") and d.get("vision", families[family].get("vision")) is False:
             raise ToolError(f"images are not available with {families[family]['title']} {model} yet: use vision=no")

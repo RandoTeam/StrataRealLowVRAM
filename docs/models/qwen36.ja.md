@@ -47,11 +47,11 @@
 ほかはすべてインストーラーが用意します。GLM 5.3 Flash と同じです。
 Windows では最新リリースからビルド済みのエンジンをダウンロードします。
 AVX2 のない CPU と、そのリリースのあとでエンジンが変わったコピーでは、代わりに Visual Studio の 2022 コンパイラーと
-CUDA ツールキットでコンパイルし、足りなければインストールするか尋ねます。未対応：Windows での 2 枚、3 枚以上。Windows の AMD のカードでは、セットアップが Linux と同じように `strata-poly` をコンパイルします（AMD の TheRock ホイールを `.rocm-win` に）。そこでの実行は新しいものだという警告が出ます（[AMD_HIP.md](../AMD_HIP.md#strata-poly-on-amd-beta)）。
+CUDA ツールキットでコンパイルし、足りなければインストールするか尋ねます。未対応：Windows での 2 枚、3 枚以上。Windows の AMD のカードでは、セットアップが Linux と同じように `strata-fourgbvram` をコンパイルします（AMD の TheRock ホイールを `.rocm-win` に）。そこでの実行は新しいものだという警告が出ます（[AMD_HIP.md](../AMD_HIP.md#strata-fourgbvram-on-amd-beta)）。
 
 [Strata](https://github.com/Niko1221/Strata) 自身のエンジンも 0.1.44 から Qwen3.6 を動かせます。UD-Q4_K_XL 以上です（`--family qwen36-strata`、RAM 32 GB 以上）。
-RTX 5090 と UD-Q4_K_XL で比べると、4K のプロンプトは strata-poly の 1.6 倍の速さで読み、31K のプロンプトと書き出しはほぼ同じでした（[測定](../BACKENDS.md#qwen36-on-two-engines)、英語）。
-小さいサイズと 8 GB のカードは strata-poly のままです。
+RTX 5090 と UD-Q4_K_XL で比べると、4K のプロンプトは strata-fourgbvram の 1.6 倍の速さで読み、31K のプロンプトと書き出しはほぼ同じでした（[測定](../BACKENDS.md#qwen36-on-two-engines)、英語）。
+小さいサイズと 8 GB のカードは strata-fourgbvram のままです。
 
 ## どのモデルを選べばいい
 

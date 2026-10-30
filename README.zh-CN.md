@@ -22,7 +22,7 @@ Qwen3.8-Flash-Next、GLM 5.3 Flash、DeepSeek V4 Flash、LFM2.5、Flint、Qwen3.
 - **[Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next)**：12 GB 及以上的 NVIDIA 或 AMD 显卡，Windows 或
   Linux。它还能看图片。引擎是 Strata 项目的，没有改动。
 
-另外十一个用的是为 4gbVramStrata 写的引擎，需要一张 NVIDIA 显卡，也可以用[两张](docs/MULTI_GPU.md#the-strata-poly-models)：十一个都能在 Linux 上跑，除了 GLM 5.3 Flash 和 DeepSeek V4 Flash，其余也都能在 Windows 上跑。
+另外十一个用的是为 4gbVramStrata 写的引擎，需要一张 NVIDIA 显卡，也可以用[两张](docs/MULTI_GPU.md#the-strata-fourgbvram-models)：十一个都能在 Linux 上跑，除了 GLM 5.3 Flash 和 DeepSeek V4 Flash，其余也都能在 Windows 上跑。
 目前是实验性的：只在一台 32 GB 显卡的电脑上跑过，八个小的另外在一台 8 GB 显卡的笔记本上跑过。
 
 - **[GLM 5.3 Flash](docs/models/glm.zh-CN.md)**：最大的一个，文件 79 到 114 GB，大部分留在内存里。
@@ -72,7 +72,7 @@ Qwen3.8-Flash-Next、GLM 5.3 Flash、DeepSeek V4 Flash、LFM2.5、Flint、Qwen3.
 Qwen3.8-Flash-Next 用的是 [Strata](https://github.com/Niko1221/Strata) 的引擎，由 Strata 项目在 RTX 5070（12 GB）、64 GB 内存的电脑上测得：IQ2_XS 写 79、读 32K 提示 2,090（[全部规格](docs/models/qwen38.zh-CN.md)）。
 
 用 4gbVramStrata 自己引擎的这十一个模型，都是用它自带的跑分测的，你也可以在自己的电脑上跑：
-`python polystrata.py benchmark --model <name> --prompt-tokens 24000`
+`python fourgbvramstrata.py benchmark --model <name> --prompt-tokens 24000`
 （[它发什么、打印什么](docs/BACKENDS.md#benchmark)，英文）。
 别人在自己的显卡上测的结果，以及怎么在你的电脑上和 llama.cpp 对比：
 [社区测试结果](docs/COMMUNITY_BENCHMARKS.md#the-models-polystrata-adds)（英文）。

@@ -1729,7 +1729,7 @@ def join_warm_read():
 
 
 class LastTurn(unittest.TestCase):
-    """strata-poly keeps a checkpoint where the prompt's last turn begins (the GEN line's turn_at): the chat's next
+    """strata-fourgbvram keeps a checkpoint where the prompt's last turn begins (the GEN line's turn_at): the chat's next
     request shares the prompt up to there, whatever its template writes for this reply (some drop the thinking)."""
 
     MSGS = [{"role": "system", "content": "You are terse."}, {"role": "user", "content": "hi"}]
@@ -2408,9 +2408,9 @@ class PeerDevice(unittest.TestCase):
         self.assertEqual(engine_args({"args": list(done), "vision": {"gpu": True}}), done)
         self.assertEqual(engine_args({"args": list(args)}), args)                # no section: no images
         # it has no such option; setup writes its path as this system writes one
-        for exe in ("engine-poly/strata-poly", os.path.join(os.sep, "x", "engine-poly", "strata-poly.exe")):
-            poly = ["--model", "x.gguf"]
-            self.assertEqual(engine_args({"exe": exe, "args": list(poly), "vision": {"exe": "v", "gpu": True}}), poly)
+        for exe in ("engine-fourgbvram/strata-fourgbvram", os.path.join(os.sep, "x", "engine-fourgbvram", "strata-fourgbvram.exe")):
+            fourgbvram = ["--model", "x.gguf"]
+            self.assertEqual(engine_args({"exe": exe, "args": list(fourgbvram), "vision": {"exe": "v", "gpu": True}}), fourgbvram)
 
     def test_split_added_for_several_gpus(self):
         self.assertEqual(engine_args({"args": ["--native", "x"], "gpu": [0, 1]}),
@@ -5199,7 +5199,7 @@ class SilentEngine(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             engine.log_path = os.path.join(d, "e.log")
             with open(engine.log_path, "w", encoding="utf-8") as f:
-                f.write("strata-poly: loaded in 12.6 s\nprompt 300 tokens\n")
+                f.write("strata-fourgbvram: loaded in 12.6 s\nprompt 300 tokens\n")
             engine.proc.poll.return_value = -11
             note = engine.death_note()
             self.assertIn("SIGSEGV", note)

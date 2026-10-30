@@ -573,8 +573,8 @@ class EngineLaunchEnv(unittest.TestCase):
             self.assertEqual(seen["env"]["PATH"].split(setup.os.pathsep)[0], str(eng / "rocm" / "bin"))
 
 
-class PolyHipWindows(unittest.TestCase):
-    """strata-poly on an AMD card under Windows: setup compiles it itself (AMD's TheRock wheels in .rocm-win), the
+class FourgbvramHipWindows(unittest.TestCase):
+    """strata-fourgbvram on an AMD card under Windows: setup compiles it itself (AMD's TheRock wheels in .rocm-win), the
     wheels' version coming from STRATA_ROCM_WIN_VERSION (or build_windows.bat's STRATA_ROCM_VERSION).
     No ROCm, no GPU, no downloads."""
 
@@ -662,29 +662,29 @@ class PolyHipWindows(unittest.TestCase):
     def test_an_engine_of_this_source_is_kept(self):
         with tempfile.TemporaryDirectory() as t:
             root = Path(t)
-            eng = root / setup.ENGINE_POLY_DIR
+            eng = root / setup.ENGINE_FOURGBVRAM_DIR
             eng.mkdir()
-            (eng / setup.POLY_EXE).write_text("x")
+            (eng / setup.FOURGBVRAM_EXE).write_text("x")
             (eng / "BUILD.json").write_text(json.dumps({"source": "local-hip", "backend": "hip",
                                                         "archs": ["gfx1201"], "src": "abc"}), encoding="utf-8")
             compiled = mock.Mock(side_effect=AssertionError("compiled"))
             with mock.patch.object(setup, "ROOT", root), mock.patch.object(setup, "source_hash", lambda parts: "abc"), \
                     mock.patch.object(setup, "cmake_build", compiled):
-                got = setup.build_engine_poly_hip_win({"arch": "gfx1201", "archs": ["gfx1201"]}, root / "llama.cpp")
+                got = setup.build_engine_fourgbvram_hip_win({"arch": "gfx1201", "archs": ["gfx1201"]}, root / "llama.cpp")
             self.assertEqual(got, eng)
             compiled.assert_not_called()
 
     def test_the_windows_engine_is_dispatched_from_the_amd_build(self):
         seen = {}
         with mock.patch.object(setup, "WIN", True), \
-                mock.patch.object(setup, "build_engine_poly_hip_win", lambda gpu, llama: seen.update(gpu=gpu)):
-            setup.build_engine_poly_hip({"arch": "gfx1201"}, Path("llama.cpp"))
+                mock.patch.object(setup, "build_engine_fourgbvram_hip_win", lambda gpu, llama: seen.update(gpu=gpu)):
+            setup.build_engine_fourgbvram_hip({"arch": "gfx1201"}, Path("llama.cpp"))
         self.assertEqual(seen["gpu"], {"arch": "gfx1201"})
 
     def test_the_check_line_names_amd_on_windows(self):
         d = setup.FAMILIES["tiel"]["models"]["UD-Q3_K_XL"]
         with mock.patch.object(setup, "WIN", True):
-            line = setup.poly_verdict(d, 63, 15.9, True)
+            line = setup.fourgbvram_verdict(d, 63, 15.9, True)
         self.assertIn("measured on one AMD card on Windows", line)
         self.assertIn("fits by setup's estimate", line)
 
@@ -695,7 +695,7 @@ class PolyHipWindows(unittest.TestCase):
         def cmake(src_dir, bdir, target, defs, vcvars, bat):
             built.append((target, defs))
             bdir.mkdir(parents=True, exist_ok=True)
-            (bdir / setup.POLY_EXE).write_text("x")
+            (bdir / setup.FOURGBVRAM_EXE).write_text("x")
 
         with mock.patch.object(setup, "ROOT", root), \
                 mock.patch.object(setup, "source_hash", lambda parts: "new"), \
@@ -705,9 +705,9 @@ class PolyHipWindows(unittest.TestCase):
                 mock.patch.object(setup, "hipblaslt_version", lambda dirs: None), \
                 mock.patch.object(setup, "source_version", lambda: "0.1.45"), \
                 mock.patch.object(setup, "hip_runtime_beside_exe", lambda eng: None):
-            got = setup.build_engine_poly_hip_win({"arch": "gfx1201"}, root / "llama.cpp")
-        self.assertEqual(got, root / setup.ENGINE_POLY_DIR)
-        return built[0][1], json.loads((root / setup.ENGINE_POLY_DIR / "BUILD.json").read_text(encoding="utf-8"))
+            got = setup.build_engine_fourgbvram_hip_win({"arch": "gfx1201"}, root / "llama.cpp")
+        self.assertEqual(got, root / setup.ENGINE_FOURGBVRAM_DIR)
+        return built[0][1], json.loads((root / setup.ENGINE_FOURGBVRAM_DIR / "BUILD.json").read_text(encoding="utf-8"))
 
     def test_the_build_is_native_and_loads_the_bundled_rocm(self):
         with tempfile.TemporaryDirectory() as t:
@@ -719,14 +719,14 @@ class PolyHipWindows(unittest.TestCase):
             self.assertIn("-DSTRATA_PREFILL_MMQ=ON", defs)         # the ready-made Windows HIP engine's own build
             self.assertNotIn("-DSTRATA_NATIVE_EXPERTS=ON", defs)   # ON by default
             self.assertEqual(meta["lib_dirs"], [str(bundled)])     # the ready-made engine's ROCm: not on the disk twice
-            self.assertFalse((root / setup.ENGINE_POLY_DIR / "rocm").exists())
+            self.assertFalse((root / setup.ENGINE_FOURGBVRAM_DIR / "rocm").exists())
 
     def test_without_a_ready_made_engine_the_wheels_own_rocm_is_used(self):
         with tempfile.TemporaryDirectory() as t:
             root = Path(t)
             defs, meta = self.build(root, root / "engine" / "rocm" / "bin")
             self.assertEqual(meta["lib_dirs"], [str(root / "rocm" / "bin")])   # .rocm-win's own
-            self.assertFalse((root / setup.ENGINE_POLY_DIR / "rocm").exists())
+            self.assertFalse((root / setup.ENGINE_FOURGBVRAM_DIR / "rocm").exists())
 
 
 class TdrPointer(unittest.TestCase):

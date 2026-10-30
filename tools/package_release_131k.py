@@ -36,16 +36,16 @@ def package_release():
         else:
             print(f"  ! Warning: {rf} not found")
 
-    # engine-poly directory
-    poly_src = os.path.join(root, "engine-poly")
-    poly_dst = os.path.join(stage_dir, "engine-poly")
-    os.makedirs(poly_dst, exist_ok=True)
-    if os.path.exists(poly_src):
-        for f in os.listdir(poly_src):
-            src = os.path.join(poly_src, f)
+    # engine-fourgbvram directory
+    fourgbvram_src = os.path.join(root, "engine-fourgbvram")
+    fourgbvram_dst = os.path.join(stage_dir, "engine-fourgbvram")
+    os.makedirs(fourgbvram_dst, exist_ok=True)
+    if os.path.exists(fourgbvram_src):
+        for f in os.listdir(fourgbvram_src):
+            src = os.path.join(fourgbvram_src, f)
             if os.path.isfile(src) and (f.endswith(".exe") or f.endswith(".dll")):
-                shutil.copy2(src, os.path.join(poly_dst, f))
-                print(f"  + engine-poly/{f} ({os.path.getsize(src) / (1024*1024):.1f} MB)")
+                shutil.copy2(src, os.path.join(fourgbvram_dst, f))
+                print(f"  + engine-fourgbvram/{f} ({os.path.getsize(src) / (1024*1024):.1f} MB)")
 
     # Serve directory (Python server + Web UI)
     serve_src = os.path.join(root, "serve")

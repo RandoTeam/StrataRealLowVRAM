@@ -1,6 +1,6 @@
-# LFM2.5-24B-A2B (`strata-poly`)
+# LFM2.5-24B-A2B (`strata-fourgbvram`)
 
-`strata-poly`, the engine of GLM 5.3 Flash and the smaller models, also runs Liquid AI's LFM2.5-24B-A2B: llama.cpp's
+`strata-fourgbvram`, the engine of GLM 5.3 Flash and the smaller models, also runs Liquid AI's LFM2.5-24B-A2B: llama.cpp's
 architecture `lfm2moe`, read from the GGUF files of Unsloth and Liquid AI. The server, the web app and the API are the
 ones the README describes.
 
@@ -27,7 +27,7 @@ Setup takes UD-Q4_K_XL, or UD-Q3_K_XL when the PC has too little RAM for it; the
 ## How fast
 
 The README's numbers are 4gbVramStrata's own benchmark through the server, the test every model of this engine gets
-([BACKENDS.md](BACKENDS.md#a-prompt-of-30000-tokens)): `polystrata.py benchmark --prompt-tokens 24000`, a short chat
+([BACKENDS.md](BACKENDS.md#a-prompt-of-30000-tokens)): `fourgbvramstrata.py benchmark --prompt-tokens 24000`, a short chat
 and a prompt built from this repository's documents, 256 tokens written after each, three runs a size and the last
 two below. The engine is 4a644a8d's, with the run configs setup writes for each machine: on both, a prompt is read
 2,048 tokens at a time.
@@ -118,7 +118,7 @@ UD-Q4_K_XL, a context of 131,072 and prompts read 2,048 tokens at a time:
   probabilities are 0.087 apart at most.
 - A window of guesses writes the same tokens as one token at a time, with the experts on the CPU: 300 tokens after
   a prompt of 26 tokens and after one of 4,259.
-- `poly_attend_test`, `poly_norm_q8_test`, `poly_shortconv_test` and `poly_route_test` check the kernels written for
+- `fourgbvram_attend_test`, `fourgbvram_norm_q8_test`, `fourgbvram_shortconv_test` and `fourgbvram_route_test` check the kernels written for
   it against the ones they stand for; `serve/test_lfm2.py` the tool calls and the chat template.
 
 ## How the sizes compare

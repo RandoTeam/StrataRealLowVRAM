@@ -16,7 +16,7 @@ It runs twelve models, on two engines:
 - **[Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next)** on an NVIDIA or AMD graphics card with
   12 GB or more, on Windows or Linux. It also reads pictures. Its engine is the Strata project's, unchanged.
 
-The other eleven run on an engine written for 4gbVramStrata, with one NVIDIA card or [two](docs/MULTI_GPU.md#the-strata-poly-models): on Linux, and all but GLM 5.3 Flash and
+The other eleven run on an engine written for 4gbVramStrata, with one NVIDIA card or [two](docs/MULTI_GPU.md#the-strata-fourgbvram-models): on Linux, and all but GLM 5.3 Flash and
 DeepSeek V4 Flash on Windows too. They are experimental: they have run on one PC with a 32 GB card, and the eight smaller ones on a laptop
 with an 8 GB card as well.
 
@@ -63,7 +63,7 @@ A token is about ¾ of a word.
 > 
 > Additional models (`UD-IQ4_XS`, baseline `Tiel-Coder`, `Qwen3.6-35B`, `Ornith 1.5`, etc.) are queued for upcoming test validation on this hardware.
 
-Measured with `engine-poly/strata-poly-131k.exe` (`kSnapPlaces = 7`, CUDA 12.8, SM_86) on consumer hardware:
+Measured with `engine-fourgbvram/strata-fourgbvram-131k.exe` (`kSnapPlaces = 7`, CUDA 12.8, SM_86) on consumer hardware:
 
 <table>
 <tr><th>NVIDIA GeForce RTX 3050 Laptop (4 GB VRAM), AMD Ryzen 5 5500U (6 threads), 32 GB RAM, Windows 11</th></tr>
@@ -118,7 +118,7 @@ Laptop: RTX 4070 Laptop (8 GB), Core i7-14700HX, 32 GB RAM. Workstation: RTX 509
 Qwen3.8-Flash-Next runs on the Strata project's engine and was measured by that project on a PC with an RTX 5070 (12 GB) and 64 GB of RAM: IQ2_XS writes at 79 and reads a 32K prompt at 2,090 ([every size](docs/models/qwen38.md)).
 
 The eleven models of 4gbVramStrata's own engine were measured with its benchmark, which you can run on your PC:
-`python polystrata.py benchmark --model <name> --prompt-tokens 24000`
+`python fourgbvramstrata.py benchmark --model <name> --prompt-tokens 24000`
 ([what it sends and prints](docs/BACKENDS.md#benchmark)).
 What others measured on their own cards, and how to compare with llama.cpp on yours:
 [community results](docs/COMMUNITY_BENCHMARKS.md#the-models-polystrata-adds).

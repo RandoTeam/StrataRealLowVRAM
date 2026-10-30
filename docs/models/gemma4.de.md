@@ -45,8 +45,8 @@ Alles andere richtet der Installer ein, wie bei GLM 5.3 Flash. Unter Windows lä
 neuesten Release. Auf einem Prozessor ohne AVX2, oder in einer Kopie, deren Engine sich seit diesem Release geändert
 hat, kompiliert er sie stattdessen mit dem 2022er Compiler von Visual Studio und dem CUDA-Toolkit und bietet an, beides
 zu installieren. Noch nicht: zwei Karten unter Windows, drei Karten oder mehr. Auf einer AMD-Karte unter Windows
-kompiliert Setup `strata-poly` für die Karte wie unter Linux (AMDs TheRock-Wheels in `.rocm-win`) und warnt, dass
-Läufe dort neu sind ([AMD_HIP.md](../AMD_HIP.md#strata-poly-on-amd-beta)).
+kompiliert Setup `strata-fourgbvram` für die Karte wie unter Linux (AMDs TheRock-Wheels in `.rocm-win`) und warnt, dass
+Läufe dort neu sind ([AMD_HIP.md](../AMD_HIP.md#strata-fourgbvram-on-amd-beta)).
 
 ## Welches Modell soll ich nehmen?
 

@@ -46,7 +46,7 @@ void native_quantize_q8_1(const float* x, void* x_q8_1, int n_in, int ncols,
                           void* stream);
 
 /// An RMS norm of `rows` rows of n values and native_quantize_q8_1() of its output in one launch, bit for bit what
-/// the two launches give: y = x / rms(x) * w as poly's rms_norm() writes it with `threads` a block (its
+/// the two launches give: y = x / rms(x) * w as fourgbvram's rms_norm() writes it with `threads` a block (its
 /// sum_threads(n)), and y_q8_1 its Q8_1 blocks.  With `add` (null: none), x += add first, as axpy() adds, and x
 /// keeps the sum.  n is a multiple of 32.
 void native_add_rms_norm_q8_1(float* x, const float* add, const float* w, float* y, void* y_q8_1, int n, int rows,
@@ -141,7 +141,7 @@ void native_iq4_nl_f32(const void* weights, const float* x, void* scratch_q8_1,
 // into y[i], as native_mmvq(type, w[i], x[i], y[i], n_in, n_out, 1, stream) would each.  A launch costs the calling thread more
 // than a small product costs the card, which is what this saves.  False, with nothing launched: there is no
 // kernel for it (a format native_mmvq() does not take, or a HIP build), and the caller launches them one by one.
-constexpr int kMmvqSlotsMax = 32;   // 8 before: strata-poly's cached experts go 32 a launch where the wide path is on
+constexpr int kMmvqSlotsMax = 32;   // 8 before: strata-fourgbvram's cached experts go 32 a launch where the wide path is on
 struct MmvqSlots {
     const void* w[kMmvqSlotsMax];
     const void* x[kMmvqSlotsMax];
@@ -149,7 +149,7 @@ struct MmvqSlots {
 };
 bool native_mmvq_slots(int ggml_type, const MmvqSlots& slots, int count, int n_in, int n_out, void* stream);
 // Whether the slots launches take a warp per row group where a row's blocks fit one warp (an expert's IQ4_XS down
-// projection of 512 values), and strata-poly gives them its cached experts 32 at a time instead of 8.  The same bits
+// projection of 512 values), and strata-fourgbvram gives them its cached experts 32 at a time instead of 8.  The same bits
 // either way.  On by default on HIP (measured on an RX 7800 XT), off by default on CUDA (not measured there);
 // STRATA_SLOTS_WARP=0 turns it off, =1 on.
 bool native_mmvq_slots_wide();

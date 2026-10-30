@@ -34,13 +34,13 @@ class Pins(unittest.TestCase):
             self.assertRegex(FAM["sha256"][file][1], r"^[0-9a-f]{64}$")
             self.assertAlmostEqual(n / 1e9, d["download_gb"], delta=0.05)
             self.assertLess(d["arena_gb"], d["download_gb"])
-            self.assertEqual(d["ram_gb"], round(setup.poly_ram_need(d, 8.0)), size)
+            self.assertEqual(d["ram_gb"], round(setup.fourgbvram_ram_need(d, 8.0)), size)
             self.assertNotIn("hf", d)
         # the engine's prompt batch, not a figure of this family's
-        self.assertFalse(setup.poly_batch(FAM, FAM["models"]["Q4_K_M"], 31.8, 32768))
+        self.assertFalse(setup.fourgbvram_batch(FAM, FAM["models"]["Q4_K_M"], 31.8, 32768))
 
     def test_the_about_line_says_the_first_size(self):
-        n = setup.poly_ram_need(FAM["models"]["Q4_K_M"], 8.0)
+        n = setup.fourgbvram_ram_need(FAM["models"]["Q4_K_M"], 8.0)
         self.assertIn(f"~{n:.0f} GB of RAM beside an 8 GB card", FAM["about"])
         self.assertIn("run on 32 GB", FAM["about"])
         # it has run on Windows, on a 12 GB card: no "not tried" question there

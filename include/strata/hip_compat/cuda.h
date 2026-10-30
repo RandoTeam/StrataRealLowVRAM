@@ -1,6 +1,6 @@
 #pragma once
 // Included only by STRATA_ENABLE_HIP builds (the hip_compat directory precedes the ROCm includes on the
-// include path).  It maps the CUDA driver API surface strata-poly uses for its virtual-memory-managed VRAM
+// include path).  It maps the CUDA driver API surface strata-fourgbvram uses for its virtual-memory-managed VRAM
 // (cuMemCreate, cuMemMap, ...) onto HIP's memory management API, which the HIP runtime provides.
 #include <hip/hip_runtime.h>
 
@@ -13,7 +13,7 @@
 
 typedef hipError_t CUresult;
 typedef int CUdevice;
-// HIP's own CUdeviceptr/handle equivalents are pointer-typed; CUDA's are integers, and strata-poly's Mapped
+// HIP's own CUdeviceptr/handle equivalents are pointer-typed; CUDA's are integers, and strata-fourgbvram's Mapped
 // struct stores them as unsigned long long.  Keep CUDA's shape and cast in the wrappers below.
 typedef unsigned long long CUdeviceptr;
 typedef unsigned long long CUmemGenericAllocationHandle;

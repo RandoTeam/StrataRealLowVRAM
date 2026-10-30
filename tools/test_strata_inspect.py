@@ -50,7 +50,7 @@ class Verdict(unittest.TestCase):
         self.assertIn("Qwen3.6-35B-A3B", sentence)
         self.assertIn("--family qwen36", sentence)
 
-    def test_gemma4_runs_on_poly_engine(self):
+    def test_gemma4_runs_on_fourgbvram_engine(self):
         fp = self.fp("qwen/Q2_0")
         fp["arch"] = "gemma4"
         kind, sentence = SI.verdict(fp, self.table)

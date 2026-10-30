@@ -141,7 +141,7 @@ class VisualStudio(unittest.TestCase):
             vcvars = self.vs(Path(t) / "2026", "14.51.36231", "14.44.35207")
             with mock.patch.object(setup, "WIN", True), mock.patch.object(setup, "ROOT", Path(t)), \
                     mock.patch.object(setup, "find_tool", lambda name: name), mock.patch.object(setup, "run"):
-                setup.cmake_build(Path(t), Path(t) / "b", "strata-poly", [], vcvars, "build.bat")
+                setup.cmake_build(Path(t), Path(t) / "b", "strata-fourgbvram", [], vcvars, "build.bat")
             self.assertIn(f'call "{vcvars}" -vcvars_ver=14.44.35207 >nul', (Path(t) / "build.bat").read_text())
 
 

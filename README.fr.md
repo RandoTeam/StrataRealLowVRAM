@@ -23,7 +23,7 @@ Il fait tourner douze modèles, avec deux moteurs :
   de 12 Go ou plus, sous Windows ou Linux. Il lit aussi les images. Son moteur est celui de
   [Strata](https://github.com/Niko1221/Strata), inchangé.
 
-Les onze autres tournent sur un moteur écrit pour 4gbVramStrata, avec une carte NVIDIA ou [deux](docs/MULTI_GPU.md#the-strata-poly-models) : tous les onze sous Linux, et
+Les onze autres tournent sur un moteur écrit pour 4gbVramStrata, avec une carte NVIDIA ou [deux](docs/MULTI_GPU.md#the-strata-fourgbvram-models) : tous les onze sous Linux, et
 tous sauf GLM 5.3 Flash et DeepSeek V4 Flash aussi sous Windows. Ils sont expérimentaux : ils n'ont tourné que sur un seul PC avec une carte
 de 32 Go, et les huit plus petits en plus sur un portable avec une carte de 8 Go.
 
@@ -84,7 +84,7 @@ Portable : RTX 4070 Laptop (8 Go), Core i7-14700HX, 32 Go de RAM. Station de tra
 Qwen3.8-Flash-Next tourne sur le moteur du projet [Strata](https://github.com/Niko1221/Strata), qui l'a mesuré sur un PC avec une RTX 5070 (12 Go) et 64 Go de RAM : IQ2_XS écrit à 79 et lit un prompt de 32K à 2,090 ([toutes les tailles](docs/models/qwen38.fr.md)).
 
 Les onze modèles du moteur propre à 4gbVramStrata ont été mesurés avec son benchmark, que vous pouvez lancer sur votre
-PC : `python polystrata.py benchmark --model <name> --prompt-tokens 24000`
+PC : `python fourgbvramstrata.py benchmark --model <name> --prompt-tokens 24000`
 ([ce qu'il envoie et affiche](docs/BACKENDS.md#benchmark), en anglais).
 Ce que d'autres ont mesuré sur leurs cartes, et comment comparer avec llama.cpp sur la vôtre :
 [résultats de la communauté](docs/COMMUNITY_BENCHMARKS.md#the-models-polystrata-adds) (en anglais).

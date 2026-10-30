@@ -10,14 +10,14 @@ conversations at the same time instead of waiting for each other.
 It is opt-in and changes nothing when the options are absent (#465; the engine part is PR #559).
 
 Most of this page is about the Strata project's engine, which runs Qwen3.8-Flash-Next. The other eight models run on
-strata-poly, which does the same since 0.1.44.1-poly.6 with fewer options: see
-[The strata-poly models](#the-strata-poly-models).
+strata-fourgbvram, which does the same since 0.1.44.1-poly.6 with fewer options: see
+[The strata-fourgbvram models](#the-strata-fourgbvram-models).
 
 Qwen3.6-35B-A3B also runs on the Strata project's own engine (setup's `--family qwen36-strata`), which has the
 same option there (`"parallel": N`, `--batch N`, `--batch-mtp`, up to 8 slots, the same engine protocol and the
 same server): its numbers, what a slot costs and where setup recommends it are in [QWEN36.md](QWEN36.md).
 
-## The strata-poly models
+## The strata-fourgbvram models
 
 `"parallel": N` in the model's config (`strata-<model>.json`), or `--parallel N` when you run setup, works for
 GLM 5.3 Flash, DeepSeek V4 Flash, LFM2.5, Flint, Qwen3.6, Ornith 1.5, Gemma 4, Tiel Coder and MiniCPM-V too, up to
@@ -47,7 +47,7 @@ gains more. On an RTX 5090 with Qwen3.6 UD-Q4_K_M, chats of 300 tokens through t
 Each slot's attention rows take VRAM from the expert cache as its conversation grows, as the first conversation's
 do. A model split across cards (`"layer_split"`) runs its slots card after card.
 
-Check it on your PC with the engine alone: `strata-poly --model M.gguf --batch 3 --check-batch 3 --tokens ID,ID,...`
+Check it on your PC with the engine alone: `strata-fourgbvram --model M.gguf --batch 3 --check-batch 3 --tokens ID,ID,...`
 answers three prompts (the given one, and it without its first one and two tokens) one after the other and then
 together, and says for each how many tokens came out the same. To compare token by token, keep the expert cache
 fixed and leave guesses and the tail skip out: `--expert-swaps 0 --cpu-share 0 --window 1 --tail-skip 0`. The

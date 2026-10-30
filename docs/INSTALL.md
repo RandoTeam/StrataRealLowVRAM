@@ -206,7 +206,7 @@ says so and starts the engine you had.
   them, and you add them again.
 - **The model files** (`models/`, `packs/`, `mtp/`, 70-120 GB): in **`4gbVramStrata-data` next to the 4gbVramStrata folder**, or
   wherever `--data-dir` put them.
-- **Where that data folder is:** `%APPDATA%\4gbVramStrata\settings.json` on Windows, `~/.config/polystrata/settings.json` on
+- **Where that data folder is:** `%APPDATA%\4gbVramStrata\settings.json` on Windows, `~/.config/fourgbvramstrata/settings.json` on
   Linux ([details](DETAILS.md#before-you-start)).
 - **The program itself:** `.venv/`, `engine/` and `third_party/` in the 4gbVramStrata folder.
 - **Where github.com cannot be reached:** a build from source downloads llama.cpp's source (ggml, gguf-py) from

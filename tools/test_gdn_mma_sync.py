@@ -2,7 +2,7 @@
 
 STRATA_GGML_DIR selects the pinned llama.cpp checkout. To independently recheck the
 kernel body, STRATA_GDN_UPSTREAM_SOURCE may name gated-delta-net-mma.cu from the
-recorded upstream revision. Runtime integration is tested by poly_gdn_mma_test.
+recorded upstream revision. Runtime integration is tested by fourgbvram_gdn_mma_test.
 """
 import hashlib
 import json

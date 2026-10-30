@@ -11,9 +11,9 @@ verify window (a few hundred KB through pinned RAM), not twice per layer. No NVL
 needed; cards on x4 or x1 slots work, and the PCIe share of each card is probed on its own link. A `--pcie-frac` you give
 is every card's share and skips those probes; there is no per-card setting yet.
 
-Most of this page is about the engine of Qwen3.8-Flash-Next. The models of the strata-poly engine (Qwen3.6, Gemma 4,
+Most of this page is about the engine of Qwen3.8-Flash-Next. The models of the strata-fourgbvram engine (Qwen3.6, Gemma 4,
 Ornith, Tiel Coder, GLM 5.3 Flash) split their layers as well, more simply: see
-[The strata-poly models](#the-strata-poly-models).
+[The strata-fourgbvram models](#the-strata-fourgbvram-models).
 
 ## Using it
 
@@ -469,9 +469,9 @@ These are opt-in settings on one rig, not defaults.
 With a layer split, `--batch N --batch-groups G --trim-stage-weights` decodes several conversations together and
 pipelines them through the cards: see [BATCHING.md](BATCHING.md).
 
-## The strata-poly models
+## The strata-fourgbvram models
 
-Qwen3.6, Gemma 4, Ornith, Tiel Coder and GLM 5.3 Flash run on the strata-poly engine, which splits a model's layers
+Qwen3.6, Gemma 4, Ornith, Tiel Coder and GLM 5.3 Flash run on the strata-fourgbvram engine, which splits a model's layers
 across cards too. Each card runs a range of layers and keeps the routed experts of those layers in its VRAM, as many
 as fit. The last card also runs the output and the draft block, or Gemma 4's draft model. After its layers a card
 copies the rows of the tokens it read into pinned RAM, and the next card reads them from there: one row of the
@@ -494,8 +494,8 @@ puts the faster card last, as it does for the other engine. The engine's flag is
 splits across the cards `CUDA_VISIBLE_DEVICES` shows it, in that order. The log names each card's layers:
 
 ```
-strata-poly: layers 0 to 21 on card 0: 5632 of 5632 routed experts in VRAM (7.2 GiB)
-strata-poly: layers 22 to 39 on card 1: 4864 of 4864 routed experts in VRAM (6.5 GiB)
+strata-fourgbvram: layers 0 to 21 on card 0: 5632 of 5632 routed experts in VRAM (7.2 GiB)
+strata-fourgbvram: layers 22 to 39 on card 1: 4864 of 4864 routed experts in VRAM (6.5 GiB)
 ```
 
 Measured on two RTX 3080 (10 GB each, 320 W) with a Xeon Platinum 8255C under Linux, the engine built with CUDA
@@ -550,4 +550,4 @@ Not done yet:
 
 - Only two cards under Linux have run it. Three cards and Windows were not tried.
 - A long prompt with experts outside VRAM, and an answer, have the cards take turns (above). The other engine's
-  chunk pipeline, `--pipeline-windows`, `"split_skip_if_fits"` and its `STRATA_*` variables are not in strata-poly.
+  chunk pipeline, `--pipeline-windows`, `"split_skip_if_fits"` and its `STRATA_*` variables are not in strata-fourgbvram.

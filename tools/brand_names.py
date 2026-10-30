@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Write this fork's name, 4gbVramStrata, where the text taken from PolyStrata names PolyStrata.
 
-4gbVramStrata is built on PolyStrata (https://github.com/VecSzn/PolyStrata), which is built on
-Strata (https://github.com/Niko1221/Strata), and takes their changes. Run this after taking changes:
+4gbVramStrata is built on [PolyStrata](https://github.com/VecSzn/PolyStrata), which is built on
+[Strata](https://github.com/Niko1221/Strata), and takes their changes. Run this after taking changes:
 
     python tools/brand_names.py            # rewrite the files
     python tools/brand_names.py --check    # list what it would change, change nothing
@@ -14,9 +14,9 @@ and build files (src/, include/, sycl/, metal/, engine targets), the benchmark r
 means the donor project this fork is built on (KEEP). To name that project in new text, link it,
 [PolyStrata](https://github.com/VecSzn/PolyStrata), or write "the PolyStrata project".
 
-Code identifiers stay as they are on purpose: the entry script polystrata.py (imported by tools/test_benchmark_prompt.py,
-and a name starting with a digit is not a valid Python module), the src/poly/ tree and the strata::poly namespace,
-the strata-poly CMake target and binary, and engine-poly/ (build output, git-ignored).
+Code identifiers stay as they are on purpose: the entry script fourgbvramstrata.py (imported by tools/test_benchmark_prompt.py,
+and a name starting with a digit is not a valid Python module), the src/fourgbvram/ tree and the strata::fourgbvram namespace,
+the strata-fourgbvram CMake target and binary, and engine-fourgbvram/ (build output, git-ignored).
 """
 import re
 import subprocess
@@ -25,7 +25,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SKIP = ("src/", "include/", "sycl/", "metal/", "tests/", "third_party/", "bench/", "docs/paper/",
-        "docs/COMMUNITY_BENCHMARKS.md", "docs/FAQ.md", "tools/brand_names.py", "tools/polystrata_names.py")
+        "docs/COMMUNITY_BENCHMARKS.md", "docs/FAQ.md", "tools/brand_names.py", "tools/polystrata_names.py",
+        "tools/test_brand_names.py", "tools/test_polystrata_names.py", "tools/rename_fourgbvram.py")
+# tools/*_names.py and their tests carry the words on purpose (patterns, examples, donor links).
 KINDS = (".md", ".py", ".html", ".js", ".css", ".bat", ".sh", ".yml", ".yaml", ".jinja", ".json")
 NAMES = ("Dockerfile",)
 KEEP = "|".join((
@@ -33,16 +35,16 @@ KEEP = "|".join((
     r"VecSzn/PolyStrata\">PolyStrata",                         # an HTML link to it
     r"(?:VecSzn)/PolyStrata",                                  # their repository, in an address or by name
     r"[Tt]he\s+PolyStrata project",
-    r"polystrata\.py",                                         # the kept entry-script file name
+    r"fourgbvramstrata\.py",                                         # the kept entry-script file name
     r"polystrata_names",                                       # the kept upstream brand tool
-    r"strata-poly",                                            # the kept engine target and binary
-    r"engine-poly",                                            # the kept build-output directory
-    r"src/poly",                                               # the kept engine source tree
-    r"strata::poly",                                           # the kept C++ namespace
-    r"strata_poly",                                            # the kept CMake library name
+    r"strata-fourgbvram",                                            # the kept engine target and binary
+    r"engine-fourgbvram",                                            # the kept build-output directory
+    r"src/fourgbvram",                                               # the kept engine source tree
+    r"strata::fourgbvram",                                           # the kept C++ namespace
+    r"strata_fourgbvram",                                            # the kept CMake library name
     r"strata-cfg-polystrata",                                  # benchmark record file names
-    r"community-\w*-polystrata",                               # benchmark record directory names
-    r"NVFP4(?:-GPTQ)?-Strata",                                 # the NVFP4 packs' Hugging Face repositories
+    r"community-\w*-fourgbvramstrata",                               # benchmark record directory names
+    # (no NVFP4-Strata line: brand WORD only matches PolyStrata, and the literal would trip donor --check)
 ))
 WORD = re.compile(f"{KEEP}|(?<![A-Za-z0-9_])(PolyStrata)(?![A-Za-z0-9_])")
 

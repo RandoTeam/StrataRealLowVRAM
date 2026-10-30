@@ -16,8 +16,8 @@ per token, so one global ranking compares layers fairly.
 
 Two files can be written, picked by `--format` (default: from the extension):
 
-  * `counts` (`.txt`): lines of "layer expert count", what strata-poly's `--expert-profile` reads and saves
-    (src/poly/engine.cpp read_profile): it places experts in VRAM by use per byte from these counts.
+  * `counts` (`.txt`): lines of "layer expert count", what strata-fourgbvram's `--expert-profile` reads and saves
+    (src/fourgbvram/engine.cpp read_profile): it places experts in VRAM by use per byte from these counts.
   * `strp` (`.bin`): make_profile.py's format for the Qwen3.8-Flash-Next engine (STRP version 1, little-endian): the
     header, the ranked (layer, expert) pairs as u16, then the per-pair slot table as i32.
 
@@ -152,7 +152,7 @@ def main():
     ap.add_argument("--n-expert", type=int, help="experts per layer (required with --csv; overrides the database)")
     ap.add_argument("--out", required=True)
     ap.add_argument("--format", choices=("counts", "strp"),
-                    help="counts: strata-poly's 'layer expert count' text; strp: the Qwen3.8-Flash-Next engine's "
+                    help="counts: strata-fourgbvram's 'layer expert count' text; strp: the Qwen3.8-Flash-Next engine's "
                          "binary (default: .txt is counts, anything else strp)")
     ap.add_argument("--coverage", type=int, action="append", default=[], help="print coverage at N slots (repeat)")
     a = ap.parse_args()
@@ -176,7 +176,7 @@ def main():
         back = read_counts(a.out)
         assert back == {p: round(c) for p, c in freq.items() if round(c) > 0 and p[0] < nl and p[1] < ne}, \
             "the counts did not survive the round trip"
-        print(f"wrote {a.out}: {nl}x{ne}, {len(back)} counted pairs (strata-poly counts) from "
+        print(f"wrote {a.out}: {nl}x{ne}, {len(back)} counted pairs (strata-fourgbvram counts) from "
               f"{sum(freq.values()):,.0f} weighted selections")
     else:
         write_profile(a.out, ranked, nl, ne)

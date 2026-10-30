@@ -34,11 +34,11 @@ class Pins(unittest.TestCase):
             self.assertRegex(FAM["sha256"][file][1], r"^[0-9a-f]{64}$")
             self.assertAlmostEqual(n / 1e9, d["download_gb"], delta=0.05)
             self.assertLess(d["arena_gb"], d["download_gb"])
-            self.assertEqual(d["ram_gb"], round(setup.poly_ram_need(d, 8.0)), size)
-        self.assertEqual(setup.POLY_GGUF_ARCHS["flint"], ("flint",))
+            self.assertEqual(d["ram_gb"], round(setup.fourgbvram_ram_need(d, 8.0)), size)
+        self.assertEqual(setup.FOURGBVRAM_GGUF_ARCHS["flint"], ("flint",))
 
     def test_the_about_line_says_the_first_size(self):
-        n = setup.poly_ram_need(FAM["models"]["UD-Q4_K_XL"], 8.0)
+        n = setup.fourgbvram_ram_need(FAM["models"]["UD-Q4_K_XL"], 8.0)
         self.assertIn(f"~{n:.0f} GB of RAM beside an 8 GB card", FAM["about"])
 
 

@@ -138,7 +138,7 @@ The flags (all of them: `START-HERE.bat --help`):
 | `--backend cuda\|hip` | NVIDIA or AMD engine; chosen by itself on a PC with only one kind of card |
 | `--data-dir PATH` | where the 70-120 GB of model files go |
 | `--custom-gguf PATH` | install one custom GGUF; setup reads the header and picks family/size. Not for nvfp4 packs |
-| `--gguf-dir PATH` | run GGUFs you already have by name; strata-poly also accepts same-arch fine-tunes. Not for nvfp4 packs |
+| `--gguf-dir PATH` | run GGUFs you already have by name; strata-fourgbvram also accepts same-arch fine-tunes. Not for nvfp4 packs |
 | `--inspect` | print what setup would read from a GGUF; no install |
 | `--port N` | the server port (default 8080) |
 | `--host H --api-key K` | listen beyond this PC; **only together with a key** |

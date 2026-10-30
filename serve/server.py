@@ -147,7 +147,7 @@ EFFORT_TEXT = {"low": "Reasoning effort is set to low. Keep your thinking brief 
                         "clarity in the final answer."}
 VISION_START = "<|vision_start|>"
 # The tokens that open a chat turn in each call format's template.  The last one in a prompt begins the reply's
-# turn: strata-poly keeps a checkpoint there (turn_at), which the chat's next request goes on from.  The second one
+# turn: strata-fourgbvram keeps a checkpoint there (turn_at), which the chat's next request goes on from.  The second one
 # ends the first turn: the system prompt with the tools, which "warm_start" keeps.
 TURN_OPENERS = {"function": ("<|im_start|>",), "gemma": ("<|turn>",),
                 "glm": ("<|system|>", "<|developer|>", "<|user|>", "<|assistant|>", "<|observation|>"),
@@ -741,9 +741,9 @@ class ConvCacheLog:
         return dict(self.state)
 
 
-def poly_engine(cfg: dict) -> bool:
-    """The run config starts strata-poly (the engine of the models 4gbVramStrata adds), not the Strata project's."""
-    return Path(str(cfg.get("exe") or "")).stem.lower() in ("strata-poly", "strata-glm")   # its name before 10-05
+def fourgbvram_engine(cfg: dict) -> bool:
+    """The run config starts strata-fourgbvram (the engine of the models 4gbVramStrata adds), not the Strata project's."""
+    return Path(str(cfg.get("exe") or "")).stem.lower() in ("strata-fourgbvram", "strata-poly", "strata-glm")   # + its names before the rename
 
 
 def conversation_slots(engine) -> int | None:
@@ -1283,7 +1283,7 @@ class StrataEngine:
         return f" cvec={int(on)}" if isinstance(on, bool) else ""
 
     def turn_key(self, ids) -> str:
-        """`turn_at=POS`: where the prompt's last turn begins (its last token of turn_ids).  strata-poly keeps a
+        """`turn_at=POS`: where the prompt's last turn begins (its last token of turn_ids).  strata-fourgbvram keeps a
         checkpoint there, which the chat's next request goes on from; the Qwen3.8 engine skips the key and finds the
         place itself."""
         at = next((i for i in range(len(ids) - 1, 0, -1) if ids[i] in self.turn_ids), None)
@@ -2699,10 +2699,10 @@ def engine_args(cfg: dict) -> list[str]:
     # #1322: a config with a "vision" section but without --vision in its args (written by an older setup run, or edited by
     # hand) advertised images and then refused every picture ("this engine was started without --vision").  The section
     # says images are wanted: start the engine with them, and keep the encoder's VRAM free as setup does for a GPU encoder
-    # (only when the config has no reserve of its own).  strata-poly has no such option: it reads a prompt's pictures
+    # (only when the config has no reserve of its own).  strata-fourgbvram has no such option: it reads a prompt's pictures
     # whenever a request has them.
-    poly = poly_engine(cfg)
-    if isinstance(cfg.get("vision"), dict) and "--vision" not in args and not poly:
+    fourgbvram = fourgbvram_engine(cfg)
+    if isinstance(cfg.get("vision"), dict) and "--vision" not in args and not fourgbvram:
         args.append("--vision")
         note = "added --vision"
         if cfg["vision"].get("gpu") and "--vram-reserve-mib" not in args:
@@ -4537,7 +4537,7 @@ class Service:
             # one more for every retry of a 503.  run() deletes it; drop_embeddings() if run() never starts.
             combined = combined_embeddings_path(self.vision.dir, sum(Path(p).stat().st_size for p, _ in encoded))
             self.embeddings.path = combined             # first, so a half-written one is found as well
-            self.embeddings.pad = pad                   # strata-poly finds the images' rows by their token
+            self.embeddings.pad = pad                   # strata-fourgbvram finds the images' rows by their token
             # #2228: each picture's key is its normalized bytes' hash (the encoder's file name), so the engine's
             # conversation cache matches a picture by what it is, not by its embedding floats: a picture encoded again
             # (an encoder restart, the cache's eviction) with other bits still matches its checkpoints
@@ -4783,7 +4783,7 @@ class Service:
         looped, next_loop_check = False, LOOP_CHECK_EVERY       # #728: reasoning that repeats whole passages
         raw_ids = []                                    # every generated id (STRATA_DEBUG: dump raw model text)
         emb, self.embeddings.path = getattr(self.embeddings, "path", None), None   # this run's to delete now
-        if emb:                                         # strata-poly finds the images' rows by their token
+        if emb:                                         # strata-fourgbvram finds the images' rows by their token
             sampling = {**(sampling or {}), "image_pad": self.embeddings.pad}
         self.warm_stop.set()                            # a warm read (start_warm()) gives way
         if self.warm_start and tools and not emb:
@@ -7380,8 +7380,8 @@ def model_settings(cfg: dict, overrides: dict | None = None) -> dict:
         "before_load_strict": cfg.get("before_load_strict") is True,
         "memory_debug": bool(os.environ.get("STRATA_MEMORY_DEBUG")) or cfg.get("memory_debug") is True,
         # 0.1.45: the model card's sampling (MODEL_CARD_SAMPLING) for the Strata project's families; the models on
-        # strata-poly have no "arch" and keep their own defaults
-        "model_arch": None if poly_engine(cfg) else cfg.get("arch") or "qwen4exp",
+        # strata-fourgbvram have no "arch" and keep their own defaults
+        "model_arch": None if fourgbvram_engine(cfg) else cfg.get("arch") or "qwen4exp",
         "answer_room": cfg.get("answer_room") is not False,                 # 0.1.45: see ANSWER_ROOM_MIN_CAP
     }
 

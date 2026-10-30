@@ -46,7 +46,7 @@ class Pins(unittest.TestCase):
         for family, (size0, file0, repo, n0) in NEW.items():
             sizes = [(size0, file0, n0), *MORE[family]]
             fam = setup.FAMILIES[family]
-            self.assertEqual(fam["engine"], "poly", family)
+            self.assertEqual(fam["engine"], "fourgbvram", family)
             self.assertRegex(fam["hf"], rf"^https://huggingface.co/{repo}/resolve/[0-9a-f]{{40}}/$")
             self.assertEqual(list(setup.family_models(family)), [size for size, _, _ in sizes])
             more = []                                                    # a draft model the sizes share
@@ -61,7 +61,7 @@ class Pins(unittest.TestCase):
                     self.assertEqual(sorted(d["sha256"]), sorted([*more, fam["mmproj"]]), size)
                     self.assertIn(d["hf"].split("/resolve/")[0], d["mmproj_hf"])
                 self.assertLess(d["arena_gb"], d["download_gb"])        # the experts are part of the file
-                self.assertEqual(d["ram_gb"], round(setup.poly_ram_need(d, 8.0)), size)
+                self.assertEqual(d["ram_gb"], round(setup.fourgbvram_ram_need(d, 8.0)), size)
             # the image encoder is pinned too; it is downloaded when images are wanted, so it has its own size
             self.assertEqual(list(fam["sha256"]), [*(file for _, file, _ in sizes), *more, fam["mmproj"]])
             for pinned in fam["sha256"].values():
@@ -85,12 +85,12 @@ class Estimates(unittest.TestCase):
     def test_a_32_gb_card_holds_every_expert(self):
         for family in NEW:
             for d in setup.family_models(family).values():
-                self.assertEqual(setup.poly_held_gb(d, 31.84), d["arena_gb"], family)
-                self.assertEqual(setup.poly_ram_need(d, 31.84), setup.POLY_RAM_BESIDE_GB)
+                self.assertEqual(setup.fourgbvram_held_gb(d, 31.84), d["arena_gb"], family)
+                self.assertEqual(setup.fourgbvram_ram_need(d, 31.84), setup.FOURGBVRAM_RAM_BESIDE_GB)
 
     def test_an_8_gb_card(self):
         # what the families' menu lines say of an 8 GB card
-        need = {f: setup.poly_ram_need(next(iter(setup.family_models(f).values())), 8.0) for f in NEW}
+        need = {f: setup.fourgbvram_ram_need(next(iter(setup.family_models(f).values())), 8.0) for f in NEW}
         self.assertAlmostEqual(need["qwen36"], 21, delta=0.5)
         self.assertAlmostEqual(need["ornith"], 22, delta=0.5)
         self.assertAlmostEqual(need["gemma4"], 18, delta=0.5)
@@ -101,15 +101,15 @@ class Estimates(unittest.TestCase):
 
     def test_check_lines(self):
         d = setup.FAMILIES["qwen36"]["models"]["UD-Q3_K_M"]
-        self.assertIn("fits by setup's estimate (~21 GB of RAM", setup.poly_verdict(d, 32, 8.0, False))
-        self.assertIn("read from the SSD", setup.poly_verdict(d, 12, 8.0, False))
-        self.assertIn("does not fit", setup.poly_verdict(d, 64, 6.0, False))
+        self.assertIn("fits by setup's estimate (~21 GB of RAM", setup.fourgbvram_verdict(d, 32, 8.0, False))
+        self.assertIn("read from the SSD", setup.fourgbvram_verdict(d, 12, 8.0, False))
+        self.assertIn("does not fit", setup.fourgbvram_verdict(d, 64, 6.0, False))
         with mock.patch.object(setup, "WIN", False):   # #11: AMD on Linux runs it
-            self.assertNotIn("does not run", setup.poly_verdict(d, 64, 24.0, True))
+            self.assertNotIn("does not run", setup.fourgbvram_verdict(d, 64, 24.0, True))
         with mock.patch.object(setup, "WIN", True):     # a family that has run on Windows is not said to be untried
-            self.assertIn("AMD", setup.poly_verdict(d, 64, 24.0, True))           # only AMD on Windows is left out
-            self.assertIn("not tried on Windows", setup.poly_verdict(d, 32, 8.0, False))
-            self.assertNotIn("not tried on Windows", setup.poly_verdict(d, 32, 8.0, False, True))
+            self.assertIn("AMD", setup.fourgbvram_verdict(d, 64, 24.0, True))           # only AMD on Windows is left out
+            self.assertIn("not tried on Windows", setup.fourgbvram_verdict(d, 32, 8.0, False))
+            self.assertNotIn("not tried on Windows", setup.fourgbvram_verdict(d, 32, 8.0, False, True))
 
 
 class Config(unittest.TestCase):
@@ -117,7 +117,7 @@ class Config(unittest.TestCase):
         with tempfile.TemporaryDirectory() as t:
             for family, (size, *_rest) in NEW.items():
                 p = Path(t) / f"strata-{setup.FAMILIES[family]['tag']}{size.lower()}.json"
-                p.write_text(json.dumps({"exe": "/x/engine-poly/" + setup.POLY_EXE, "args": ["--max-context", "8192"]}))
+                p.write_text(json.dumps({"exe": "/x/engine-fourgbvram/" + setup.FOURGBVRAM_EXE, "args": ["--max-context", "8192"]}))
                 ch = setup.choices_from_config(p)
                 self.assertEqual((ch["family"], ch["model"], ch["context"]), (family, size, 8192))
 
@@ -157,7 +157,7 @@ class Main(unittest.TestCase):
                     self.assertNotIn("--tail-skip", args)
                 self.assertEqual(cfg["model_name"], f"{fam['name']}-{size.lower()}")
                 self.assertEqual(cfg["display_name"], f"{fam['title']} {size}")
-                self.assertEqual(Path(cfg["exe"]), self.t / setup.ENGINE_POLY_DIR / setup.POLY_EXE)
+                self.assertEqual(Path(cfg["exe"]), self.t / setup.ENGINE_FOURGBVRAM_DIR / setup.FOURGBVRAM_EXE)
                 self.assertIn("experts fit in VRAM (100% on a 32 GB card)", out)
                 self.assertNotIn("has run on no card", out)   # each has run on one of 8 GB
                 self.assertEqual((self.encoder, cfg.get("vision")), ("none", None))   # --yes: no images
@@ -190,7 +190,7 @@ class Main(unittest.TestCase):
                     self.assertEqual(self.verified[-1], (fam["mmproj"], *fam["sha256"][fam["mmproj"]]))
                     v = cfg["vision"]
                     self.assertEqual((Path(v["exe"]), Path(v["mmproj"]), Path(v["model"]), v["gpu"]),
-                                     (self.t / setup.ENGINE_POLY_DIR / setup.VEXE, folder / fam["mmproj"],
+                                     (self.t / setup.ENGINE_FOURGBVRAM_DIR / setup.VEXE, folder / fam["mmproj"],
                                       folder / file, where == "gpu"))
                     self.assertEqual(v["max_tokens"], setup.VISION[where]["max_tokens"])
                     self.assertEqual("threads" in v, where == "cpu")

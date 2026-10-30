@@ -6,7 +6,7 @@ bench/prompts/** -text
 *.bat text eol=crlf
 
 # Byte-checked upstream GDN copy and its imported helpers.
-src/poly/gdn_mma* text eol=lf
+src/fourgbvram/gdn_mma* text eol=lf
 src/kernels/cuda/gdn_mma* text eol=lf
 include/strata/kernels/gdn_mma* text eol=lf
 
@@ -17,4 +17,4 @@ tests/data/native_experts/** -text
 data/quant_quality/** -text
 
 # llama.cpp's flash-attention kernel and its patch: git apply (tools/test_fattn_sync.py) rejects them with CRLF
-src/poly/fattn_mma.* text eol=lf
+src/fourgbvram/fattn_mma.* text eol=lf

@@ -1,4 +1,4 @@
-"""--gguf-dir with the user's own GGUF (issue 54): for a strata-poly family, another file of the family's architecture
+"""--gguf-dir with the user's own GGUF (issue 54): for a strata-fourgbvram family, another file of the family's architecture
 is taken with a warning (docs/FAQ.md); another architecture or an incomplete copy is refused; and setup never deletes
 a file in the user's own folder, whatever its hash."""
 import contextlib
@@ -58,43 +58,43 @@ class OwnGguf(unittest.TestCase):
 
     def test_another_file_of_the_architecture_is_taken(self):
         gguf(self.f, "qwen35moe")
-        code, out = quiet(setup.verify_poly_own, self.f, 13_600_000_000, "0" * 64, "tiel")
+        code, out = quiet(setup.verify_fourgbvram_own, self.f, 13_600_000_000, "0" * 64, "tiel")
         self.assertEqual(code, "ok", out)
         self.assertIn("not the file setup offers", out)
         self.assertIn("own file", self.f.with_name(self.f.name + ".done").read_text())
-        self.assertEqual(quiet(setup.verify_poly_own, self.f, 13_600_000_000, "0" * 64, "tiel")[0], "ok")
+        self.assertEqual(quiet(setup.verify_fourgbvram_own, self.f, 13_600_000_000, "0" * 64, "tiel")[0], "ok")
 
     def test_another_architecture_is_refused_and_kept(self):
         gguf(self.f, "llama")
-        self.assertEqual(quiet(setup.verify_poly_own, self.f, 13_600_000_000, "0" * 64, "tiel")[0], "stopped")
+        self.assertEqual(quiet(setup.verify_fourgbvram_own, self.f, 13_600_000_000, "0" * 64, "tiel")[0], "stopped")
         self.assertTrue(self.f.exists())
         gguf(self.f, "qwen35moe")                  # a Qwen3.6-type file is not a Gemma 4 one
-        self.assertEqual(quiet(setup.verify_poly_own, self.f, 13_600_000_000, "0" * 64, "gemma4")[0], "stopped")
+        self.assertEqual(quiet(setup.verify_fourgbvram_own, self.f, 13_600_000_000, "0" * 64, "gemma4")[0], "stopped")
 
     def test_gate_and_up_of_different_types_are_refused(self):
         # issue 54: Tiel APEX-I-NanoPlus, whose layer 16 stores gate and up differently; the engine refuses it at load
         gguf_tensors(self.f, "qwen35moe", [("blk.16.ffn_gate_exps.weight", 0, 64), ("blk.16.ffn_up_exps.weight", 1, 64)])
-        code, out = quiet(setup.verify_poly_own, self.f, 13_600_000_000, "0" * 64, "tiel")
+        code, out = quiet(setup.verify_fourgbvram_own, self.f, 13_600_000_000, "0" * 64, "tiel")
         self.assertEqual(code, "stopped")
         self.assertIn("blk.16: F32 and F16", out)
         gguf_tensors(self.f, "qwen35moe", [("blk.16.ffn_gate_exps.weight", 1, 64), ("blk.16.ffn_up_exps.weight", 1, 64)])
-        self.assertEqual(quiet(setup.verify_poly_own, self.f, 13_600_000_000, "0" * 64, "tiel")[0], "ok")
+        self.assertEqual(quiet(setup.verify_fourgbvram_own, self.f, 13_600_000_000, "0" * 64, "tiel")[0], "ok")
 
     def test_an_incomplete_copy_is_refused(self):
         gguf(self.f, "qwen35moe", short=100)
-        self.assertEqual(quiet(setup.verify_poly_own, self.f, 13_600_000_000, "0" * 64, "tiel")[0], "stopped")
+        self.assertEqual(quiet(setup.verify_fourgbvram_own, self.f, 13_600_000_000, "0" * 64, "tiel")[0], "stopped")
         self.assertTrue(self.f.exists())
 
     def test_ones_own_file_in_setups_folder_is_pointed_to_gguf_dir(self):
         # issue 54: renamed into setup's own models folder, without --gguf-dir
         gguf(self.f, "qwen35moe")
-        code, out = quiet(setup.verify_poly_download, self.f, 13_600_000_000, "0" * 64, "tiel")
+        code, out = quiet(setup.verify_fourgbvram_download, self.f, 13_600_000_000, "0" * 64, "tiel")
         self.assertEqual(code, "stopped")
         self.assertIn("--gguf-dir", out)
         self.assertNotIn("delete it and run setup again (the download restarts)", out)
         self.assertTrue(self.f.exists())
         gguf(self.f, "qwen35moe", short=100)       # a truncated download is still one to fetch again
-        code, out = quiet(setup.verify_poly_download, self.f, 13_600_000_000, "0" * 64, "tiel")
+        code, out = quiet(setup.verify_fourgbvram_download, self.f, 13_600_000_000, "0" * 64, "tiel")
         self.assertIn("the download restarts", out)
 
     def test_a_wrong_hash_deletes_only_what_setup_downloaded(self):

@@ -3,7 +3,7 @@
 4gbVramStrata runs [Qwen3.6-35B-A3B](https://huggingface.co/Qwen/Qwen3.6-35B-A3B) (35B mixture of experts, 3B active, 256 experts, top-8) from
 [Unsloth's GGUFs with the MTP layer](https://huggingface.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF) (UD-Q4_K_XL, UD-Q6_K_XL, Q8_0)
 on the Strata project's own engine path (`src/qwen35`; `strata` switches to it from the file's architecture). Pick it in
-setup (`--family qwen36-strata`); `--family qwen36` runs the same model on strata-poly instead
+setup (`--family qwen36-strata`); `--family qwen36` runs the same model on strata-fourgbvram instead
 ([BACKENDS.md](BACKENDS.md#qwen36-on-two-engines)). Besides text it
 reads **pictures** and serves **several requests at once**, the same two options the Flash-Next models have.
 

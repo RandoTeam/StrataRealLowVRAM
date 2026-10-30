@@ -23,7 +23,7 @@ Qwen3.8-Flash-Next、GLM 5.3 Flash、DeepSeek V4 Flash、LFM2.5、Flint、Qwen3.
   グラフィックカード、Windows または Linux。画像も読めます。エンジンは
   [Strata](https://github.com/Niko1221/Strata) のものをそのまま使っています。
 
-残りの 11 個は 4gbVramStrata のために書いたエンジンで動きます。NVIDIA カードが 1 枚必要です（[2 枚](docs/MULTI_GPU.md#the-strata-poly-models)でも動きます）。11 個とも Linux で動き、
+残りの 11 個は 4gbVramStrata のために書いたエンジンで動きます。NVIDIA カードが 1 枚必要です（[2 枚](docs/MULTI_GPU.md#the-strata-fourgbvram-models)でも動きます）。11 個とも Linux で動き、
 GLM 5.3 Flash と DeepSeek V4 Flash 以外は Windows でも動きます。まだ実験的で、動かしたのは 32 GB のカードを載せた 1 台の PC と、
 小さい 8 つについては 8 GB のカードを載せたノート PC 1 台だけです。
 
@@ -75,7 +75,7 @@ GLM 5.3 Flash と DeepSeek V4 Flash 以外は Windows でも動きます。ま�
 Qwen3.8-Flash-Next は [Strata](https://github.com/Niko1221/Strata) プロジェクトのエンジンで動き、そのプロジェクトが RTX 5070（12 GB）、RAM 64 GB の PC で測りました：IQ2_XS で書き出し 79、32K プロンプトの読み込み 2,090（[全サイズ](docs/models/qwen38.ja.md)）。
 
 4gbVramStrata 独自のエンジンで動く 11 個のモデルは、付属のベンチマークで測りました。あなたの PC でも実行できます：
-`python polystrata.py benchmark --model <name> --prompt-tokens 24000`
+`python fourgbvramstrata.py benchmark --model <name> --prompt-tokens 24000`
 （[何を送り、何を表示するか](docs/BACKENDS.md#benchmark)、英語）。
 ほかの人が自分のカードで測った結果と、あなたの PC で llama.cpp と比べる方法：
 [コミュニティの測定結果](docs/COMMUNITY_BENCHMARKS.md#the-models-polystrata-adds)（英語）。

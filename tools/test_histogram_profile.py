@@ -72,7 +72,7 @@ def test_file_format_and_coverage():
         assert hp.coverage(ranked, freq, 2) == 90 / 130
 
 
-def test_counts_format_for_strata_poly():
+def test_counts_format_for_strata_fourgbvram():
     with tempfile.TemporaryDirectory() as d:
         db = pathlib.Path(d) / "h.sqlite"
         make_db(db)
@@ -80,7 +80,7 @@ def test_counts_format_for_strata_poly():
         r = subprocess.run([sys.executable, str(TOOL), "--db", str(db), "--model-id", "toy", "--out", str(out)],
                            capture_output=True, text=True)
         assert r.returncode == 0, r.stderr
-        # what src/poly/engine.cpp read_profile scans: "layer expert count", counted pairs only
+        # what src/fourgbvram/engine.cpp read_profile scans: "layer expert count", counted pairs only
         assert out.read_text() == "0 1 10\n0 3 50\n1 0 40\n1 3 30\n"
 
 

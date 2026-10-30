@@ -497,7 +497,7 @@ Everything else is installed for you the first time.
 What the first start installs: in this folder `.venv/`, `engine/` and `third_party/`; the model files (`models/`,
 `packs/`, `mtp/`, 70-120 GB) in **`4gbVramStrata-data` next to this folder**, so a new copy of 4gbVramStrata (an update unzipped
 elsewhere) finds them and sets itself up the same way. The place is remembered per user (`%APPDATA%\4gbVramStrata\settings.json`,
-`~/.config/polystrata/settings.json`); `--data-dir` chooses another. Installs from before 0.1.16 are moved there by the next
+`~/.config/fourgbvramstrata/settings.json`); `--data-dir` chooses another. Installs from before 0.1.16 are moved there by the next
 start (a rename on the same drive; files on another drive are used where they are).
 Python 3.12 if you have none (for your user account, no admin), a private Python environment, NVIDIA's CUDA libraries
 (from pip, ~0.4 GB), the ready-made 4gbVramStrata engine for RTX 20/30/40/50, the model and the MTP draft layer. If no
@@ -2095,11 +2095,11 @@ model's.
 changes at 10% of positions, mean KL from the stock model 0.063 nats (max 4.1), perplexity +15% on code, +2.3% on
 the document, +0.4% on the chat. Details: `bench/results/2026-09-27-esp/`.
 
-## strata-poly: flash attention for prompt reading (on by default; `STRATA_FATTN=0` turns it off)
+## strata-fourgbvram: flash attention for prompt reading (on by default; `STRATA_FATTN=0` turns it off)
 
-For strata-poly's Qwen3.6 family, including Ornith 122B (heads of 256 values, 8 or 16 heads a group), on an
+For strata-fourgbvram's Qwen3.6 family, including Ornith 122B (heads of 256 values, 8 or 16 heads a group), on an
 Ampere or later NVIDIA card. A prompt batch's attention runs through llama.cpp's flash-attention kernel
-(`src/poly/fattn_mma.cuh`, a copy of `fattn-mma-f16.cuh` with the causal mask computed in the kernel) instead of
+(`src/fourgbvram/fattn_mma.cuh`, a copy of `fattn-mma-f16.cuh` with the causal mask computed in the kernel) instead of
 two cuBLAS products and a softmax over scores in memory. Under the q8_0 cache (`--kv int8`) blocks of keys are
 dequantized to fp16 in the attention's existing score scratch; an fp16 cache is read where it lies. No VRAM is added.
 The server logs `STRATA_FATTN: prompt attention through llama.cpp's flash-attention kernel`. Decode, Turing, HIP and
@@ -2111,14 +2111,14 @@ the end of the next section).
 UD-Q4_K_XL, `--max-context 262144`, q8_0 cache), a coding-agent conversation of growing turns: prompt read 1,437 -> 1,824 tokens/s at 32K of context, 749 -> 1,268 at 103K,
 610 -> 1,066 at 143K (+65-85% at 103-143K against the range of earlier control runs); decode the same within 1
 token/s; a 107K recall test 3 of 3. The kernel sums the value products in halves, so its results are further from
-the arithmetic in doubles (up to 7.7e-3 on results up to 2.9) than the old path's (2.3e-3); `poly_fattn_test` checks
+the arithmetic in doubles (up to 7.7e-3 on results up to 2.9) than the old path's (2.3e-3); `fourgbvram_fattn_test` checks
 both caches. Greedy answers part from the old path's after a few dozen characters, at near-ties where the old path
 also parts from itself between runs.
 
-## strata-poly: tensor-core decode attention (on by default from 4,096 tokens of context; `STRATA_FDEC=0` turns it off)
+## strata-fourgbvram: tensor-core decode attention (on by default from 4,096 tokens of context; `STRATA_FDEC=0` turns it off)
 
 The decode side of the same layers: the few tokens of an answer's step (one, or a window of guesses). Once the cache
-holds 4,096 positions they go through a kernel of this project's own (`fdec_q8()` / `fdec_f16()` in `src/poly/fattn.cu`)
+holds 4,096 positions they go through a kernel of this project's own (`fdec_q8()` / `fdec_f16()` in `src/fourgbvram/fattn.cu`)
 instead of `attend()`'s score, softmax and value kernels, which write every score to memory and read it back twice.
 One CUDA block takes 1,024 keys of a KV head's group for up to 4 tokens (group 8) or 2 tokens (group 16) as flash
 attention on the tensor cores. The cache is read once for those tokens, and the blocks are merged by their softmax
@@ -2132,7 +2132,7 @@ the new one from the first position, as the opt-in did.
 **Measured** on the RTX 3070 setup above (q8_0 cache, 256K, with `STRATA_FATTN=1`), the same conversation, two runs
 each: decode 53.8 -> 63.9 tokens/s at 32K of context, 35.1 -> 53.0 at 103K, 29.3 -> 48.7 at 143K, 26.6 -> 45.6 at
 174K; short prompts the same (62-78 tokens/s either way). With an fp16 cache at 128K (one run): 53.0 -> 62.6 at
-32K, 32.5 -> 43.2 at 103K. One layer's attention at 140K of context (`poly_fattn_test dec`): 0.45 ms against 1.94
+32K, 32.5 -> 43.2 at 103K. One layer's attention at 140K of context (`fourgbvram_fattn_test dec`): 0.45 ms against 1.94
 for one token with q8_0, 0.72 against 1.82 with fp16; below about 4K of context it is the slower one (0.05 against
 0.02 ms a layer). The scores and values go through the tensor cores as halves, so results are within 1.8e-3 of the
 arithmetic in doubles where `attend()` is within 1e-6. A long-context question set (39K to 196K tokens of this
@@ -2377,7 +2377,7 @@ Options that change answers (other summation order) are separate and explicit: `
 KL 0.01 against the warp scorer per #2071), `STRATA_PA_V2T=1` (v2 prompt attention, #2092/#2146), `STRATA_PF_FUSED=1
 STRATA_PF_FUSED_SM75=1` (fused int8 prompt experts for the Q2_0 pack, #2145; only on a 7.5 card, sm_80+ is unchanged), `STRATA_BF16_TC=1` with `STRATA_XN_F16` (#2091).
 
-## strata-poly: chunked GDN prefill
+## strata-fourgbvram: chunked GDN prefill
 
 `STRATA_GDN_MMA=1` requests the shared CUDA tensor-core GDN kernel for eligible reads in the Qwen35 backend.
 Unset or `0` keeps the stock recurrence. The request is captured at engine initialization; restart to change

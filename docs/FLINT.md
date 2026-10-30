@@ -1,6 +1,6 @@
-# Flint 40B-A2.5B (`strata-poly`)
+# Flint 40B-A2.5B (`strata-fourgbvram`)
 
-`strata-poly`, the engine of GLM 5.3 Flash and the smaller models, also runs Recursive's Flint 40B-A2.5B: llama.cpp's
+`strata-fourgbvram`, the engine of GLM 5.3 Flash and the smaller models, also runs Recursive's Flint 40B-A2.5B: llama.cpp's
 architecture `flint`, read from Unsloth's GGUF files. The server, the web app and the API are the ones the README
 describes.
 
@@ -24,7 +24,7 @@ else UD-Q3_K_XL; the others are chosen by name (`--model Q8_0`). Every file is p
 ## How fast
 
 The README's numbers are 4gbVramStrata's own benchmark through the server, the test every model of this engine gets
-([BACKENDS.md](BACKENDS.md#a-prompt-of-30000-tokens)): `polystrata.py benchmark --prompt-tokens 24000`, a short chat
+([BACKENDS.md](BACKENDS.md#a-prompt-of-30000-tokens)): `fourgbvramstrata.py benchmark --prompt-tokens 24000`, a short chat
 and a prompt built from this repository's documents, 256 tokens written after each, three runs a size and the last
 two below, with the run configs setup writes for each machine.
 
@@ -128,7 +128,7 @@ file also does not stay in RAM. Setup's context menu shows UD-Q3_K_XL's numbers.
   0.402; read token by token with its plain float kernels the engine gives them 0.242 and 0.258.
 - Three answers written together are the ones written one at a time, all 64 tokens of each, after a prompt of 15
   tokens and one of 3,000, with every expert on the card and with the card held to 8 GB.
-- `poly_sink_attend_test` checks the attention of a prompt batch (attn_flash128_kernel) and of a few tokens in
+- `fourgbvram_sink_attend_test` checks the attention of a prompt batch (attn_flash128_kernel) and of a few tokens in
   blocks of rows (attn_split_kernel) against the plain kernels, with the sinks and a window of 513 over a ring of
   rows; `serve/test_flint.py` checks the pre-tokenizer, the tool calls, the stop tokens and the thinking.
 

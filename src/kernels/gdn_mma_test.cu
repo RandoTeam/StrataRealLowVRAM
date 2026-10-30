@@ -1,4 +1,4 @@
-// Standalone consumer: prepared scalar-gated GDN, without model/engine/Poly objects.
+// Standalone consumer: prepared scalar-gated GDN, without model/engine/Fourgbvram objects.
 #include "strata/kernels/gdn_mma.hpp"
 #include <cuda_runtime.h>
 #include <algorithm>

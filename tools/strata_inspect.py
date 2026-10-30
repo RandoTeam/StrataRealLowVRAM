@@ -30,10 +30,10 @@ import quantscope as qs  # noqa: E402
 FINGERPRINTS = ROOT / "data" / "gguf_fingerprints.json"
 ARCH = "qwen4exp"                                       # Qwen3.8-Flash-Next's general.architecture
 PREVIEW_ARCHS = {"qwen35moe": "Qwen3.6-35B-A3B"}         # model families 4gbVramStrata knows but does not run yet (T0)
-# strata-poly engine architectures: general.architecture -> FAMILIES[family]["title"] from setup.py
-# (setup.py's POLY_GGUF_ARCHS lists the arch set; keep these values byte-identical to those titles so
+# strata-fourgbvram engine architectures: general.architecture -> FAMILIES[family]["title"] from setup.py
+# (setup.py's FOURGBVRAM_GGUF_ARCHS lists the arch set; keep these values byte-identical to those titles so
 # resolve_custom_gguf can map a "family" verdict back to --family/--model)
-POLY_ARCHS = {"gemma4": "Gemma 4 26B-A4B", "glm5-next": "GLM 5.3 Flash", "glm5next": "GLM 5.3 Flash",
+FOURGBVRAM_ARCHS = {"gemma4": "Gemma 4 26B-A4B", "glm5-next": "GLM 5.3 Flash", "glm5next": "GLM 5.3 Flash",
               "deepseek4": "DeepSeek V4 Flash", "lfm2moe": "LFM2.5-24B-A2B", "flint": "Flint 40B-A2.5B"}
 
 # the files setup installs: (family, model, ModelScope repository, file name prefix) - for --fingerprints
@@ -95,7 +95,7 @@ def load_fingerprints(path: Path = FINGERPRINTS) -> dict:
 
 def verdict(fp: dict, table: dict) -> tuple[str, str]:
     """(kind, sentence): kind is "known" (a file setup installs, under any name), "family" (another family 4gbVramStrata
-    runs on its own engine path - Qwen3.6 on its CUDA/HIP path, or a strata-poly model such as Gemma 4, GLM,
+    runs on its own engine path - Qwen3.6 on its CUDA/HIP path, or a strata-fourgbvram model such as Gemma 4, GLM,
     DeepSeek, LFM, Flint), "layout" (the same routed-expert
     layout as one: a fine-tune made with the same recipe, untested), "no" (4gbVramStrata cannot run it) or "untested"
     (naming the tensors whose quantization no file 4gbVramStrata runs has for them)."""
@@ -103,11 +103,11 @@ def verdict(fp: dict, table: dict) -> tuple[str, str]:
     if fp["arch"] in PREVIEW_ARCHS:
         return "family", (f"{PREVIEW_ARCHS[fp['arch']]} (architecture {fp['arch']!r}): 4gbVramStrata runs it on its own "
                           "engine path in the NVIDIA (CUDA) and AMD (HIP) builds, not yet on Intel Arc (SYCL); setup "
-                          "installs it with --family qwen36-strata, and with --family qwen36 on the strata-poly "
+                          "installs it with --family qwen36-strata, and with --family qwen36 on the strata-fourgbvram "
                           "engine")
-    if fp["arch"] in POLY_ARCHS:
-        return "family", (f"{POLY_ARCHS[fp['arch']]} (architecture {fp['arch']!r}): 4gbVramStrata runs it on the "
-                          "strata-poly engine; give its folder with --gguf-dir")
+    if fp["arch"] in FOURGBVRAM_ARCHS:
+        return "family", (f"{FOURGBVRAM_ARCHS[fp['arch']]} (architecture {fp['arch']!r}): 4gbVramStrata runs it on the "
+                          "strata-fourgbvram engine; give its folder with --gguf-dir")
     if fp["arch"] != ARCH:
         return "no", f"not Qwen3.8-Flash-Next (architecture {fp['arch']!r}): 4gbVramStrata runs only that model"
     exact = [k for k, v in known.items() if v["expert_bytes"] == fp["expert_bytes"] and v["bytes"] == fp["bytes"]

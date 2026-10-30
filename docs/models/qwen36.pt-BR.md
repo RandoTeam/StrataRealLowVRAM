@@ -48,14 +48,14 @@ inglês).
 O instalador cuida de todo o resto, como faz com o GLM 5.3 Flash. No Windows ele baixa o motor já compilado da
 última versão publicada. Num processador sem AVX2, ou numa cópia cujo motor mudou depois dessa versão, ele compila o
 motor no lugar, com o compilador de 2022 do Visual Studio e o CUDA Toolkit, e oferece instalar os dois. Ainda não:
-duas placas no Windows, três placas ou mais. Em uma placa AMD no Windows o instalador compila o `strata-poly` para a
+duas placas no Windows, três placas ou mais. Em uma placa AMD no Windows o instalador compila o `strata-fourgbvram` para a
 placa, como no Linux (as wheels TheRock da AMD em `.rocm-win`), e avisa que rodar ali é novo
-([AMD_HIP.md](../AMD_HIP.md#strata-poly-on-amd-beta)).
+([AMD_HIP.md](../AMD_HIP.md#strata-fourgbvram-on-amd-beta)).
 
 Desde a 0.1.44, o próprio motor do [Strata](https://github.com/Niko1221/Strata) também roda o Qwen3.6, a partir do
 UD-Q4_K_XL (`--family qwen36-strata`, 32 GB de RAM ou mais). Numa RTX 5090 com UD-Q4_K_XL, ele leu um prompt de 4K
-1,6 vez mais rápido que o strata-poly; num prompt de 31K e na escrita os dois ficaram quase iguais
-([medido](../BACKENDS.md#qwen36-on-two-engines), em inglês). Os tamanhos menores, para placas de 8 GB, continuam no strata-poly.
+1,6 vez mais rápido que o strata-fourgbvram; num prompt de 31K e na escrita os dois ficaram quase iguais
+([medido](../BACKENDS.md#qwen36-on-two-engines), em inglês). Os tamanhos menores, para placas de 8 GB, continuam no strata-fourgbvram.
 
 ## Qual modelo devo escolher?
 

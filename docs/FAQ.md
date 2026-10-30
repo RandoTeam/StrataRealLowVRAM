@@ -17,7 +17,7 @@ architectures, I'd like this work to go there, and I'm glad to help with that.
 
 Yes. It is built on Strata's own code: its quantized matvec kernels, its GGUF reader, its draft policy and suffix
 drafter, its conversation memory and the llama.cpp MMQ kernels Strata compiles. You can see the list in
-`CMakeLists.txt` (the `strata-poly` target). What is new is the model code for the five architectures and the
+`CMakeLists.txt` (the `strata-fourgbvram` target). What is new is the model code for the five architectures and the
 part that decides which experts sit in VRAM and which run on the CPU.
 
 ### How do I know the output is right?
@@ -60,7 +60,7 @@ Ornith APEX-I-Mini on an RX 7600 with 8 GB: 74 and 40 tokens/s in a short chat, 
 read at 481 and 444. One Windows run, Tiel Coder UD-Q3_K_XL on an RX 9070 XT, wrote at 55 to 75 tokens/s and
 read a 7,376-token prompt at 2,750. GLM 5.3 Flash, DeepSeek V4, Flint and Kolibri 1 have not been tried on an AMD
 card, and setup says so when you pick them. I don't have an AMD card myself, so reports from one help; see
-[AMD_HIP.md](AMD_HIP.md#strata-poly-on-amd-beta).
+[AMD_HIP.md](AMD_HIP.md#strata-fourgbvram-on-amd-beta).
 
 ### Will it run on a 6 GB card, or 4 GB?
 
@@ -174,7 +174,7 @@ On a card that holds most of the model's experts that writes more tokens a secon
 Qwen3.6 chats at once came at 428 tokens/s together, one alone at 312 to 333. On a small card, where
 most experts run on the CPU, it gains less: on the 8 GB laptop three Qwen3.6 chats at once came at 105 tokens/s
 together, one after the other at 79. How it works, and how to check it on your PC:
-[BATCHING.md](BATCHING.md#the-strata-poly-models).
+[BATCHING.md](BATCHING.md#the-strata-fourgbvram-models).
 
 ### Who maintains it?
 

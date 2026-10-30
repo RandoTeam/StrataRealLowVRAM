@@ -456,10 +456,10 @@ an RX 9070 XT 16 GB and a Radeon AI PRO R9700 32 GB (both gfx1201), a Ryzen 9 39
   one card or two and on engine 0.1.29 as well; not yet explained.
 - **Not validated:** images, long contexts beyond 16K, answer-quality benchmarks.
 
-## strata-poly on AMD (beta)
+## strata-fourgbvram on AMD (beta)
 
 The four smaller models of 4gbVramStrata's own engine (Qwen3.6, Ornith 1.5, Gemma 4, Tiel Coder) and GLM 5.3 Flash
-run through `strata-poly`, which is CUDA-shaped code; since 0.1.42-poly.4 it compiles for an AMD card through the
+run through `strata-fourgbvram`, which is CUDA-shaped code; since 0.1.42-poly.4 it compiles for an AMD card through the
 same `hip_compat` headers as the main engine, with the CUDA driver's virtual memory calls mapped onto HIP's
 (`hip_compat/cuda.h`). There is no ready-made AMD engine: setup compiles one for the card. On Linux with ROCm from
 a system install or AMD's wheels in `.venv`, as for the main engine; on Windows with AMD's TheRock
@@ -470,8 +470,8 @@ before it installs a model.
 
 - Install as for NVIDIA: `./setup.sh --family qwen36` (or `lfm25`, `flint`, `ornith`, `gemma4`, `tiel`, `glm`,
   `deepseek`, `kolibri`).
-  Setup compiles the engine for the card into `engine-poly/` (`build_engine_poly_hip`; on Windows
-  `build_engine_poly_hip_win`), with ROCm from a system install or AMD's wheels in `.venv` on Linux and from
+  Setup compiles the engine for the card into `engine-fourgbvram/` (`build_engine_fourgbvram_hip`; on Windows
+  `build_engine_fourgbvram_hip_win`), with ROCm from a system install or AMD's wheels in `.venv` on Linux and from
   `.rocm-win` on Windows, as for the main engine, and compiles again after a `git pull` that changed the
   engine. `STRATA_ROCM_WIN_VERSION` picks which version of AMD's TheRock Windows wheels setup installs; the name
   `tools\hip\build_windows.bat` reads for the same venv, `STRATA_ROCM_VERSION`, works too (the index stays
@@ -677,7 +677,7 @@ run it; the report below is from a community machine: an RX 6900 XT 16 GB (gfx10
   in `tools\hip\build_windows.bat` (the default list has it from 0.1.40.2 on).
 - **gfx1032** (RX 6600 / 6600 XT / 6650 XT): setup knows it (the `gfx103X-all` wheels, unvalidated). One owner ran it
   on Fedora with an RX 6600 XT 8 GB and 32 GB DDR5: setup built the engine for gfx1032 from the `gfx103X-all`
-  7.13.0a20260515 wheels, and Qwen3.6 UD-Q4_K_M on strata-poly wrote at 69 tok/s over a 2,331-token answer with
+  7.13.0a20260515 wheels, and Qwen3.6 UD-Q4_K_M on strata-fourgbvram wrote at 69 tok/s over a 2,331-token answer with
   71.1% of the experts from VRAM ([discussion 49](https://github.com/VecSzn/PolyStrata/discussions/49)). The card
   needs no `HSA_OVERRIDE_GFX_VERSION`. One left in the shell from an older guide (10.3.0 makes the card a gfx1030)
   stops this engine at the first request with `rms_norm: device kernel image is invalid`; unset it.
@@ -908,7 +908,7 @@ after three refusals for good. `hip_prefill_rocblas_gemm` (with `STRATA_ROCBLAS_
 smoke test: it refuses a table for another architecture or build and checks Gemm's FP16 route against hipBLASEx on the
 table's first two shapes.
 
-## Opt-in split value reduction in strata-poly
+## Opt-in split value reduction in strata-fourgbvram
 
 `STRATA_HIP_VALUE_SPLIT=1` splits the weighted-value reduction into 1,024-key
 parts, then sums those parts. It applies only to `attend()` with head dimension

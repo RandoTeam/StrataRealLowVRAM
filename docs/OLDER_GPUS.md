@@ -71,12 +71,12 @@ N`), where it runs the CUDA 13 engine.
 
 ### GLM 5.3 Flash, Qwen3.6, Ornith 1.5, Gemma 4 and Tiel Coder
 
-These run on strata-poly, whose ready-made engine (Windows) is built with CUDA 13. With `--cuda 12` setup compiles
-strata-poly here instead, on Windows or Linux, with a CUDA 12.x toolkit (12.8 or newer for an RTX 50 card), and the
-image encoder with it. It goes in `engine-poly\` in place of the ready-made one, for every model of that engine; a
+These run on strata-fourgbvram, whose ready-made engine (Windows) is built with CUDA 13. With `--cuda 12` setup compiles
+strata-fourgbvram here instead, on Windows or Linux, with a CUDA 12.x toolkit (12.8 or newer for an RTX 50 card), and the
+image encoder with it. It goes in `engine-fourgbvram\` in place of the ready-made one, for every model of that engine; a
 later setup without `--cuda 12` takes the ready-made one back. #220 is the Qwen engine's prompt path and does not
-apply here: on an RTX 5090 with driver 570, strata-poly built with CUDA 12.8 read Tiel Coder's 31,516-token prompts
-at 6,200 to 6,700 tokens/s. On a Pascal or Volta card setup adds `-DSTRATA_EXPERIMENTAL_SM60=ON`; strata-poly
+apply here: on an RTX 5090 with driver 570, strata-fourgbvram built with CUDA 12.8 read Tiel Coder's 31,516-token prompts
+at 6,200 to 6,700 tokens/s. On a Pascal or Volta card setup adds `-DSTRATA_EXPERIMENTAL_SM60=ON`; strata-fourgbvram
 compiles for sm_61 and sm_70 with CUDA 12.4 and 12.8. On two Tesla V100-PCIE-32GB, built with CUDA 12.9.1, it ran
 Qwen3.6 UD-Q3_K_M split over both cards at 157 tokens/s in a chat and read 4K and 16K prompts at 2,615 and 2,778
 tokens/s ([issue 88](https://github.com/VecSzn/PolyStrata/issues/88)). Built as compute_61 PTX only and
@@ -165,10 +165,10 @@ Two things to know when measuring on such a card:
 
 ### Tesla P100 (sm_60): building it again, and what ran (October 2026)
 
-Since 91fe6531 the `--kv int8` readers in `src/poly/kernels.cu` called `__dp4a`, which compute capability 6.0 does not
+Since 91fe6531 the `--kv int8` readers in `src/fourgbvram/kernels.cu` called `__dp4a`, which compute capability 6.0 does not
 have, so a build with `60` in `CMAKE_CUDA_ARCHITECTURES` stopped at `identifier "__dp4a" is undefined`. They now use
 `STRATA_DP4A` from `strata/kernels/dp4a.hpp`, as the i-quant kernels do; every other card compiles to `__dp4a` as
-before. The poly path's three cuBLAS calls use `CUBLAS_GEMM_DEFAULT`, as the Qwen3.8-Flash-Next engine does, instead of the
+before. The fourgbvram path's three cuBLAS calls use `CUBLAS_GEMM_DEFAULT`, as the Qwen3.8-Flash-Next engine does, instead of the
 tensor-op hint (the P100 has no tensor cores).
 
 Built with CUDA 12.8 and gcc 14, `-DSTRATA_EXPERIMENTAL_SM60=ON`, `CMAKE_CUDA_ARCHITECTURES="60;61;75"`, with today's

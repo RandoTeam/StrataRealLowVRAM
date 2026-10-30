@@ -35,14 +35,14 @@ class Pins(unittest.TestCase):
             self.assertRegex(FAM["sha256"][file][1], r"^[0-9a-f]{64}$")
             self.assertAlmostEqual(n / 1e9, d["download_gb"], delta=0.05)
             self.assertLess(d["arena_gb"], d["download_gb"])
-            self.assertEqual(d["ram_gb"], round(setup.poly_ram_need(d, 8.0)), size)
+            self.assertEqual(d["ram_gb"], round(setup.fourgbvram_ram_need(d, 8.0)), size)
         # Liquid AI's own file is in its repository, the others in Unsloth's
         self.assertRegex(FAM["models"]["QAD-Q4_0"]["hf"],
                          r"^https://huggingface.co/LiquidAI/LFM2.5-24B-A2B-GGUF/resolve/[0-9a-f]{40}/$")
         self.assertEqual([m for m, d in FAM["models"].items() if "hf" in d], ["QAD-Q4_0"])
 
     def test_the_about_line_says_the_first_size(self):
-        n = setup.poly_ram_need(FAM["models"]["UD-Q4_K_XL"], 8.0)
+        n = setup.fourgbvram_ram_need(FAM["models"]["UD-Q4_K_XL"], 8.0)
         self.assertIn(f"~{n:.0f} GB of RAM beside an 8 GB card", FAM["about"])
 
 
@@ -52,14 +52,14 @@ class Batch(unittest.TestCase):
         # LFM2.5 on any card from 8 GB; Qwen3.6 where the card holds every expert of the size
         for vram, want in ((6.0, []), (7.6, list(sizes)), (31.8, list(sizes))):
             with self.subTest(vram=vram):
-                self.assertEqual([m for m, d in sizes.items() if setup.poly_batch(FAM, d, vram, 32768)], want)
+                self.assertEqual([m for m, d in sizes.items() if setup.fourgbvram_batch(FAM, d, vram, 32768)], want)
         qwen = setup.FAMILIES["qwen36"]
         for vram, ctx, want in ((8.0, 32768, []), (23.6, 32768, ["UD-Q3_K_M", "UD-Q2_K_XL"]),
                                 (23.6, 131072, ["UD-Q3_K_M", "UD-Q2_K_XL"]), (31.8, 131072, list(qwen["models"]))):
             with self.subTest(vram=vram, ctx=ctx):
-                self.assertEqual([m for m, d in qwen["models"].items() if setup.poly_batch(qwen, d, vram, ctx)], want)
+                self.assertEqual([m for m, d in qwen["models"].items() if setup.fourgbvram_batch(qwen, d, vram, ctx)], want)
         # a family without the figure keeps the engine's batch
-        self.assertFalse(setup.poly_batch(setup.FAMILIES["gemma4"], setup.FAMILIES["gemma4"]["models"]["UD-Q2_K_XL"],
+        self.assertFalse(setup.fourgbvram_batch(setup.FAMILIES["gemma4"], setup.FAMILIES["gemma4"]["models"]["UD-Q2_K_XL"],
                                           96.0, 32768))
 
 

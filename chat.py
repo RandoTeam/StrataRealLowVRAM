@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """A tiny terminal chat for a running 4gbVramStrata server (start it with run-<model>.bat / run-<model>.sh first, or
-let `python polystrata.py --model <name>` start it).
+let `python fourgbvramstrata.py --model <name>` start it).
 
     python chat.py [--port 8080] [--think none|low|medium|high]
 

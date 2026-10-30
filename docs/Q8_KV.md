@@ -1,11 +1,11 @@
-# The Q8_0 KV cache (`strata-poly --kv q8_0`)
+# The Q8_0 KV cache (`strata-fourgbvram --kv q8_0`)
 
-`strata-poly` can store its attention K and V caches in the ggml **Q8_0** format instead of fp16. It is
+`strata-fourgbvram` can store its attention K and V caches in the ggml **Q8_0** format instead of fp16. It is
 opt-in: `--kv q8_0`. The default, `--kv fp16`, is unchanged and byte-identical to the build before this
 option existed. The format halves the KV cache's VRAM and, on the models tested, leaves the answers alone.
 
 Gemma 4 has its own two, in the same Q8_0 rule but its own layout: `--kv int8` and `--kv int8k`
-([the int8 pair, below](#the-int8-pair-for-gemma-4-strata-poly---kv-int8-and---kv-int8k)).
+([the int8 pair, below](#the-int8-pair-for-gemma-4-strata-fourgbvram---kv-int8-and---kv-int8k)).
 
 On `kolibri1`, `STRATA_KV_INT8=1` makes both the decode and the prompt read the q8_0 cache with the int8
 reader below (`attend_int8`) instead of the float q8 readers. It is experimental: the queries are quantized
@@ -24,7 +24,7 @@ For the three tested models (`n_kv = 2`, `head_dim = 256`, 11 attention layers f
 the engine prints its row size at load:
 
 ```
-strata-poly: q8_0 KV cache: 544 bytes a row
+strata-fourgbvram: q8_0 KV cache: 544 bytes a row
 ```
 
 544 = 512 codes + 2 blocks × 2 scales, a head, K and V. `--kv q8_0` needs `n_kv * head_dim` to be a multiple
@@ -39,7 +39,7 @@ through the vision encoder (`strata-vision`), each replying `KV OK` to the fixed
 | --- | --- |
 | Graphics card | NVIDIA RTX 3070, 8192 MiB |
 | CPU | 24 threads |
-| Built with | CUDA (the CUDA build of `strata-poly`); `/opt/cuda` |
+| Built with | CUDA (the CUDA build of `strata-fourgbvram`); `/opt/cuda` |
 | Models | `Tiel-Coder-35B-A3B.APEX-I-MiniPlus-V2.1.gguf`, `Ornith-1.5-35B-A3B.APEX-I-MiniPlus-V2.1.gguf`, `Occamy-1.0.APEX-I-MiniPlus-V2.1.gguf`, all `qwen35moe`, Q4_K - Medium |
 | Context | 131072 tokens |
 | Server | `serve/server.py --engine strata --config strata-<model>.json --port 8099` |
@@ -133,22 +133,22 @@ The three run configs (`strata-tiel.json`, `strata-ornith.json` and `strata-occa
 `llama.cpp` (the in-tree build `runners/llama.cpp/build/bin/llama-cli`) reads the same `qwen35moe` files and
 accepts `-ctk q8_0 -ctv q8_0`. Given a Q8_0 KV cache it answered the two short fixed prompts
 (`Reply with exactly: KV OK` → `KV OK`; `What is 17 + 25? Answer with just the number.` → `42`), the same
-tokens the poly engine's `--kv q8_0` produced on all three models. It was run on the CPU (`-ngl 0`) because the
+tokens the fourgbvram engine's `--kv q8_0` produced on all three models. It was run on the CPU (`-ngl 0`) because the
 file is far larger than the card; only the short deterministic answers are a meaningful signal across engines.
 Full transcript in the T8.5 report.
 
 ## Files touched
 
-- `src/poly/engine.hpp` — `KvFmt` and `Options::kv_format` (default `kFp16`).
-- `src/poly/main.cpp` — `--kv fp16|q8_0` parsing and help text.
-- `src/poly/engine.cpp` — the `qwen35moe`-only check and the clean rejection for other architectures.
-- `src/poly/qwen35.hpp`, `src/poly/qwen35.cpp` — the Q8_0 cache pointers, allocation, save/load, the row-size
+- `src/fourgbvram/engine.hpp` — `KvFmt` and `Options::kv_format` (default `kFp16`).
+- `src/fourgbvram/main.cpp` — `--kv fp16|q8_0` parsing and help text.
+- `src/fourgbvram/engine.cpp` — the `qwen35moe`-only check and the clean rejection for other architectures.
+- `src/fourgbvram/qwen35.hpp`, `src/fourgbvram/qwen35.cpp` — the Q8_0 cache pointers, allocation, save/load, the row-size
   print, and the attention path that reads codes+scales.
-- `src/poly/kernels.cu`, `include/strata/poly/kernels.hpp` — `store_q8` / `store_q8_at` and the Q8_0 attention
+- `src/fourgbvram/kernels.cu`, `include/strata/fourgbvram/kernels.hpp` — `store_q8` / `store_q8_at` and the Q8_0 attention
   readers (scores and outputs).
-- `src/poly/kv_q8_test.cpp` (new) — the kernel unit test: round-trip within half a block scale, byte-exact
+- `src/fourgbvram/kv_q8_test.cpp` (new) — the kernel unit test: round-trip within half a block scale, byte-exact
   layout, and the ring store.
-- `CMakeLists.txt` — the `poly_kv_q8_test` target and its `add_test`.
+- `CMakeLists.txt` — the `fourgbvram_kv_q8_test` target and its `add_test`.
 - `strata-tiel.json`, `strata-ornith.json`, `strata-occamy.json` — the three run configs now carry
   `--kv q8_0` and `--vram-reserve-mib 512`.
 - `gemma4.hpp` / `gemma4.cpp` — untouched.
@@ -157,11 +157,11 @@ Full transcript in the T8.5 report.
 
 - **CUDA:** builds clean; the test-suite run is **116/117**. The one failure, `ple_parity`, is a missing model
   file (`.../Q2_0/Qwen3.8-Flash-Next-GSQ-RCO-Q2_0-00002-of-00002.gguf: cannot open`), unrelated to this change.
-  `poly_kv_q8_test` passes (0.23 s), `poly_kv_int8_test` 35/35 (0.4 s).
-- **HIP:** builds clean for gfx1201; `poly_kv_q8_test` passes (91,530 values checked) on an RX 9070 XT. The
+  `fourgbvram_kv_q8_test` passes (0.23 s), `fourgbvram_kv_int8_test` 35/35 (0.4 s).
+- **HIP:** builds clean for gfx1201; `fourgbvram_kv_q8_test` passes (91,530 values checked) on an RX 9070 XT. The
   int8 family builds there too: the MMA tier's PTX has an empty body and `attend_int8` never selects it
   (`tensor_cores()` is false under `__HIPCC__`), so the dp4a tier and the fp16 twin carry the prompt path;
-  `poly_kv_int8_test` skips the mma probes with `STRATA_USE_HIP` set.
+  `fourgbvram_kv_int8_test` skips the mma probes with `STRATA_USE_HIP` set.
 
 ## On an AMD card
 
@@ -179,7 +179,7 @@ summary of a 24K-character prompt and a list of names from a 60K-character one t
 14th and first character on, each answer as right as the fp16 one.
 - **SYCL:** not applicable; that is a separate engine.
 
-## The int8 pair for Gemma 4 (`strata-poly --kv int8` and `--kv int8k`)
+## The int8 pair for Gemma 4 (`strata-fourgbvram --kv int8` and `--kv int8k`)
 
 Same rule, different layout. The block's largest magnitude over 127 is the **delta**, `roundf(x / delta)` is the
 **code** — llama.cpp's Q8_0 rule, which is what the engine already uses for its expert weights
@@ -215,7 +215,7 @@ arithmetic is not the same and a model takes one family or the other.
 
 ### What was measured
 
-Kernels, without a model (`poly_kv_int8_test`, 35 checks, RTX 4070 Laptop): the codes and deltas agree with
+Kernels, without a model (`fourgbvram_kv_int8_test`, 35 checks, RTX 4070 Laptop): the codes and deltas agree with
 ggml's own `quantize_row_q8_0_ref` **to the bit** (0 of 1,536,000 halves differ for the whole-cache
 dequantizer); two layers' shapes give `cos(attend, attend_int8)` 0.99995-0.99996 at 64 to 3000 keys, the
 window layers' rings included; the MMA probe runs one product and checks it (0 of 128 wrong), and the MMA is
@@ -249,14 +249,14 @@ no arithmetic.
 
 ### Files touched
 
-- `src/poly/kernels.cu`, `include/strata/poly/kernels.hpp` — `KvInt8`, `kQ8_0Values`, `store_int8` /
+- `src/fourgbvram/kernels.cu`, `include/strata/fourgbvram/kernels.hpp` — `KvInt8`, `kQ8_0Values`, `store_int8` /
   `store_int8_at` / `dequant_int8_to_f16`, and `attend_int8` / `attend_int8_mixed` with their score readers
   (dp4a, register, and MMA tiers). Nothing of the Q8_0 family beside them.
-- `src/poly/gemma4.hpp` / `gemma4.cpp` — the codes/delta arrays beside the fp16 ones, the fp16 twin for a
+- `src/fourgbvram/gemma4.hpp` / `gemma4.cpp` — the codes/delta arrays beside the fp16 ones, the fp16 twin for a
   prompt batch and its per-sequence rows, the ring stores, and the save/load and parking paths
   (`card_row_bytes`, `save_card_rows` / `load_card_rows`, `extra_bytes`, `save_layer` / `load_extra`).
-- `src/poly/engine.hpp` — `KvFmt` grows `kInt8` and `kInt8K`, with the `int8()` / `int8k()` readers.
-- `src/poly/engine.cpp` — the clean rejection of int8/int8k for anything but `gemma4`.
-- `src/poly/main.cpp` — `--kv int8` / `--kv int8k` parsing and the help text.
-- `src/poly/kv_int8_test.cpp` (new) — the kernel unit test.
-- `CMakeLists.txt` — the `poly_kv_int8_test` target and its `add_test`.
+- `src/fourgbvram/engine.hpp` — `KvFmt` grows `kInt8` and `kInt8K`, with the `int8()` / `int8k()` readers.
+- `src/fourgbvram/engine.cpp` — the clean rejection of int8/int8k for anything but `gemma4`.
+- `src/fourgbvram/main.cpp` — `--kv int8` / `--kv int8k` parsing and the help text.
+- `src/fourgbvram/kv_int8_test.cpp` (new) — the kernel unit test.
+- `CMakeLists.txt` — the `fourgbvram_kv_int8_test` target and its `add_test`.

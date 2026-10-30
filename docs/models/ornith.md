@@ -43,9 +43,9 @@ A prompt of 10,000 tokens is read at 1,590 tokens/s on the laptop and at 6,400 o
 The installer sets up everything else, as it does for GLM 5.3 Flash. On Windows it downloads the engine ready-made
 from the latest release. On a processor without AVX2, or in a copy whose engine changed after that release, it
 compiles the engine instead with Visual Studio's 2022 compiler and the CUDA toolkit, and offers to install them. Not
-yet: two cards on Windows, three cards or more. On an AMD card under Windows setup compiles `strata-poly` for the
+yet: two cards on Windows, three cards or more. On an AMD card under Windows setup compiles `strata-fourgbvram` for the
 card as it does on Linux (AMD's TheRock wheels in `.rocm-win`) and warns that runs there are new
-([AMD_HIP.md](../AMD_HIP.md#strata-poly-on-amd-beta)).
+([AMD_HIP.md](../AMD_HIP.md#strata-fourgbvram-on-amd-beta)).
 
 ## Which model should I pick?
 

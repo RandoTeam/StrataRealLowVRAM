@@ -199,7 +199,7 @@ __global__ void native_swiglu_quantize_q8_1_kernel(const float* __restrict__ gat
     if (i % Q8K == 0) y[i / Q8K].ds = q8_1_ds(d, sum);
 }
 
-// native_add_rms_norm_q8_1: a block a row.  The sum of squares, the scale and the product are poly's rms_norm_kernel
+// native_add_rms_norm_q8_1: a block a row.  The sum of squares, the scale and the product are fourgbvram's rms_norm_kernel
 // with its block size (SUM threads of the block) and its IEEE operations written out (this file is built with
 // --use_fast_math).  Then every thread of the block takes values, a warp 32 of one Q8_1 block, and quantizes them as
 // native_quantize_q8_1_kernel does: more threads than the sum's make the row's quantization fewer steps.

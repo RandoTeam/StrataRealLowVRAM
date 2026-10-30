@@ -44,9 +44,9 @@ Un prompt de 10,000 tokens se lee a 2,130 tokens/s en el portátil y a 6,800 en 
 El instalador se encarga de todo lo demás, como con GLM 5.3 Flash. En Windows descarga el motor ya compilado de la
 última versión publicada. En un procesador sin AVX2, o en una copia cuyo motor cambió después de esa versión, lo
 compila en su lugar con el compilador de 2022 de Visual Studio y el CUDA Toolkit, y ofrece instalarlos. Todavía no:
-dos tarjetas en Windows, tres tarjetas o más. En una tarjeta AMD bajo Windows el instalador compila `strata-poly` para
+dos tarjetas en Windows, tres tarjetas o más. En una tarjeta AMD bajo Windows el instalador compila `strata-fourgbvram` para
 la tarjeta, como en Linux (las wheels TheRock de AMD en `.rocm-win`), y avisa de que ejecutarlo allí es nuevo
-([AMD_HIP.md](../AMD_HIP.md#strata-poly-on-amd-beta)).
+([AMD_HIP.md](../AMD_HIP.md#strata-fourgbvram-on-amd-beta)).
 
 ## ¿Qué modelo elijo?
 

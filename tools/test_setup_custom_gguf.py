@@ -43,7 +43,7 @@ class CustomGgufTests(unittest.TestCase):
         m.fingerprint = lambda arch, tensors: fp_dict
         m.verdict = lambda fp, t: (kind, f"mock verdict: {kind}")
         m.PREVIEW_ARCHS = {}
-        m.POLY_ARCHS = {}
+        m.FOURGBVRAM_ARCHS = {}
         if table is None:
             _real_path = Path(_ROOT) / "data" / "gguf_fingerprints.json"
             m.load_fingerprints = lambda path=None: json.loads(_real_path.read_text(encoding="utf-8"))
