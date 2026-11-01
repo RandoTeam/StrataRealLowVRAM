@@ -154,7 +154,7 @@ Was Qwen3.6, Clover, Ornith 1.5, Gemma 4, Tiel Coder und MiniCPM-V jeweils brauc
 Nutzt du einen KI-Coding-Assistenten (Claude Code, Cursor, Codex, GitHub Copilot, ...)? Füge dort diesen Text ein:
 
 ```text
-Set up 4gbVramStrata on this PC for me: https://github.com/VecSzn/PolyStrata - follow docs/AI_SETUP.md in that repository.
+Set up 4gbVramStrata on this PC for me: https://github.com/RandoTeam/4gbVramStrata - follow docs/AI_SETUP.md in that repository.
 ```
 
 Er prüft deine Grafikkarte, deinen RAM und deine Festplatte und wählt das passende Modell. Dann installiert und
@@ -163,7 +163,7 @@ startet er es und sagt dir, wie du deine Apps verbindest. KI-Tools können 4gbVr
 
 ### Oder mach es selbst
 
-[Lade 4gbVramStrata herunter](https://github.com/VecSzn/PolyStrata/archive/refs/heads/main.zip) und entpacke es (oder nutze
+[Lade 4gbVramStrata herunter](https://github.com/RandoTeam/4gbVramStrata/archive/refs/heads/main.zip) und entpacke es (oder nutze
 `git clone`). **Windows:** Doppelklick auf **`START-HERE.bat`**. **Linux:** Führe im 4gbVramStrata-Ordner **`./setup.sh`** aus.
 
 **Mac (Apple Silicon, M1 bis M5, macOS 15 oder neuer):** Installiere einmal Apples Command Line Tools (`xcode-select --install` im Terminal; Xcode selbst brauchst du nicht). Öffne dann das Terminal im 4gbVramStrata-Ordner und führe **`./setup.sh`** aus. Es baut die Mac-Engine auf deinem Mac (etwa 7 Minuten), stellt dieselben Fragen, lädt das Modell und startet es. Beim nächsten Mal startet `./setup.sh` sofort. Welche Größe zu deinem Mac passt und wie schnell es ist: [docs/MAC.md](docs/MAC.md). Die Mac-Engine läuft nur mit Qwen3.8-Flash-Next; die anderen elf Modelle brauchen eine NVIDIA- oder AMD-Karte.
@@ -274,7 +274,7 @@ Starte 4gbVramStrata danach neu (`START-HERE.bat` oder `./setup.sh`). Zum Rückg
 - **Es meldet, dass Port 8080 schon belegt ist.** 4gbVramStrata läuft bereits. Such nach seinem Fenster.
 
 Weitere Probleme und ihre Lösungen: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md). Kommst du nicht weiter?
-Öffne ein [Issue](https://github.com/VecSzn/PolyStrata/issues) und hänge `strata-<model>.log` aus dem 4gbVramStrata-Ordner
+Öffne ein [Issue](https://github.com/RandoTeam/4gbVramStrata/issues) und hänge `strata-<model>.log` aus dem 4gbVramStrata-Ordner
 an. Du hast ein Sicherheitsproblem gefunden? Melde es vertraulich: [SECURITY.md](SECURITY.md).
 
 ## Wie funktioniert es?

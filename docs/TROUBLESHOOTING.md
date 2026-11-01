@@ -197,4 +197,4 @@ R9700) in the `env` block of the server JSON, then a restart. Experimental, one 
 ## Still stuck?
 
 Look in the [full troubleshooting table](DETAILS.md#troubleshooting), or open an
-[issue](https://github.com/VecSzn/PolyStrata/issues) and attach `strata-<model>.log` from the 4gbVramStrata folder.
+[issue](https://github.com/RandoTeam/4gbVramStrata/issues) and attach `strata-<model>.log` from the 4gbVramStrata folder.
