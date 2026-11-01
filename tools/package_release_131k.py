@@ -1,8 +1,10 @@
 """Build the Windows release zip of 4gbVramStrata with the ready-made 131K engine.
 
 The zip is what a user downloads: START-HERE.bat, setup.py, the server and web app, the tools setup runs, the
-documents a user reads, and engine-fourgbvram/ (the built strata-fourgbvram.exe with its BUILD.json).  Tests,
-benchmark records, the paper, the local build folders and the quarantined working files (_attic/) stay out.
+documents a user reads, engine-fourgbvram/ (the built strata-fourgbvram.exe with its BUILD.json), and the engine's
+sources.  The sources are there because setup.source_hash() walks them: without them the shipped BUILD.json names a
+source the zip does not have, and setup takes the engine for stale and tries to compile one.  Tests, benchmark
+records, the paper, the local build folders and the quarantined working files (_attic/) stay out.
 
     python tools/package_release_131k.py             # build dist/4gbVramStrata-v<version>-131k-win-x64.zip
     python tools/package_release_131k.py --check     # list what is missing or would be left out, write nothing
@@ -29,6 +31,8 @@ FILES = [
 ]
 # Whole trees, with the filter below applied to every file.
 TREES = ["serve", "tools", "data", "docs"]
+# The engine's sources, copied verbatim (no filter: setup.source_hash() covers every file, test sources included).
+SOURCES = ["CMakeLists.txt", "cmake", "src", "include", "third_party/ggml", "tools/vision"]
 # Dropped everywhere: test sources, caches, and the paper (it has its own release).
 SKIP_DIRS = {"__pycache__", ".pytest_cache", "paper", "superpowers"}
 SKIP_NAMES = {"test_setup_golden.json"}
@@ -63,6 +67,18 @@ def tree_files(tree: str) -> list:
     return out
 
 
+def source_files() -> list:
+    """Every file under SOURCES, unfiltered: the engine's fingerprint covers all of them."""
+    out = []
+    for part in SOURCES:
+        base = ROOT / part
+        if base.is_file():
+            out.append(Path(part))
+        elif base.is_dir():
+            out += [p.relative_to(ROOT) for p in sorted(base.rglob("*")) if p.is_file()]
+    return out
+
+
 def engine_files(engine: Path) -> list:
     if not engine.is_dir():
         return []
@@ -89,12 +105,15 @@ def main() -> int:
         if not (ROOT / tree).is_dir():
             missing.append(tree + "/")
         plan += tree_files(tree)
+    missing += [s + ("/" if (ROOT / s).is_dir() else "") for s in SOURCES if not (ROOT / s).exists()]
+    plan += source_files()
+    plan = list(dict.fromkeys(plan))                 # tools/vision arrives from TREES and SOURCES alike
     eng = engine_files(Path(a.engine))
     if not eng:
         missing.append(f"{Path(a.engine).name}/strata-fourgbvram.exe")
 
     print(f"release: {release_name}")
-    print(f"files:   {len(plan)} from the tree, {len(eng)} from {Path(a.engine).name}/")
+    print(f"files:   {len(plan)} from the tree (the engine's sources included), {len(eng)} from {Path(a.engine).name}/")
     if missing:
         print("missing:")
         for m in missing:
