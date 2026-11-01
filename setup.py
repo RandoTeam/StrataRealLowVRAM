@@ -923,7 +923,7 @@ FOURGBVRAM_EXE = "strata-fourgbvram.exe" if WIN else "strata-fourgbvram"
 # another folder, a local one too.
 FOURGBVRAM_PREBUILT_URL = os.environ.get("STRATA_FOURGBVRAM_PREBUILT_URL",
                                    os.environ.get("STRATA_POLY_PREBUILT_URL",  # name before the rename
-                                   "https://github.com/RandoTeam/4gbVramStrata/releases/latest/download/"))
+                                   "https://github.com/RandoTeam/StrataRealLowVRAM/releases/latest/download/"))
 FOURGBVRAM_ASSET = "strata-fourgbvram-windows-x64-{src}.zip"
 # A model of strata-fourgbvram that reads pictures has its image encoder on the GPU from this much VRAM (GiB), and on the
 # CPU below it: the encoder holds 1.6 to 2.4 GB there, which a smaller card needs for the model

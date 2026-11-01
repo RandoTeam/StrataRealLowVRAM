@@ -1,8 +1,10 @@
 # AGENTS.md
 
-> **This branch is RandoTeam/4gbVramStrata `main` (4gbVramStrata line).** Release script: `tools/package_release_131k.py`
-> (`4gbVramStrata-v0.1.45-131k-win-x64`). Origin is canonical (`RandoTeam/4gbVramStrata`); `upstream` is the
-> primary donor, `strata-upstream` secondary; `old-StrataRealLowVRAM` is an archive, do not use its URLs.
+> **This branch is RandoTeam/StrataRealLowVRAM `main` (4gbVramStrata line).** Release script: `tools/package_release_131k.py`
+> (`4gbVramStrata-v0.1.45-131k-win-x64`). Origin is canonical (`RandoTeam/StrataRealLowVRAM`, a public fork of
+> [Strata](https://github.com/Niko1221/Strata)); `upstream` is the primary donor (`VecSzn/PolyStrata`),
+> `strata-upstream` the secondary (`Niko1221/Strata`). The private `RandoTeam/4gbVramStrata` is a mirror of this
+> branch, not the project: links, releases and issues go to `StrataRealLowVRAM`.
 > The experimental 0.2.0-based port lives on `feature/strata-020-fourgbvram-131k` (`tools/package_portable.py` there).
 
 4gbVramStrata runs the Qwen3.8-Flash-Next mixture-of-experts model (and its Coder, Swift 1.5 and Unsloth variants) on a

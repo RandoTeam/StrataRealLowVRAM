@@ -21,7 +21,7 @@ direction: *your assistant* manages 4gbVramStrata.
 
 ## Add it
 
-You need a copy of 4gbVramStrata: the zip from GitHub, or `git clone https://github.com/RandoTeam/4gbVramStrata`. Below,
+You need a copy of 4gbVramStrata: the zip from GitHub, or `git clone https://github.com/RandoTeam/StrataRealLowVRAM`. Below,
 `C:\Users\you\4gbVramStrata` (Windows) and `/home/you/4gbVramStrata` (Linux) stand for that folder. Use `python3` on Linux. On
 Windows, use `py` if `python` is not on your PATH.
 

@@ -141,7 +141,7 @@ Qwen3.6、Clover、Ornith 1.5、Gemma 4、Tiel Coder、MiniCPM-V の 6 つのモ
 AI コーディングアシスタント（Claude Code、Cursor、Codex、GitHub Copilot など）を使っていますか？ これを貼り付けてください：
 
 ```text
-Set up 4gbVramStrata on this PC for me: https://github.com/RandoTeam/4gbVramStrata - follow docs/AI_SETUP.md in that repository.
+Set up 4gbVramStrata on this PC for me: https://github.com/RandoTeam/StrataRealLowVRAM - follow docs/AI_SETUP.md in that repository.
 ```
 
 AI がグラフィックカード、RAM、ディスクを調べて、合うモデルを選びます。それからインストールして起動し、
@@ -150,7 +150,7 @@ AI がグラフィックカード、RAM、ディスクを調べて、合うモ�
 
 ### 自分でやる
 
-[4gbVramStrata をダウンロード](https://github.com/RandoTeam/4gbVramStrata/archive/refs/heads/main.zip)して展開します（または `git clone` します）。
+[4gbVramStrata をダウンロード](https://github.com/RandoTeam/StrataRealLowVRAM/archive/refs/heads/main.zip)して展開します（または `git clone` します）。
 **Windows：** **`START-HERE.bat`** をダブルクリック。**Linux：** 4gbVramStrata フォルダーで **`./setup.sh`** を実行します。
 
 手順は NVIDIA でも AMD でも同じです。インストーラーがカードを見つけて、それに合うエンジンを用意します。
@@ -256,7 +256,7 @@ AI がグラフィックカード、RAM、ディスクを調べて、合うモ�
 - **ポート 8080 がすでに使われていると表示される。** 4gbVramStrata はもう動いています。そのウィンドウを探してください。
 
 ほかの問題と解決方法：[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)。それでも解決しない場合は
-[issue](https://github.com/RandoTeam/4gbVramStrata/issues) を作成し、4gbVramStrata フォルダーにある `strata-<model>.log` を添付してください。
+[issue](https://github.com/RandoTeam/StrataRealLowVRAM/issues) を作成し、4gbVramStrata フォルダーにある `strata-<model>.log` を添付してください。
 セキュリティの問題を見つけたら、非公開で報告してください：[SECURITY.md](SECURITY.md)。
 
 ## しくみ
