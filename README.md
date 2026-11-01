@@ -57,7 +57,7 @@ A token is about ¾ of a word.
 
 > [!IMPORTANT]
 > **What has been measured on a 4 GB card so far:** the two Cyber-Tiel-Coder sizes in the tables below, Clover
-> APEX-I-NANOPLUS (32K, 2026-10-31) and Flint UD-Q3_K_XL (33.8 tokens/s writing, 414 tokens/s reading a 2,000-token
+> APEX-I-NANOPLUS (32K, 2026-10-31) and Flint UD-Q3_K_XL (38.5 tokens/s writing, 420 tokens/s reading a 2,000-token
 > prompt, 2026-11-01). Every other model is untested on 4 GB VRAM: the table under
 > [Qwen3.8-Flash-Next](#qwen38flash-next) was measured on an 8 GB laptop and a 32 GB workstation.
 
@@ -107,16 +107,16 @@ Measured 2026-10-31 at 32K context, same laptop, `engine-fourgbvram/strata-fourg
 | Short answer (13-token prompt, 43 tokens) | 29.6 tokens/s | — | 0 of 2 | loaded in 1.8 s, 244 of 10,240 experts in VRAM (0.2 GiB) |
 | Long answer (483-token prompt, 9,148 tokens) | 26.2 tokens/s | 224.6 tokens/s | 1,009 of 1,492 (68%) | 337 of 10,240 experts in VRAM (0.34 GiB) |
 
-On v0.1.45-poly.7 (2026-11-01) the same 2,000-token prompt is read at 514 tokens/s and 128 tokens are written at 30.5
-tokens/s, or 36.4 with `--tail-skip 6`; the expert cache at load is 421 of 10,240 (0.4 GiB)
-([the table](docs/BENCH-4GB.md#after-the-poly7-merge)).
+On the engine this release ships (CUDA 13, v0.1.45-poly.7) the same 2,000-token prompt is read at 522 tokens/s and
+128 tokens are written at 33.4 tokens/s, or 38.3 with `--tail-skip 6`; the expert cache at load is 421 of 10,240
+(0.4 GiB) ([the table](docs/BENCH-4GB.md#the-engine-this-release-ships)).
 
 #### 4. Flint 40B-A2.5B UD-Q3_K_XL (17.2 GB)
 
-Measured with the card to itself at 32K context, same laptop, v0.1.45-poly.7 (2026-11-01): a 2,000-token prompt is read
-at 414 tokens/s and 128 tokens are written at 33.8 tokens/s, with 561 of 12,032 experts in VRAM (0.7 GiB).
-`--prompt-batch 512` reads at 366 tokens/s and writes 36.7 tokens/s
-([every setting measured](docs/BENCH-4GB.md#settings-measured-one-at-a-time)).
+Measured with the card to itself at 32K context, same laptop, the engine this release ships (CUDA 13,
+v0.1.45-poly.7, 2026-11-01): a 2,000-token prompt is read at 420 tokens/s and 128 tokens are written at 38.5
+tokens/s, with 561 of 12,032 experts in VRAM (0.7 GiB). `--prompt-batch 512` reads at 372 tokens/s and writes 39.9
+tokens/s ([every setting measured](docs/BENCH-4GB.md#settings-measured-one-at-a-time)).
 
 A start that reports 0 of 12,032 experts means another model was still holding the card: one model at a time on
 4 GB.
