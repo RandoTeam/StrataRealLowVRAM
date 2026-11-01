@@ -75,7 +75,7 @@ Qwen3.8-Flash-Next 用的是 [Strata](https://github.com/Niko1221/Strata) 的引
 `python fourgbvramstrata.py benchmark --model <name> --prompt-tokens 24000`
 （[它发什么、打印什么](docs/BACKENDS.md#benchmark)，英文）。
 别人在自己的显卡上测的结果，以及怎么在你的电脑上和 llama.cpp 对比：
-[社区测试结果](docs/COMMUNITY_BENCHMARKS.md#the-models-polystrata-adds)（英文）。
+[社区测试结果](docs/COMMUNITY_BENCHMARKS.md#the-models-this-projects-own-engine-adds)（英文）。
 在笔记本上跑 Qwen3.6 和 Tiel Coder，4gbVramStrata 读提示比 llama.cpp b11540 快 2.7 到 3.5 倍，写快 1.5 到 1.8 倍
 （[两次测试](docs/COMMUNITY_BENCHMARKS.md#comparing-with-llamacpp)，英文）。
 

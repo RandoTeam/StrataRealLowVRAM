@@ -1,0 +1,129 @@
+# Measured on a 4 GB card
+
+What this project's engine does on the laptop it is made for. Every number here comes from a run on that laptop;
+nothing is estimated.
+
+**The laptop:** NVIDIA GeForce RTX 3050 Laptop, 4 GB of VRAM, `sm_86`; AMD Ryzen 5 5500U, 6 cores and 12 threads;
+32 GB of DDR4-3200; Windows 11. The engine is built from this repository with CUDA 12.8
+(`engine-fourgbvram/strata-fourgbvram.exe`, `kSnapPlaces = 7`).
+
+**What the server prints.** Each request adds one line to the log:
+
+```text
+strata serve: prompt 495 tokens = 12 reused + 483 read in 2151 ms (224.6 tok/s), 9148 generated in 349079 ms (26.2 tok/s), drafts accepted 1009 of 1492
+```
+
+- *prompt N tokens* is what the request carried; *reused* is what the conversation cache already held, *read* is
+  what the engine had to take in, and the speed is for the read part.
+- *generated* is the answer, and its speed counts from the first token to the last.
+- *drafts accepted* is the draft head's guesses the model kept; the rest it replaced.
+
+## Clover-35B-A3B-Preview APEX-I-NANOPLUS
+
+`Clover-35B-A3B-Preview.APEX-I-NanoPlus-V2.1.gguf`, 11.69 GB, 32K context, 2026-10-31. The run config is
+`strata-clover-apex-i-nanoplus.json`: the engine's defaults plus `--expert-profile` and
+`--conversation-cache-mib auto`. The whole log:
+
+```text
+[strata] 2026-10-31 01:50:09 engine started: ...\strata-fourgbvram.exe --serve --model ...\Clover-35B-A3B-Preview.APEX-I-NanoPlus-V2.1.gguf --max-context 32768 --expert-profile ...\expert-profile.txt --conversation-cache-mib auto
+strata-fourgbvram: STRATA_FATTN: prompt attention through llama.cpp's flash-attention kernel (STRATA_FATTN=0 turns it off)
+strata-fourgbvram: STRATA_FDEC: decode attention through the tensor-core decode kernel from 4,096 tokens of context (STRATA_FDEC=0 turns it off)
+strata-fourgbvram: loaded in 1.8 s; 244 of 10240 routed experts in VRAM (0.2 GiB), 12 CPU threads
+strata-fourgbvram: conversation cache sized from the free RAM: 8192 MiB for up to 4 parked conversations (--conversation-cache-mib N sets it, 0 turns it off)
+strata serve: prompt 13 tokens = 0 reused + 13 read in 938 ms (13.9 tok/s), 43 generated in 1453 ms (29.6 tok/s), drafts accepted 0 of 2
+strata-fourgbvram: the expert cache 244 -> 337 experts (0.34 GiB) for the VRAM free now, 127 MiB left
+strata serve: prompt 495 tokens = 12 reused + 483 read in 2151 ms (224.6 tok/s), 9148 generated in 349079 ms (26.2 tok/s), drafts accepted 1009 of 1492
+```
+
+What it says:
+
+| | |
+| --- | ---: |
+| Load, 32K context | 1.8 s |
+| Experts in VRAM at the start | 244 of 10,240 (0.2 GiB) |
+| Experts in VRAM after the first request | 337 of 10,240 (0.34 GiB), 127 MiB of VRAM left |
+| Writes a short answer (43 tokens) | 29.6 tokens/s |
+| Writes a long answer (9,148 tokens) | 26.2 tokens/s |
+| Reads a 483-token prompt | 224.6 tokens/s |
+| Draft guesses kept | 1,009 of 1,492 (68%) |
+
+The first request's 13-token read took 938 ms, which is the engine warming up rather than a read speed: at 13 tokens
+there is nothing to measure.
+
+## Flint 40B-A2.5B UD-Q3_K_XL
+
+`flint-UD-Q3_K_XL.gguf`, 17.22 GB, 32K context. The log of the first start, 2026-10-31:
+
+```text
+[strata] 2026-10-31 03:00:41 engine started: ...\strata-fourgbvram.exe --serve --model ...\flint-UD-Q3_K_XL.gguf --max-context 32768 --expert-profile ...\expert-profile.txt --conversation-cache-mib auto
+strata-fourgbvram: loaded in 1.2 s; 0 of 12032 routed experts in VRAM (0.0 GiB), 12 CPU threads
+strata-fourgbvram: conversation cache sized from the free RAM: 7168 MiB for up to 4 parked conversations (--conversation-cache-mib N sets it, 0 turns it off)
+```
+
+That run got no expert into VRAM, and no request was sent in it. The same file started with the card to itself
+reports **342 of 12,032 experts (0.4 GiB)**, so the difference was what else held the card: Clover's server had been
+serving since 01:50 and kept its own share. One model at a time on 4 GB.
+
+With the card free, a 2,000-token prompt is read at 379 tokens/s and 128 tokens are written at 24.5 tokens/s
+(median of three runs, engine defaults). `--prompt-batch 512` writes 31.5 tokens/s and `--prompt-batch 2048` reads
+453 tokens/s; [the table above](#settings-measured-one-at-a-time) has both.
+
+The first request of a fresh process is slower than the rest: on Flint it read the same prompt at 131 tokens/s where
+the next runs read it at 379. The engine records a layer's kernels once (CUDA graphs), and the expert cache has no
+history yet.
+
+## Not measured
+
+- Every other model on 4 GB of VRAM. The tables in the README for them come from an 8 GB laptop and a 32 GB
+  workstation.
+- Memory use of the rest of the PC, so the numbers hold only on a laptop with nothing else on the GPU.
+
+## Settings, measured one at a time
+
+One engine process per run, the model's own tokenizer, a 2,000-token prompt, 128 new tokens, 32K context, greedy
+sampling, nothing else on the GPU. The median of three runs, except where a row says otherwise. "Experts at load" is
+what the engine reports before the first request.
+
+Clover-35B-A3B-Preview APEX-I-NANOPLUS:
+
+| Setting | Reads a 2,000-token prompt | Writes 128 tokens | Experts at load |
+| --- | ---: | ---: | ---: |
+| the engine's defaults | 505 tokens/s | 31.3 tokens/s | 247 |
+| `--tail-skip 6` | 506 tokens/s | 36.3 tokens/s | 247 |
+| `--prompt-batch 2048` | 566 tokens/s | 30.8 tokens/s | 0 |
+| `--prompt-batch 512` | 409 tokens/s | 29.9 tokens/s | 454 |
+| `--threads 6` | 507 tokens/s | 32.2 tokens/s | 247 |
+| `--window 4` | 511 tokens/s | 31.5 tokens/s | 495 |
+| `--kv-whole` (one run) | 509 tokens/s | 30.8 tokens/s | 0 |
+| `--kv q8_0` (one run) | 513 tokens/s | 31.6 tokens/s | 243 |
+
+Flint 40B-A2.5B UD-Q3_K_XL:
+
+| Setting | Reads a 2,000-token prompt | Writes 128 tokens | Experts at load |
+| --- | ---: | ---: | ---: |
+| the engine's defaults | 379 tokens/s | 24.5 tokens/s | 342 |
+| `--prompt-batch 512` | 335 tokens/s | 31.5 tokens/s | 490 |
+| `--prompt-batch 2048` (one run) | 453 tokens/s | 28.4 tokens/s | 51 |
+| `--threads 6` (one run) | 374 tokens/s | 23.9 tokens/s | 342 |
+| `--stage-mib 1024` (one run) | 380 tokens/s | 24.6 tokens/s | 342 |
+
+What the numbers say:
+
+- **`--tail-skip 6` is the one clear gain on Clover: +16% written tokens.** The engine leaves out an expert outside
+  VRAM that every token of a window ranks at place 7 or later; the answers move a little, and how much was not
+  measured here. Setup gives Qwen3.6 6 and leaves the other families at 0.
+- **`--kv-whole` is wrong on a 4 GB card:** the whole 32K of attention caches leaves no room for a single expert.
+  The engine's default, growing the caches with the conversation, is what makes 32K work here at all.
+- **`--kv q8_0` changes nothing measurable on Clover** (243 against 247 experts), so its KV format is not the one the
+  flag covers; the engine's help lists `qwen35moe` and `kolibri1`.
+- **`--prompt-batch` cuts both ways.** On Clover 2,048 reads a prompt 12% faster and costs the expert cache at load;
+  on Flint 512 writes 28% faster and 2,048 reads 19% faster. Neither is a default this project should pick for every
+  model; both are worth a try on yours.
+- **Six CPU threads are not faster than twelve** on either model, so the old configs' `--threads 6` only cost speed.
+
+## Measuring your own
+
+The server prints the same lines for your requests, so a chat and a long prompt are enough. For a run with numbers
+side by side, `python fourgbvramstrata.py benchmark --model <name> --prompt-tokens 24000`
+([what it sends and prints](BACKENDS.md#benchmark)) and `BENCH.bat` (`./bench.sh`) write a report you can share
+([how](COMMUNITY_BENCHMARKS.md#run-the-benchmark)).

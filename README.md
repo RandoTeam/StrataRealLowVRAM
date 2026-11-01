@@ -56,17 +56,15 @@ A token is about ¾ of a word.
 ### 4 GB VRAM Low-Memory Benchmark (4gbVramStrata 131K Engine)
 
 > [!IMPORTANT]
-> **Verified Model Coverage Notice:**  
-> Currently, **only two models** have been formally benchmarked and verified under our 4 GB VRAM / 131K setup:
-> 1. **Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_S** (21.28 GB, Fast 131K Edition)
-> 2. **Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_XL** (22.75 GB, Senior High-Quality Edition)
-> 
-> Additional models (`UD-IQ4_XS`, baseline `Tiel-Coder`, `Qwen3.6-35B`, `Ornith 1.5`, etc.) are queued for upcoming test validation on this hardware.
+> **What has been measured on a 4 GB card so far:** the two Cyber-Tiel-Coder sizes in the tables below, Clover
+> APEX-I-NANOPLUS (32K, 2026-10-31) and Flint UD-Q3_K_XL (24.5 tokens/s writing, 379 tokens/s reading a 2,000-token
+> prompt). Every other model is untested on 4 GB VRAM: the table under [Qwen3.8-Flash-Next](#qwen38flash-next) was
+> measured on an 8 GB laptop and a 32 GB workstation.
 
-Measured with `engine-fourgbvram/strata-fourgbvram-131k.exe` (`kSnapPlaces = 7`, CUDA 12.8, SM_86) on consumer hardware:
+Measured with the engine built from this repository (`engine-fourgbvram/`, CUDA 12.8, `sm_86`, `kSnapPlaces = 7`) on consumer hardware:
 
 <table>
-<tr><th>NVIDIA GeForce RTX 3050 Laptop (4 GB VRAM), AMD Ryzen 5 5500U (6 threads), 32 GB RAM, Windows 11</th></tr>
+<tr><th>NVIDIA GeForce RTX 3050 Laptop (4 GB VRAM), AMD Ryzen 5 5500U (6 cores, 12 threads), 32 GB RAM, Windows 11</th></tr>
 <tr><td>
 
 #### 1. Cyber-Tiel-Coder-35B-A3B-MTP-UD-Q4_K_S (Fast 131K, 21.3 GB)
@@ -97,6 +95,27 @@ Measured with `engine-fourgbvram/strata-fourgbvram-131k.exe` (`kSnapPlaces = 7`,
 - **Zero Memory Leaks / OOM**: strictly stays within 3.8 GB VRAM.
 - **Continuous 15K Token Run**: generated 14,530 consecutive completion tokens in a single request without halting or dropping under 27 tokens/s.
 
+<br>
+
+#### 3. Clover-35B-A3B-Preview APEX-I-NANOPLUS V2.1 (11.7 GB)
+
+Measured 2026-10-31 at 32K context, same laptop, `engine-fourgbvram/strata-fourgbvram.exe`
+([the log](docs/BENCH-4GB.md#clover-35b-a3b-preview-apex-i-nanoplus)):
+
+| Phase | Writes answers | Reads prompt | Drafts accepted | Memory |
+| :--- | ---: | ---: | ---: | ---: |
+| Short answer (13-token prompt, 43 tokens) | 29.6 tokens/s | — | 0 of 2 | loaded in 1.8 s, 244 of 10,240 experts in VRAM (0.2 GiB) |
+| Long answer (483-token prompt, 9,148 tokens) | 26.2 tokens/s | 224.6 tokens/s | 1,009 of 1,492 (68%) | 337 of 10,240 experts in VRAM (0.34 GiB) |
+
+#### 4. Flint 40B-A2.5B UD-Q3_K_XL (17.2 GB)
+
+Measured with the card to itself at 32K context, same laptop: a 2,000-token prompt is read at 379 tokens/s and 128
+tokens are written at 24.5 tokens/s, with 342 of 12,032 experts in VRAM (0.4 GiB). `--prompt-batch 512` writes 31.5
+tokens/s; `--prompt-batch 2048` reads 453 tokens/s ([every setting measured](docs/BENCH-4GB.md#settings-measured-one-at-a-time)).
+
+A start that reports 0 of 12,032 experts means another model was still holding the card: one model at a time on
+4 GB.
+
 ### Qwen3.8-Flash-Next
 
 | Model | Laptop with an 8 GB card<br>writes / reads | RTX 5090<br>writes / reads | Every size |
@@ -121,7 +140,7 @@ The eleven models of 4gbVramStrata's own engine were measured with its benchmark
 `python fourgbvramstrata.py benchmark --model <name> --prompt-tokens 24000`
 ([what it sends and prints](docs/BACKENDS.md#benchmark)).
 What others measured on their own cards, and how to compare with llama.cpp on yours:
-[community results](docs/COMMUNITY_BENCHMARKS.md#the-models-polystrata-adds).
+[community results](docs/COMMUNITY_BENCHMARKS.md#the-models-this-projects-own-engine-adds).
 On the laptop 4gbVramStrata read prompts 2.7 to 3.5 times as fast as llama.cpp b11540 and wrote 1.5 to 1.8 times
 as fast, with Qwen3.6 and with Tiel Coder ([the two runs](docs/COMMUNITY_BENCHMARKS.md#comparing-with-llamacpp)).
 
@@ -153,18 +172,22 @@ What Qwen3.6, Clover, Ornith 1.5, Gemma 4, Tiel Coder and MiniCPM-V each need an
 Do you use an AI coding assistant (Claude Code, Cursor, Codex, GitHub Copilot, ...)? Paste this into it:
 
 ```text
-Set up 4gbVramStrata on this PC for me: https://github.com/VecSzn/PolyStrata - follow docs/AI_SETUP.md in that repository.
+Set up 4gbVramStrata on this PC for me: https://github.com/RandoTeam/4gbVramStrata - follow docs/AI_SETUP.md in that repository.
 ```
 
 It checks your graphics card, RAM and disk and picks the model that fits. Then it installs and starts it and tells
 you how to connect your apps. AI tools can also install, start and stop 4gbVramStrata through its
 [MCP server](docs/MCP_SERVER.md).
 
-### 1-Click Launch on 4 GB VRAM (Windows)
+### Starting a model you already installed
 
-For preconfigured low-memory 131k environments, launch directly via dedicated batch scripts:
-- **`run-cybertiel-xl-131k.bat`**: Starts the senior **Cyber-Tiel-Coder-35B UD-Q4_K_XL** (131K context, 4,096 thinking budget, port 8085).
-- **`run-cybertiel-131k.bat`**: Starts the fast **Cyber-Tiel-Coder-35B UD-Q4_K_S** (131K context, 4,096 thinking budget, port 8085).
+The first run of `START-HERE.bat` (`./setup.sh`) asks the questions above, downloads the model and starts it. Later
+runs download nothing twice: with one model installed they start it, and with several they list them and ask which one.
+
+- **Another model, or other settings:** `SETUP.bat` (`./setup.sh --setup`) always asks: which model and size, how much
+  context, and so on. An earlier model's files and settings stay.
+- **One click per model:** setup writes `run-<model>.bat` (`./run-<model>.sh`) for every installed model. It starts
+  that model's server with its saved config, asks nothing and opens the browser. Keep it beside `START-HERE.bat`.
 
 ### Or do it yourself
 
@@ -203,7 +226,7 @@ several cards, where the files go and every option: [docs/INSTALL.md](docs/INSTA
 
 ## Which model should I pick?
 
-The same model comes in several sizes, compressed more or less: smaller sizes are faster and need less RAM, larger ones are closer to the original. The installer takes one for your RAM and card when you press Enter; for another size add `--model <size>` when you install.
+The same model comes in several sizes, compressed more or less: smaller sizes are faster and need less RAM, larger ones are closer to the original. The installer takes one for your RAM and card when you press Enter; for another size add `--model <size>` when you install. Every size, every vendor score and what fits beside a 4 GB card: [docs/MODELS-4GB.md](docs/MODELS-4GB.md).
 
 | Model | The installer takes | With less RAM | By name |
 | --- | --- | --- | --- |

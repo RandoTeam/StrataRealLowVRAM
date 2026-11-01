@@ -9,10 +9,12 @@ a digit (C++, Python imports), so the code token is `fourgbvram`.
 Kept on purpose (documented, not oversight):
 - tools/polystrata_names.py + tools/test_polystrata_names.py: the donor's brand tool, needed for merges.
 - bench/, docs/paper/: benchmark evidence and the paper.
-- docs/FAQ.md, docs/COMMUNITY_BENCHMARKS.md: shared/community records (their poly anchors stay valid;
-  FAQ's 3 outbound anchors to renamed headings are fixed by hand after the run).
-- Donor links (VecSzn/PolyStrata, Niko1221/Strata), version strings (0.1.44.1-poly.6), record file names,
-  the old remote name old-StrataRealLowVRAM, strata-glm/engine-glm history.
+- docs/FAQ.md, docs/COMMUNITY_BENCHMARKS.md: shared/community records. Their prose name was rewritten by hand
+  (the heading "The models this project's own engine adds" and the anchors to it), and what stays is what must:
+  the VecSzn/PolyStrata links that lead to where people posted their reports, and the versions they ran
+  (0.1.45-poly.1, 0.1.44.1-poly.6).
+- Donor links (VecSzn/PolyStrata, Niko1221/Strata), record file names, the old remote name old-StrataRealLowVRAM,
+  strata-glm/engine-glm history.
 - serve's engine-stem check keeps the old stems after the new one (upgraders' configs).
 
 Run:  python tools/rename_fourgbvram.py --check    (lists, changes nothing)
@@ -36,7 +38,6 @@ MOVES = [
 KEEP = "|".join((
     r"VecSzn/PolyStrata",
     r"Niko1221/Strata",
-    r"the-models-polystrata-adds",          # anchor into skipped COMMUNITY_BENCHMARKS.md
     r"old-StrataRealLowVRAM",
     r"STRATA_POLY_PREBUILT_URL",  # legacy env fallback, kept on purpose (see setup.py)
     r'"strata-poly", "strata-glm"',  # serve compat stems for upgraders, kept on purpose
