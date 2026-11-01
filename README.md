@@ -56,10 +56,10 @@ A token is about ¾ of a word.
 ### 4 GB VRAM Low-Memory Benchmark (4gbVramStrata 131K Engine)
 
 > [!IMPORTANT]
-> **What has been measured on a 4 GB card so far:** the two Cyber-Tiel-Coder sizes in the tables below, and
-> Clover-35B-A3B-Preview APEX-I-NANOPLUS (32K context, 2026-10-31). Flint 40B-A2.5B UD-Q3_K_XL loads and serves at
-> 32K on the same laptop, but its speed has not been measured. Every other model is untested on 4 GB VRAM: the table
-> under [Qwen3.8-Flash-Next](#qwen38flash-next) was measured on an 8 GB laptop and a 32 GB workstation.
+> **What has been measured on a 4 GB card so far:** the two Cyber-Tiel-Coder sizes in the tables below, Clover
+> APEX-I-NANOPLUS (32K, 2026-10-31) and Flint UD-Q3_K_XL (24.5 tokens/s writing, 379 tokens/s reading a 2,000-token
+> prompt). Every other model is untested on 4 GB VRAM: the table under [Qwen3.8-Flash-Next](#qwen38flash-next) was
+> measured on an 8 GB laptop and a 32 GB workstation.
 
 Measured with the engine built from this repository (`engine-fourgbvram/`, CUDA 12.8, `sm_86`, `kSnapPlaces = 7`) on consumer hardware:
 
@@ -109,8 +109,12 @@ Measured 2026-10-31 at 32K context, same laptop, `engine-fourgbvram/strata-fourg
 
 #### 4. Flint 40B-A2.5B UD-Q3_K_XL (17.2 GB)
 
-Loads in 1.2 s and serves at 32K context on the same laptop, with 0 of 12,032 experts in VRAM (0.0 GiB) and 12 CPU
-threads at the start. Its speed has not been measured yet.
+Measured with the card to itself at 32K context, same laptop: a 2,000-token prompt is read at 379 tokens/s and 128
+tokens are written at 24.5 tokens/s, with 342 of 12,032 experts in VRAM (0.4 GiB). `--prompt-batch 512` writes 31.5
+tokens/s; `--prompt-batch 2048` reads 453 tokens/s ([every setting measured](docs/BENCH-4GB.md#settings-measured-one-at-a-time)).
+
+A start that reports 0 of 12,032 experts means another model was still holding the card: one model at a time on
+4 GB.
 
 ### Qwen3.8-Flash-Next
 

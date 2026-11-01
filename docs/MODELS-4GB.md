@@ -133,8 +133,8 @@ picks a size from your RAM.
 **Does not fit:** Kolibri 1 (from 29 GB), GLM 5.3 Flash (from 79 GB), DeepSeek V4 Flash (91 GB),
 Qwen3.8-Flash-Next (from 68 GB).
 
-Measured here so far: the two Cyber-Tiel-Coder sizes and Clover APEX-I-NANOPLUS write 26 to 42 tokens/s at 32K to
-131K; Flint loads and serves. [The numbers and their logs](BENCH-4GB.md).
+Measured here so far: the two Cyber-Tiel-Coder sizes, Clover APEX-I-NANOPLUS and Flint UD-Q3_K_XL. At 32K to 131K
+they write 24 to 42 tokens/s; [the numbers, their logs and the settings measured one at a time](BENCH-4GB.md).
 
 An order that costs little: Tiel Coder (re-measure the release's 131K numbers) then LFM2.5 (the fastest to load) then
 Qwen3.6 (the reference for the engine) then Ornith, Clover and Gemma 4.
