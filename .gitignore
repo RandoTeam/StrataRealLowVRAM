@@ -71,3 +71,19 @@ build-vision-cuda12.bat
 
 # local Windows HIP packaging output
 dist-hip/
+
+# Local working files kept out of the release: quarantined old configs and builds, the desktop app's node_modules,
+# setup's own state, and the ad-hoc probe scripts and run configs of bench sessions.  See docs/CLEANUP.md.
+/_attic/
+/.strata/
+/configs/
+/apps/
+/*.lnk
+/bench/_runs/
+/bench/cfg_*.json
+/bench/*_probe.py
+/bench/*_probe*.json
+/bench/validate_*.py
+/bench/validate_*.json
+/bench/bench_4gb-*.json
+/bench/bench_4gb-*.md
