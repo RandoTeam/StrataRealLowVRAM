@@ -6286,14 +6286,26 @@ def fourgbvram_ram_need(d, vram_gb) -> float:
 
 
 def fourgbvram_fits(d, ram, vram_gb, hip) -> bool:
-    """Whether a size of strata-fourgbvram's models runs on this PC with its experts in RAM, by setup's estimate."""
+    """Whether a size of strata-fourgbvram's models runs on this PC with its experts in RAM, by setup's estimate.
+
+    The 2 GB over what a size takes before any expert is the room setup wants for an expert cache and a draft head.
+    A size below that is not refused and does not fail to start: the engine begins with an empty or nearly empty
+    expert cache, which is how Clover (0.2 GiB) and Flint (0.4 GiB) ran on a 4 GB card at 32K
+    (docs/BENCH-4GB.md).  fourgbvram_verdict and the install's question say that in words; this estimate stays as it
+    is so a card that only just meets it is not called comfortable."""
     return vram_gb >= fourgbvram_beside_gb(d) + 2 and ram >= fourgbvram_ram_need(d, vram_gb) - 4
 
 
 def fourgbvram_verdict(d, ram, vram_gb, hip, windows=False) -> str:
     """--check's line for a size of strata-fourgbvram's models.  `windows`: its family has run there (FAMILIES)."""
-    if vram_gb < fourgbvram_beside_gb(d) + 2:
-        return f"does not fit: it takes about {fourgbvram_beside_gb(d)} GB of VRAM before any expert"
+    beside = fourgbvram_beside_gb(d)
+    if vram_gb < beside:
+        return (f"does not fit: it takes about {beside} GB of VRAM before any expert, and this card has "
+                f"{vram_gb:.0f} GB")
+    if vram_gb < beside + 2:
+        return (f"starts with a small expert cache: about {beside} GB of this card go to the weights and caches, so "
+                f"little or no VRAM is left for experts (on a 4 GB card at 32K that is 0.2 to 0.6 GiB of experts; "
+                "the rest of every answer is computed on the CPU)")
     need = fourgbvram_ram_need(d, vram_gb)
     # an AMD card on Windows: setup compiles the HIP engine there (AMD's ROCm wheels); one RX 9070 XT has run one
     head = ("EXPERIMENTAL, measured on one AMD card on Windows, " if hip and WIN else
@@ -6713,18 +6725,26 @@ def fourgbvram_setup(a, family, gpu, hip, cuda_tk, multi, ram, data, elsewhere, 
     beside = fourgbvram_beside_gb(d)
     held, need_ram = fourgbvram_held_gb(d, room), fourgbvram_ram_need(d, room)
     say()
-    say(f"  {model}: {d['about']}; download {d['download_gb']:.0f} GB. The file is read in place: about {held:.0f} of")
+    fit = f"{held:.1f}" if held < 1 else f"{held:.0f}"    # "about 0 of its 15 GB" is not what 0.4 GiB says
+    say(f"  {model}: {d['about']}; download {d['download_gb']:.0f} GB. The file is read in place: about {fit} of")
     say(f"  its {d['arena_gb']:.0f} GB of experts fit {'these cards' if multi else 'this card'}, the rest stay in RAM "
         "(the OS file cache).")
     if room < beside + 2:
         enc = vision == "gpu"                          # the encoder's share may be what does not fit
-        confirm_risk(f"{title} takes about {beside} GB of VRAM before any expert (measured on a 32 GB "
-                     f"card at a 32K context)" + (f" and its image encoder {fam['vision_vram_gb']} GB" if enc else "") +
-                     f"; {gpu_name(gpu)} has less than it takes to start", bool(a.model), a.yes,
-                     f"{title} needs more VRAM than {vram:.0f} GB",
-                     ("--vision cpu keeps the image encoder off the card; " if enc else "") +
-                     f"--family {family} --model {model} --yes installs it anyway")
-        warn(f"going on with {vram:.0f} GB of VRAM, as you chose")
+        tight = room >= beside                         # it starts; what it does not get is an expert cache
+        confirm_risk(
+            f"{title} takes about {beside} GB of VRAM before any expert (measured on a 32 GB card at a 32K context)" +
+            (f" and its image encoder {fam['vision_vram_gb']} GB" if enc else "") +
+            (f"; {gpu_name(gpu)} has {room:.0f} GB, so it starts with an empty expert cache and every answer's experts "
+             "are computed on the CPU: much slower than a card with 2 GB more. Measured on a 4 GB card at 32K, Clover "
+             "held 0.2 GiB of its experts and wrote 31 tokens/s, Flint 0.4 GiB and 24.5 tokens/s" if tight else
+             f"; {gpu_name(gpu)} has less than it takes to start"),
+            bool(a.model), a.yes,
+            (f"{title} has {room:.0f} GB of VRAM: the expert cache would start empty" if tight else
+             f"{title} needs more VRAM than {room:.0f} GB"),
+            ("--vision cpu keeps the image encoder off the card; " if enc else "") +
+            f"--family {family} --model {model} --yes installs it anyway")
+        warn(f"going on with {room:.0f} GB of VRAM, as you chose")
     elif vram < 30:
         ran = fam.get("ran_on_gb", 32)                 # a card of 8 GB reports 8,188 MiB
         warn((f"{title} has run on no card under {ran} GB. " if round(vram) < ran else "") +
@@ -7958,8 +7978,11 @@ def main() -> int:
         any_fits = False
         for m, d in MODELS.items():
             verdict = "fits" if ram >= d["ram_gb"] else "tight" if ram >= d["ram_gb"] - 8 else "does not fit"
+            fits = not verdict.startswith("does not fit")
             if "glm" in d.get("families", ()):
                 verdict = fourgbvram_verdict(d, ram, gpu["vram_gb"], hip)
+                # the rule, not its words: "starts with a small expert cache" is not "fits" for the summary below
+                fits = fourgbvram_fits(d, ram, gpu["vram_gb"], hip)
             elif d.get("budget") and not unsloth_budget(m, ram, gpu):     # Phase 2: all of them in RAM
                 verdict = ("EXPERIMENTAL, " if d.get("experimental") else "") + "fits (all of its experts in RAM)"
             elif d.get("budget"):
@@ -7978,17 +8001,22 @@ def main() -> int:
             if hip and d.get("repo"):                  # the ready-made NVFP4 packs: no AMD kernels at all
                 verdict = "NVIDIA only (the AMD engine has no NVFP4 kernels)"
             else:
-                any_fits = any_fits or not verdict.startswith("does not fit")
+                any_fits = any_fits or fits
             say(f"  {m:8s} needs ~{d['ram_gb']} GB RAM: {verdict}")
         for f, fd in FAMILIES.items():                  # the families with sizes of their own
             for m, d in fd.get("models", {}).items():
                 any_fits = any_fits or fourgbvram_fits(d, ram, gpu["vram_gb"], hip)
                 say(f"  {fd['title']} {m}: {fourgbvram_verdict(d, ram, gpu['vram_gb'], hip, bool(fd.get('windows')))}")
         if not any_fits:
-            # #977: every size says "does not fit", so the verdict says so too (and the exit code, for scripts). It only
+            # #977: no size meets setup's estimate, so the verdict says so too (and the exit code, for scripts). It only
             # reports: --model NAME --yes still installs one anyway.
-            say(f"\nThis PC cannot run 4gbVramStrata yet: no model size fits {ram:.0f} GB of RAM (the smallest needs about "
-                f"{need} GB). --model NAME --yes installs one anyway, slowly.")
+            if ram < need - 4:
+                say(f"\nThis PC cannot run 4gbVramStrata yet: no model size fits {ram:.0f} GB of RAM (the smallest "
+                    f"needs about {need} GB). --model NAME --yes installs one anyway, slowly.")
+            else:
+                say(f"\nNo model size fits setup's estimate on this PC: {ram:.0f} GB of RAM and {gpu['vram_gb']:.0f} GB "
+                    "of VRAM. A size whose line says it starts with a small expert cache runs anyway, with its experts "
+                    "on the CPU: --model NAME --yes installs it.")
             return 1
         say("\nThis PC can run 4gbVramStrata. Run it again without --check to install.")
         return 0
