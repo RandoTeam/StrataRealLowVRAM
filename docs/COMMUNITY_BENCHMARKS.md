@@ -11,12 +11,13 @@ includes hardware, settings, and per-run JSON. The
 [technical details](DETAILS.md#speed-measured) explain the published measurements
 and their limits. Report what you actually measured and label estimates separately.
 
-## The models PolyStrata adds
+## The models this project's own engine adds
 
-Qwen3.6-35B-A3B, Ornith 1.5, Gemma 4 26B-A4B and GLM 5.3 Flash run on PolyStrata's own engine, `strata-poly`, so
-their reports are listed here, apart from Strata's. The three below were posted on Reddit by people who ran the
-engine of v0.1.41-poly.1 or an earlier one. The numbers are the posters' own, and "not stated" marks what a post
-leaves out.
+Qwen3.6-35B-A3B, Ornith 1.5, Gemma 4 26B-A4B and GLM 5.3 Flash run on 4gbVramStrata's own engine, `strata-fourgbvram`, so
+their reports are listed here, apart from Strata's. These reports were posted on the PolyStrata builds this project
+continues from, so the links go to the threads where their authors wrote them, and a version like `0.1.45-poly.1` is
+the version they ran; the first three rows are Reddit posts about v0.1.41-poly.1 or an earlier engine. The numbers are
+the posters' own, and "not stated" marks what a post leaves out.
 
 | Reported by | GPU | CPU, RAM, system | Model and file | Context | MTP | Writes, tokens/s | Reads, tokens/s | Before, or compared with |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |

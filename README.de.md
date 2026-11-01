@@ -88,7 +88,7 @@ Die elf Modelle der eigenen Engine von 4gbVramStrata wurden mit ihrem Benchmark 
 laufen lassen kannst: `python fourgbvramstrata.py benchmark --model <name> --prompt-tokens 24000`
 ([was er schickt und ausgibt](docs/BACKENDS.md#benchmark), englisch).
 Was andere auf ihren eigenen Karten gemessen haben und wie du auf deinem PC mit llama.cpp vergleichst:
-[Ergebnisse aus der Community](docs/COMMUNITY_BENCHMARKS.md#the-models-polystrata-adds) (englisch).
+[Ergebnisse aus der Community](docs/COMMUNITY_BENCHMARKS.md#the-models-this-projects-own-engine-adds) (englisch).
 Auf dem Laptop las 4gbVramStrata Prompts 2.7- bis 3.5-mal so schnell wie llama.cpp b11540 und schrieb 1.5- bis
 1.8-mal so schnell, mit Qwen3.6 und mit Tiel Coder ([die beiden Läufe](docs/COMMUNITY_BENCHMARKS.md#comparing-with-llamacpp), englisch).
 

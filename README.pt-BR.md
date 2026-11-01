@@ -86,7 +86,7 @@ Os onze modelos do motor próprio do 4gbVramStrata foram medidos com o benchmark
 `python fourgbvramstrata.py benchmark --model <name> --prompt-tokens 24000`
 ([o que ele envia e mostra](docs/BACKENDS.md#benchmark), em inglês).
 O que outras pessoas mediram nas próprias placas, e como comparar com o llama.cpp na sua:
-[resultados da comunidade](docs/COMMUNITY_BENCHMARKS.md#the-models-polystrata-adds) (em inglês).
+[resultados da comunidade](docs/COMMUNITY_BENCHMARKS.md#the-models-this-projects-own-engine-adds) (em inglês).
 No notebook, o 4gbVramStrata leu os prompts de 2.7 a 3.5 vezes mais rápido que o llama.cpp b11540 e escreveu de
 1.5 a 1.8 vezes mais rápido, com o Qwen3.6 e com o Tiel Coder ([as duas medições](docs/COMMUNITY_BENCHMARKS.md#comparing-with-llamacpp), em inglês).
 
