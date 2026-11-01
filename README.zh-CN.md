@@ -79,6 +79,34 @@ Qwen3.8-Flash-Next 用的是 [Strata](https://github.com/Niko1221/Strata) 的引
 在笔记本上跑 Qwen3.6 和 Tiel Coder，4gbVramStrata 读提示比 llama.cpp b11540 快 2.7 到 3.5 倍，写快 1.5 到 1.8 倍
 （[两次测试](docs/COMMUNITY_BENCHMARKS.md#comparing-with-llamacpp)，英文）。
 
+## 占多少内存
+
+从 0.1.45-poly.7 起，这十一个模型的引擎少占你的内存：已经放进显卡的那部分模型文件，它不再留在内存里。在笔记本上，
+Qwen3.6-35B-A3B 读完 32,000 个 token 的提示后，0.1.45-poly.6 占 17.9 GiB，现在占 13.1 GiB，写的速度不变。Linux 上从
+17.8 GiB 降到 12.6 GiB。
+
+想再少占一些，在 `strata-<model>.json` 的 `"args"` 列表里加上 `"--ram-experts-mib", "6144"`
+（[在哪](docs/INSTALL.md#where-things-are-stored)），然后重启。引擎就只给显卡外的专家留这么多 MiB 的内存，回答时也一样，
+启动时会说一声。其余的留在系统的文件缓存里，别的程序可以拿这部分内存去用，哪个 token 用到时再从缓存读。这个模式写得慢一些，
+所以默认关着，我们还在继续优化。笔记本（RTX 4070 Laptop 8 GB，32 GB 内存，Windows 11）上的 Qwen3.6-35B-A3B UD-Q3_K_M：
+
+| | 默认 | `--ram-experts-mib 6144` |
+| --- | ---: | ---: |
+| 加载后引擎占的内存 | 11.7 GiB | **6.5 GiB** |
+| 写的过程中最多：短对话 / 32K 提示后 | 14.3 / 14.0 GiB | **6.7 / 7.3 GiB** |
+| 两次请求之间 | 12.8 GiB | **7.1 GiB** |
+| 写的速度（token/秒）：第一次短对话 | 71.6 | 69.4（慢 3%） |
+| 32K 提示后 | 65.4 | 63.7（慢 3%） |
+| 之后再来一次短对话 | 84.2 | 72.9（慢 13%） |
+| 长回答（短对话写 1,024 个 token） | 90.6 | 78.3（慢 14%） |
+
+这次测的时候别的程序占了一部分显存，所以两列都比显卡空着时慢。另外两次测试里，32K 提示后慢 6% 到 8%，之后那次短对话慢
+8% 到 10%。Linux 上（RTX PRO 6000 限到约 8 GB），它占 7.0 到 7.7 GiB，默认是 12.3 到 14.3 GiB，写得慢 7% 到 14%。把专家缓存
+固定住（发布前就是这样检查的），回答逐个 token 都一样。
+
+读提示用的显存也少了 350 到 400 MiB：要么给专家缓存（Qwen3.6 显存里的专家从 2,444 个变成 2,712 个），要么用
+`--vram-reserve-mib` 留给别的程序。原理和测法见 [docs/BACKENDS.md](docs/BACKENDS.md#less-of-the-pcs-ram-and-vram)。
+
 ## 你需要什么
 
 | 模型 | 显卡 | 内存（默认规格） | 硬盘 | 系统 |

@@ -126,7 +126,7 @@ if(STRATA_BUILD_CONVERSATION_TESTS)
   add_executable(conversation_memory_test src/core/conversation_memory_test.cpp src/core/conversation_memory.cpp)
   target_include_directories(conversation_memory_test PRIVATE include)
   add_test(NAME conversation_memory_test COMMAND conversation_memory_test)
-  add_executable(glm_conversations_test src/fourgbvram/conversations_test.cpp)
+  add_executable(glm_conversations_test src/fourgbvram/conversations_test.cpp src/fourgbvram/spill.cpp)
   add_test(NAME glm_conversations_test COMMAND glm_conversations_test)
   add_executable(fourgbvram_guesses_test src/fourgbvram/guesses_test.cpp src/spec/draft_policy.cpp)
   target_include_directories(fourgbvram_guesses_test PRIVATE include)
@@ -1991,6 +1991,8 @@ if(STRATA_BUILD_TESTS)
   add_test(NAME fourgbvram_hip_value_split_policy_test COMMAND fourgbvram_hip_value_split_policy_test)
   add_executable(fourgbvram_gdn_mma_control_test src/fourgbvram/gdn_mma_control_test.cpp)
   add_test(NAME fourgbvram_gdn_mma_control_test COMMAND fourgbvram_gdn_mma_control_test)
+  add_executable(fourgbvram_stream_stage_test src/fourgbvram/stage_copy_test.cpp)
+  add_test(NAME fourgbvram_stream_stage_test COMMAND fourgbvram_stream_stage_test)
 endif()
 
 # Shared prepared-input GDN recurrence. Either engine may link this library;
@@ -2101,7 +2103,7 @@ if(STRATA_NATIVE_EXPERTS AND (STRATA_ENABLE_CUDA OR STRATA_ENABLE_HIP) AND NOT S
   add_executable(strata-fourgbvram src/fourgbvram/main.cpp src/fourgbvram/engine.cpp src/fourgbvram/glm5next.cpp src/fourgbvram/qwen35.cpp
                             src/fourgbvram/gemma4.cpp src/fourgbvram/deepseek4.cpp src/fourgbvram/lfm2moe.cpp src/fourgbvram/flint.cpp
                             src/fourgbvram/kolibri1.cpp src/fourgbvram/cpu_experts.cpp src/fourgbvram/kernels.cu src/fourgbvram/kernels_dsv4.cu
-                            src/core/conversation_memory.cpp)
+                            src/fourgbvram/spill.cpp src/core/conversation_memory.cpp)
   target_include_directories(strata-fourgbvram PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${_strata_gpu_include_directories})
   # the driver's virtual memory calls: the attention caches grow with the conversation; on HIP they are HIP's
   # memory management calls, which the HIP runtime itself provides (hip_compat/cuda.h)

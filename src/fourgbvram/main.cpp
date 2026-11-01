@@ -602,6 +602,7 @@ struct Slot {
 int serve(Session& ss) {
     Engine& engine = ss.engine;
     std::vector<Slot> slots((size_t) engine.sequences() - 1);
+    engine.trim();
     std::printf("INFO context=%d expert_slots=%d expert_cache_mib=%lld pool_workers=%d conversation_cache_mib=%lld "
                 "conversation_cache_slots=%d conversation_cache_min_free_mib=%lld vram_free_mib=%lld vram_elastic=1 "
                 "batch_slots=%d engine=" STRATA_VERSION "\n",
@@ -795,6 +796,13 @@ int serve(Session& ss) {
             std::fflush(stdout);
             continue;
         }
+        // Disk sessions are the Strata engine's.  Refused in the session protocol's own words: a bare ERR is a
+        // reply out of step there, and the server ended this engine for it (issue 114).
+        if (line.rfind("SAVE ", 0) == 0 || line.rfind("RESTORE ", 0) == 0) {
+            std::printf("SERR invalid 0 strata-fourgbvram keeps no disk sessions\n");
+            std::fflush(stdout);
+            continue;
+        }
         if (line.rfind("GEN ", 0) != 0 && line.rfind("GENI ", 0) != 0) {
             std::printf("ERR expected: GEN <max_new> <id,id,...> or GENI <max_new> image_pad=<id> <file> <id,id,...>\n");
             std::fflush(stdout);
@@ -897,6 +905,8 @@ int serve(Session& ss) {
                     r.prompt_ms, r.decode_ms, r.finish, (long long) r.guessed_right, (long long) r.guessed,
                     (long long) r.resume, hits, hits + misses, (long long) r.read);
         std::fflush(stdout);
+        engine.trim();
+        ss.kept.release();
         if (admit >= 0) {
             Slot& sl = slots[(size_t) admit];
             const bool goes_on = std::strcmp(r.finish, "length") == 0 && first >= 0 && admit_max > 1 &&
@@ -1076,15 +1086,19 @@ void usage() {
                  "  --expert-swaps N       while an answer is written, up to N experts it keeps using are on their way\n"
                  "                         into VRAM, in place of cached ones it uses less (default 64, 0 = the cache\n"
                  "                         stays as it was loaded)\n"
+                 "  --ram-experts-mib N    hold N MiB of RAM for the experts outside VRAM, during answers too: the ones\n"
+                 "                         used most lately; the rest stay in the file cache for other programs to take,\n"
+                 "                         and are read back when a token needs them (default: all of them)\n"
                  "  --prompt-batch N       prompt tokens read at a time (default 1024); about 1.4 MiB of VRAM each\n"
                  "  --stage-mib N          VRAM the experts outside the cache pass through in a prompt batch (default\n"
-                 "                         2048, or what a layer's experts take when that is less); with less, more\n"
-                 "                         of them are copied after the layer has routed\n"
+                 "                         128 on an NVIDIA card where a longer read widens it, else 2048; never more\n"
+                 "                         than a layer's experts take); with less, more of them are copied after the\n"
+                 "                         layer has routed\n"
                  "  --stage-ahead N        from N tokens, a batch copies those experts before it routes (default 1024,\n"
                  "                         0 = never)\n"
                  "  --stage-read-mib N     a prompt read of several batches grows the staging buffer to N MiB (at\n"
                  "                         most a layer's experts) with VRAM the expert cache lends it until the\n"
-                 "                         answer starts (default 0 = never)\n"
+                 "                         answer starts (default 2048 with the 128 MiB --stage-mib default; 0 = never)\n"
                  "  --cpu-share F          under that, the share of those experts the CPU computes meanwhile, the\n"
                  "                         ones the fewest tokens chose (default: as the times say; 0 = none)\n"
                  "  --prompt-cache N       checkpoints kept of a conversation, about 150 MB of RAM each (default 6;\n"
@@ -1187,6 +1201,7 @@ int main(int argc, char** argv) {
         else if (a == "--no-draft") o.draft = false;
         else if (a == "--draft-model") o.draft_model = val();
         else if (a == "--expert-swaps") o.expert_swaps = std::atoi(val());
+        else if (a == "--ram-experts-mib") o.ram_experts_mib = std::atoll(val());
         else if (a == "--tail-skip") o.tail_skip = std::atoi(val());
         else if (a == "--skip-weight") o.skip_weight = (float) std::atof(val());
         else if (a == "--cache-bias") o.cache_bias = (float) std::atof(val());
@@ -1260,6 +1275,10 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "strata-fourgbvram: loaded in %.1f s; %d of %d routed experts in VRAM (%.1f GiB), %d CPU threads\n",
                      ms_since(t0) / 1000.0, engine.cached_experts(), engine.total_experts(), engine.cached_gib(),
                      engine.threads());
+        if (engine.ram_experts_mib() >= 0)
+            std::fprintf(stderr, "strata-fourgbvram: %lld MiB of RAM for the %.1f GiB of experts outside VRAM; the others "
+                                 "come from the file cache when a token needs them (--ram-experts-mib, -1 for all)\n",
+                         (long long) engine.ram_experts_mib(), engine.outside_gib());
         if (o.cache_bias > 0)
             std::fprintf(stderr, "strata-fourgbvram: cache bias %.2f: a token that comes a few at a time routes with %.2f "
                                  "added to the score of each expert in VRAM; the weights stay the router's own\n",

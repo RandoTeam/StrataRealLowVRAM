@@ -92,6 +92,40 @@ Was andere auf ihren eigenen Karten gemessen haben und wie du auf deinem PC mit 
 Auf dem Laptop las 4gbVramStrata Prompts 2.7- bis 3.5-mal so schnell wie llama.cpp b11540 und schrieb 1.5- bis
 1.8-mal so schnell, mit Qwen3.6 und mit Tiel Coder ([die beiden Läufe](docs/COMMUNITY_BENCHMARKS.md#comparing-with-llamacpp), englisch).
 
+## Wie viel RAM es belegt
+
+Seit 0.1.45-poly.7 belegt die Engine der elf Modelle weniger RAM: Sie hält die Teile der Modelldatei, die schon auf
+der Grafikkarte liegen, nicht mehr im Speicher. Auf dem Laptop belegte Qwen3.6-35B-A3B nach einem Prompt von 32,000
+Tokens mit 0.1.45-poly.6 17.9 GiB, jetzt 13.1 GiB, und es schreibt genauso schnell. Unter Linux ging es von 17.8 auf
+12.6 GiB.
+
+Um weniger zu belegen, füge `"--ram-experts-mib", "6144"` zur `"args"`-Liste von `strata-<model>.json` hinzu
+([wo](docs/INSTALL.md#where-things-are-stored)) und starte neu. Die Engine hält dann so viele MiB RAM für die Experten
+außerhalb des VRAM, auch während sie antwortet, und sagt das beim Start. Die übrigen bleiben im Dateicache des
+Systems, wo andere Programme den Speicher nutzen können, und werden von dort gelesen, wenn ein Token sie braucht.
+Standardmäßig ist das aus, weil es langsamer schreibt; wir arbeiten weiter daran. Auf dem Laptop (RTX 4070 Laptop
+8 GB, 32 GB RAM, Windows 11), Qwen3.6-35B-A3B UD-Q3_K_M:
+
+| | Standard | `--ram-experts-mib 6144` |
+| --- | ---: | ---: |
+| RAM der Engine nach dem Laden | 11.7 GiB | **6.5 GiB** |
+| höchstens beim Schreiben: kurzer Chat / nach einem 32K-Prompt | 14.3 / 14.0 GiB | **6.7 / 7.3 GiB** |
+| zwischen Anfragen | 12.8 GiB | **7.1 GiB** |
+| Schreibt, Token/s: der erste kurze Chat | 71.6 | 69.4 (3 % langsamer) |
+| nach dem 32K-Prompt | 65.4 | 63.7 (3 % langsamer) |
+| ein kurzer Chat danach | 84.2 | 72.9 (13 % langsamer) |
+| eine lange Antwort (1,024 Token eines kurzen Chats) | 90.6 | 78.3 (14 % langsamer) |
+
+Bei dieser Messung belegten andere Programme einen Teil des VRAM, darum schreiben beide Spalten langsamer als mit
+freier Karte. In zwei anderen Läufen schrieb es nach dem 32K-Prompt 6 bis 8 % langsamer und im Chat danach 8 bis
+10 %. Unter Linux (eine RTX PRO 6000, auf etwa 8 GB begrenzt) belegte es 7.0 bis 7.7 GiB statt 12.3 bis 14.3 und
+schrieb 7 bis 14 % langsamer. Mit festgehaltenem Experten-Cache, wie ein Release geprüft wird, sind die Antworten
+Token für Token gleich.
+
+Zum Lesen von Prompts braucht die Engine außerdem 350 bis 400 MiB weniger VRAM: Der Expertencache nimmt sie (Qwen3.6
+hält 2,712 statt 2,444 Experten im VRAM), oder `--vram-reserve-mib` lässt sie anderen Programmen. Wie es funktioniert
+und gemessen wurde: [docs/BACKENDS.md](docs/BACKENDS.md#less-of-the-pcs-ram-and-vram).
+
 ## Was du brauchst
 
 | Modell | Grafikkarte | RAM (Größe des Installers) | Festplatte | System |
