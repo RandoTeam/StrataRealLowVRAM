@@ -57,9 +57,9 @@ A token is about ¾ of a word.
 
 > [!IMPORTANT]
 > **What has been measured on a 4 GB card so far:** the two Cyber-Tiel-Coder sizes in the tables below, Clover
-> APEX-I-NANOPLUS (32K, 2026-10-31) and Flint UD-Q3_K_XL (24.5 tokens/s writing, 379 tokens/s reading a 2,000-token
-> prompt). Every other model is untested on 4 GB VRAM: the table under [Qwen3.8-Flash-Next](#qwen38flash-next) was
-> measured on an 8 GB laptop and a 32 GB workstation.
+> APEX-I-NANOPLUS (32K, 2026-10-31) and Flint UD-Q3_K_XL (33.8 tokens/s writing, 414 tokens/s reading a 2,000-token
+> prompt, 2026-11-01). Every other model is untested on 4 GB VRAM: the table under
+> [Qwen3.8-Flash-Next](#qwen38flash-next) was measured on an 8 GB laptop and a 32 GB workstation.
 
 Measured with the engine built from this repository (`engine-fourgbvram/`, CUDA 12.8, `sm_86`, `kSnapPlaces = 7`) on consumer hardware:
 
@@ -99,7 +99,7 @@ Measured with the engine built from this repository (`engine-fourgbvram/`, CUDA 
 
 #### 3. Clover-35B-A3B-Preview APEX-I-NANOPLUS V2.1 (11.7 GB)
 
-Measured 2026-10-31 at 32K context, same laptop, `engine-fourgbvram/strata-fourgbvram.exe`
+Measured 2026-10-31 at 32K context, same laptop, `engine-fourgbvram/strata-fourgbvram.exe`, v0.1.45-poly.6
 ([the log](docs/BENCH-4GB.md#clover-35b-a3b-preview-apex-i-nanoplus)):
 
 | Phase | Writes answers | Reads prompt | Drafts accepted | Memory |
@@ -107,11 +107,16 @@ Measured 2026-10-31 at 32K context, same laptop, `engine-fourgbvram/strata-fourg
 | Short answer (13-token prompt, 43 tokens) | 29.6 tokens/s | — | 0 of 2 | loaded in 1.8 s, 244 of 10,240 experts in VRAM (0.2 GiB) |
 | Long answer (483-token prompt, 9,148 tokens) | 26.2 tokens/s | 224.6 tokens/s | 1,009 of 1,492 (68%) | 337 of 10,240 experts in VRAM (0.34 GiB) |
 
+On v0.1.45-poly.7 (2026-11-01) the same 2,000-token prompt is read at 514 tokens/s and 128 tokens are written at 30.5
+tokens/s, or 36.4 with `--tail-skip 6`; the expert cache at load is 421 of 10,240 (0.4 GiB)
+([the table](docs/BENCH-4GB.md#after-the-poly7-merge)).
+
 #### 4. Flint 40B-A2.5B UD-Q3_K_XL (17.2 GB)
 
-Measured with the card to itself at 32K context, same laptop: a 2,000-token prompt is read at 379 tokens/s and 128
-tokens are written at 24.5 tokens/s, with 342 of 12,032 experts in VRAM (0.4 GiB). `--prompt-batch 512` writes 31.5
-tokens/s; `--prompt-batch 2048` reads 453 tokens/s ([every setting measured](docs/BENCH-4GB.md#settings-measured-one-at-a-time)).
+Measured with the card to itself at 32K context, same laptop, v0.1.45-poly.7 (2026-11-01): a 2,000-token prompt is read
+at 414 tokens/s and 128 tokens are written at 33.8 tokens/s, with 561 of 12,032 experts in VRAM (0.7 GiB).
+`--prompt-batch 512` reads at 366 tokens/s and writes 36.7 tokens/s
+([every setting measured](docs/BENCH-4GB.md#settings-measured-one-at-a-time)).
 
 A start that reports 0 of 12,032 experts means another model was still holding the card: one model at a time on
 4 GB.
@@ -339,7 +344,7 @@ Restart 4gbVramStrata (`START-HERE.bat` or `./setup.sh`) after the change. To un
 - **It says port 8080 is already in use.** 4gbVramStrata is already running. Look for its window.
 
 More problems and their fixes: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md). Still stuck? Open an
-[issue](https://github.com/VecSzn/PolyStrata/issues) and attach `strata-<model>.log` from the 4gbVramStrata folder. Found a
+[issue](https://github.com/RandoTeam/4gbVramStrata/issues) and attach `strata-<model>.log` from the 4gbVramStrata folder. Found a
 security problem? Report it privately: [SECURITY.md](SECURITY.md).
 
 ## How does it work?
