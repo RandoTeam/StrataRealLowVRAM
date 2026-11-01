@@ -116,7 +116,8 @@ class Estimates(unittest.TestCase):
             self.assertNotIn("does not run", setup.fourgbvram_verdict(setup.MODELS[M], 256, 24.0, True))
         with mock.patch.object(setup, "WIN", True):
             self.assertIn("AMD", setup.fourgbvram_verdict(setup.MODELS[M], 256, 24.0, True))   # only AMD on Windows is left out
-        self.assertIn("does not fit", setup.fourgbvram_verdict(setup.MODELS[M], 256, 12.0, False))
+        self.assertIn("does not fit", setup.fourgbvram_verdict(setup.MODELS[M], 256, 11.9, False))
+        self.assertIn("starts with a small expert cache", setup.fourgbvram_verdict(setup.MODELS[M], 256, 13.0, False))
         self.assertIn("fits by setup's estimate", setup.fourgbvram_verdict(setup.MODELS[M], 128, 31.84, False))
         self.assertIn("read from the SSD", setup.fourgbvram_verdict(setup.MODELS[M], 64, 31.84, False))
 

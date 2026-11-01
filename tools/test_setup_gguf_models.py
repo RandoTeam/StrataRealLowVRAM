@@ -103,7 +103,10 @@ class Estimates(unittest.TestCase):
         d = setup.FAMILIES["qwen36"]["models"]["UD-Q3_K_M"]
         self.assertIn("fits by setup's estimate (~21 GB of RAM", setup.fourgbvram_verdict(d, 32, 8.0, False))
         self.assertIn("read from the SSD", setup.fourgbvram_verdict(d, 12, 8.0, False))
-        self.assertIn("does not fit", setup.fourgbvram_verdict(d, 64, 6.0, False))
+        self.assertIn("does not fit", setup.fourgbvram_verdict(d, 64, 4.0, False))
+        # 2 GB over what the size takes before any expert is what setup wants; below it the engine still starts, with
+        # an empty expert cache (docs/BENCH-4GB.md), and the line says so instead of "does not fit"
+        self.assertIn("starts with a small expert cache", setup.fourgbvram_verdict(d, 64, 6.0, False))
         with mock.patch.object(setup, "WIN", False):   # #11: AMD on Linux runs it
             self.assertNotIn("does not run", setup.fourgbvram_verdict(d, 64, 24.0, True))
         with mock.patch.object(setup, "WIN", True):     # a family that has run on Windows is not said to be untried
@@ -211,6 +214,26 @@ class Main(unittest.TestCase):
         self.assertNotEqual(code, 0)
         self.assertIn("and its image encoder 2.4 GB", out)
         self.assertIn("--vision cpu keeps the image encoder off the card", out)
+
+    def test_a_4_gb_card_says_what_starts(self):
+        """The 2 GB over the weights is setup's estimate, not what the engine needs to start: on a 4 GB card Clover and
+        Flint ran at 32K with an empty expert cache (docs/BENCH-4GB.md), and the question says that instead of "does
+        not fit" — it still asks, and Enter is still "no"."""
+        self.downloads, self.runs, self.verified = [], [], []
+        code, out, cfg = self.main(family="clover", ram=31.0, vram=4.0, model="APEX-I-NANOPLUS", answers={})
+        self.assertNotEqual(code, 0, out)                        # Enter: the default, which is no
+        self.assertIn("starts with an empty expert cache", out)
+        self.assertIn("Clover held 0.2 GiB of its experts and wrote 31 tokens/s, Flint 0.4 GiB and 24.5 tokens/s", out)
+        self.assertIn("the expert cache would start empty", out)
+        self.assertIn("--family clover --model APEX-I-NANOPLUS --yes installs it anyway", out)
+        self.assertNotIn("needs more VRAM than", out)             # that is the card the model cannot start on
+        self.assertNotIn("about 0 of", out)                      # 0.4 GiB of 15 GB is not "about 0"
+        self.assertEqual((self.downloads, cfg), ([], None))
+        code, out, cfg = self.main(family="clover", ram=31.0, vram=4.0, model="APEX-I-NANOPLUS")   # --model + --yes
+        self.assertEqual(code, 0, out)
+        self.assertIn("going on with 4 GB of VRAM, as you chose", out)
+        d = setup.FAMILIES["clover"]["models"]["APEX-I-NANOPLUS"]
+        self.assertIn(d["hf"] + setup.model_file(setup.FAMILIES["clover"], "APEX-I-NANOPLUS", 1), self.downloads)
 
     def test_a_size_from_another_repository(self):
         """Gemma 4's QAT file: its repository's draft model and image encoder, checked against that size's hashes."""
