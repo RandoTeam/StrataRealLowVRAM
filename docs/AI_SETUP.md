@@ -57,10 +57,10 @@ If the PC does not meet them, say which part is missing and stop.
 ## 2. Get 4gbVramStrata
 
 ```
-git clone https://github.com/RandoTeam/4gbVramStrata.git
+git clone https://github.com/RandoTeam/StrataRealLowVRAM.git
 ```
 
-Without git: download https://github.com/RandoTeam/4gbVramStrata/archive/refs/heads/main.zip and unzip it. Pick a drive with
+Without git: download https://github.com/RandoTeam/StrataRealLowVRAM/archive/refs/heads/main.zip and unzip it. Pick a drive with
 enough free space: the model files go to a `4gbVramStrata-data` folder **next to** the 4gbVramStrata folder (or `--data-dir <path>`
 on another drive).
 
@@ -234,7 +234,7 @@ line when it is ready; the engine log is `strata-<model>.log` in the 4gbVramStra
 | Python or build tools could not be installed | Install what the message names (links are printed), then rerun. |
 
 More: [TROUBLESHOOTING.md](TROUBLESHOOTING.md) and the [full table](DETAILS.md#troubleshooting). If it still fails,
-collect `strata-<model>.log` and the setup output, and suggest an issue at https://github.com/RandoTeam/4gbVramStrata/issues.
+collect `strata-<model>.log` and the setup output, and suggest an issue at https://github.com/RandoTeam/StrataRealLowVRAM/issues.
 
 ## Alternative: the MCP server
 

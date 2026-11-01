@@ -209,7 +209,7 @@ What Qwen3.6, Clover, Ornith 1.5, Gemma 4, Tiel Coder and MiniCPM-V each need an
 Do you use an AI coding assistant (Claude Code, Cursor, Codex, GitHub Copilot, ...)? Paste this into it:
 
 ```text
-Set up 4gbVramStrata on this PC for me: https://github.com/RandoTeam/4gbVramStrata - follow docs/AI_SETUP.md in that repository.
+Set up 4gbVramStrata on this PC for me: https://github.com/RandoTeam/StrataRealLowVRAM - follow docs/AI_SETUP.md in that repository.
 ```
 
 It checks your graphics card, RAM and disk and picks the model that fits. Then it installs and starts it and tells
@@ -228,7 +228,7 @@ runs download nothing twice: with one model installed they start it, and with se
 
 ### Or do it yourself
 
-[Download 4gbVramStrata](https://github.com/RandoTeam/4gbVramStrata/archive/refs/heads/main.zip) and unzip it (or `git clone` it).
+[Download 4gbVramStrata](https://github.com/RandoTeam/StrataRealLowVRAM/archive/refs/heads/main.zip) and unzip it (or `git clone` it).
 **Windows:** double-click **`START-HERE.bat`**. **Linux:** run **`./setup.sh`** in the repository folder.
 
 **Mac (Apple Silicon, M1 to M5, macOS 15 or newer):** install Apple's Command Line Tools once
@@ -344,7 +344,7 @@ Restart 4gbVramStrata (`START-HERE.bat` or `./setup.sh`) after the change. To un
 - **It says port 8080 is already in use.** 4gbVramStrata is already running. Look for its window.
 
 More problems and their fixes: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md). Still stuck? Open an
-[issue](https://github.com/RandoTeam/4gbVramStrata/issues) and attach `strata-<model>.log` from the 4gbVramStrata folder. Found a
+[issue](https://github.com/RandoTeam/StrataRealLowVRAM/issues) and attach `strata-<model>.log` from the 4gbVramStrata folder. Found a
 security problem? Report it privately: [SECURITY.md](SECURITY.md).
 
 ## How does it work?

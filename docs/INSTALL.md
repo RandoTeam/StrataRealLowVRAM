@@ -33,7 +33,7 @@ the engine for your GPU (asks first; 20-40 minutes once). More: [details](DETAIL
 
 ## Windows
 
-1. [Download this project](https://github.com/RandoTeam/4gbVramStrata/archive/refs/heads/main.zip) and unzip it (or
+1. [Download this project](https://github.com/RandoTeam/StrataRealLowVRAM/archive/refs/heads/main.zip) and unzip it (or
    `git clone` it).
 2. Double-click **`START-HERE.bat`**.
 3. Answer a few questions - or just press Enter each time for the recommended choice ([the questions](#setups-questions)).
