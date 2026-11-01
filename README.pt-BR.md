@@ -90,6 +90,39 @@ O que outras pessoas mediram nas próprias placas, e como comparar com o llama.c
 No notebook, o 4gbVramStrata leu os prompts de 2.7 a 3.5 vezes mais rápido que o llama.cpp b11540 e escreveu de
 1.5 a 1.8 vezes mais rápido, com o Qwen3.6 e com o Tiel Coder ([as duas medições](docs/COMMUNITY_BENCHMARKS.md#comparing-with-llamacpp), em inglês).
 
+## Quanta RAM ele ocupa
+
+Desde a 0.1.45-poly.7, o motor dos onze modelos ocupa menos RAM: ele não guarda mais na memória as partes do arquivo
+do modelo que já estão na placa de vídeo. No notebook, depois de um prompt de 32,000 tokens, o Qwen3.6-35B-A3B ocupava
+17.9 GiB com a 0.1.45-poly.6 e agora ocupa 13.1 GiB, escrevendo na mesma velocidade. No Linux, foi de 17.8 para
+12.6 GiB.
+
+Para ocupar menos, adicione `"--ram-experts-mib", "6144"` à lista `"args"` do `strata-<model>.json`
+([onde](docs/INSTALL.md#where-things-are-stored)) e reinicie. O motor passa a guardar essa quantidade de MiB de RAM
+para os experts que ficam fora da VRAM, também enquanto responde, e avisa ao iniciar. Os outros ficam no cache de
+arquivos do sistema, onde seus outros programas podem usar essa memória, e são lidos de lá quando um token precisa
+deles. Vem desligado porque escreve mais devagar, e seguimos trabalhando nisso. No notebook (RTX 4070 Laptop 8 GB,
+32 GB de RAM, Windows 11), Qwen3.6-35B-A3B UD-Q3_K_M:
+
+| | padrão | `--ram-experts-mib 6144` |
+| --- | ---: | ---: |
+| RAM que o motor ocupa depois de carregar | 11.7 GiB | **6.5 GiB** |
+| no máximo enquanto escreve: chat curto / depois de um prompt de 32K | 14.3 / 14.0 GiB | **6.7 / 7.3 GiB** |
+| entre pedidos | 12.8 GiB | **7.1 GiB** |
+| Escreve, tokens/s: o primeiro chat curto | 71.6 | 69.4 (3% mais devagar) |
+| depois do prompt de 32K | 65.4 | 63.7 (3% mais devagar) |
+| um chat curto depois disso | 84.2 | 72.9 (13% mais devagar) |
+| uma resposta longa (1,024 tokens de um chat curto) | 90.6 | 78.3 (14% mais devagar) |
+
+Nesta medição outros programas ocupavam parte da VRAM, então as duas colunas escrevem mais devagar do que com a placa
+livre. Em outras duas medições escreveu de 6 a 8% mais devagar depois do prompt de 32K e de 8 a 10% no chat seguinte.
+No Linux (uma RTX PRO 6000 limitada a cerca de 8 GB) ocupou de 7.0 a 7.7 GiB em vez de 12.3 a 14.3 e escreveu de 7 a
+14% mais devagar. Com o cache de experts fixo, como uma versão é conferida, as respostas são iguais token a token.
+
+O motor também precisa de 350 a 400 MiB a menos de VRAM para ler prompts: o cache de experts fica com eles (o Qwen3.6
+mantém 2,712 experts na VRAM em vez de 2,444), ou `--vram-reserve-mib` os deixa para outros programas.
+Como foi medido: [docs/BACKENDS.md](docs/BACKENDS.md#less-of-the-pcs-ram-and-vram).
+
 ## Do que você precisa
 
 | Modelo | Placa de vídeo | RAM (tamanho do instalador) | Disco | Sistema |
@@ -118,7 +151,7 @@ Do que cada um dos seis (Qwen3.6, Clover, Ornith 1.5, Gemma 4, Tiel Coder e Mini
 Você usa um assistente de programação com IA (Claude Code, Cursor, Codex, GitHub Copilot, ...)? Cole isto nele:
 
 ```text
-Set up 4gbVramStrata on this PC for me: https://github.com/VecSzn/PolyStrata - follow docs/AI_SETUP.md in that repository.
+Set up 4gbVramStrata on this PC for me: https://github.com/RandoTeam/4gbVramStrata - follow docs/AI_SETUP.md in that repository.
 ```
 
 Ele verifica sua placa de vídeo, RAM e disco e escolhe o modelo que cabe. Depois instala, inicia e explica como
@@ -127,7 +160,7 @@ conectar seus apps. Ferramentas de IA também podem instalar, iniciar e parar o 
 
 ### Ou faça você mesmo
 
-[Baixe o 4gbVramStrata](https://github.com/VecSzn/PolyStrata/archive/refs/heads/main.zip) e descompacte (ou use `git clone`).
+[Baixe o 4gbVramStrata](https://github.com/RandoTeam/4gbVramStrata/archive/refs/heads/main.zip) e descompacte (ou use `git clone`).
 **Windows:** clique duas vezes em **`START-HERE.bat`**. **Linux:** rode **`./setup.sh`** na pasta do 4gbVramStrata.
 
 **Mac (Apple Silicon, M1 a M5, macOS 15 ou mais recente):** instale uma vez as Command Line Tools da Apple (`xcode-select --install` no Terminal; o Xcode em si não é necessário). Depois abra o Terminal na pasta do 4gbVramStrata e rode **`./setup.sh`**. Ele compila o motor do Mac no seu Mac (uns 7 minutos), faz as mesmas perguntas, baixa o modelo e o inicia. Da próxima vez, `./setup.sh` inicia na hora. Qual tamanho cabe no seu Mac e qual a velocidade: [docs/MAC.md](docs/MAC.md). O motor do Mac roda só o Qwen3.8-Flash-Next; os outros onze modelos precisam de uma placa NVIDIA ou AMD.
@@ -236,7 +269,7 @@ Reinicie o 4gbVramStrata (`START-HERE.bat` ou `./setup.sh`) depois da mudança. 
 - **Diz que a porta 8080 já está em uso.** O 4gbVramStrata já está rodando. Procure a janela dele.
 
 Mais problemas e como resolver: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md). Ainda sem solução? Abra uma
-[issue](https://github.com/VecSzn/PolyStrata/issues) e anexe o `strata-<model>.log` da pasta do 4gbVramStrata. Encontrou um
+[issue](https://github.com/RandoTeam/4gbVramStrata/issues) e anexe o `strata-<model>.log` da pasta do 4gbVramStrata. Encontrou um
 problema de segurança? Informe em particular: [SECURITY.md](SECURITY.md).
 
 ## Como funciona?

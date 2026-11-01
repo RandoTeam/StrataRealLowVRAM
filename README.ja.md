@@ -82,6 +82,37 @@ Qwen3.8-Flash-Next は [Strata](https://github.com/Niko1221/Strata) プロジェ
 ノート PC では Qwen3.6 でも Tiel Coder でも、4gbVramStrata はプロンプトを llama.cpp b11540 の 2.7〜3.5 倍の速さで読み、
 1.5〜1.8 倍の速さで書きました（[2 回の測定](docs/COMMUNITY_BENCHMARKS.md#comparing-with-llamacpp)、英語）。
 
+## RAM をどれだけ使うか
+
+0.1.45-poly.7 から、11 モデルのエンジンが使う RAM が減りました。グラフィックカードに載せ終えたモデルファイルの部分を、
+RAM に持たなくなったためです。ノート PC で Qwen3.6-35B-A3B が 32,000 トークンのプロンプトを読んだあと、0.1.45-poly.6 は
+17.9 GiB、いまは 13.1 GiB で、書く速さは変わりません。Linux では 17.8 GiB から 12.6 GiB になりました。
+
+さらに減らすには、`strata-<model>.json` の `"args"` に `"--ram-experts-mib", "6144"` を加えて
+（[場所](docs/INSTALL.md#where-things-are-stored)）再起動します。エンジンは VRAM の外に残るエキスパートのために、回答中も含めて
+その MiB だけ RAM を使い、起動時にそう表示します。残りはシステムのファイルキャッシュに残り、ほかのプログラムがそのメモリを
+使えます。トークンが必要とするときにそこから読みます。書く速度が落ちるので既定ではオフで、改善は続けています。ノート PC
+（RTX 4070 Laptop 8 GB、RAM 32 GB、Windows 11）で Qwen3.6-35B-A3B UD-Q3_K_M の場合：
+
+| | 既定 | `--ram-experts-mib 6144` |
+| --- | ---: | ---: |
+| 読み込み後にエンジンが使う RAM | 11.7 GiB | **6.5 GiB** |
+| 書いている間の最大：短い会話 / 32K プロンプトのあと | 14.3 / 14.0 GiB | **6.7 / 7.3 GiB** |
+| リクエストの合間 | 12.8 GiB | **7.1 GiB** |
+| 書く速度（トークン/秒）：最初の短い会話 | 71.6 | 69.4（3% 遅い） |
+| 32K プロンプトのあと | 65.4 | 63.7（3% 遅い） |
+| そのあとの短い会話 | 84.2 | 72.9（13% 遅い） |
+| 長い回答（短い会話で 1,024 トークン） | 90.6 | 78.3（14% 遅い） |
+
+この測定ではほかのプログラムが VRAM の一部を使っていたので、どちらの列もカードが空いているときより遅くなっています。ほかの
+2 回では、32K プロンプトのあとで 6〜8%、そのあとの短い会話で 8〜10% 遅くなりました。Linux（約 8 GB に制限した RTX PRO
+6000）では既定の 12.3〜14.3 GiB が 7.0〜7.7 GiB になり、書く速度は 7〜14% 落ちました。エキスパートキャッシュを固定すると
+（リリース前の確認と同じ条件）、回答はトークン単位で同じです。
+
+プロンプトを読むための VRAM も 350〜400 MiB 減りました。その分はエキスパートキャッシュが使うか（Qwen3.6 は VRAM の
+エキスパートが 2,444 個から 2,712 個に）、`--vram-reserve-mib` でほかのプログラムに残せます。
+しくみと測り方：[docs/BACKENDS.md](docs/BACKENDS.md#less-of-the-pcs-ram-and-vram)。
+
 ## 必要なもの
 
 | モデル | グラフィックカード | RAM（インストーラーのサイズ） | ディスク | OS |
@@ -110,7 +141,7 @@ Qwen3.6、Clover、Ornith 1.5、Gemma 4、Tiel Coder、MiniCPM-V の 6 つのモ
 AI コーディングアシスタント（Claude Code、Cursor、Codex、GitHub Copilot など）を使っていますか？ これを貼り付けてください：
 
 ```text
-Set up 4gbVramStrata on this PC for me: https://github.com/VecSzn/PolyStrata - follow docs/AI_SETUP.md in that repository.
+Set up 4gbVramStrata on this PC for me: https://github.com/RandoTeam/4gbVramStrata - follow docs/AI_SETUP.md in that repository.
 ```
 
 AI がグラフィックカード、RAM、ディスクを調べて、合うモデルを選びます。それからインストールして起動し、
@@ -119,7 +150,7 @@ AI がグラフィックカード、RAM、ディスクを調べて、合うモ�
 
 ### 自分でやる
 
-[4gbVramStrata をダウンロード](https://github.com/VecSzn/PolyStrata/archive/refs/heads/main.zip)して展開します（または `git clone` します）。
+[4gbVramStrata をダウンロード](https://github.com/RandoTeam/4gbVramStrata/archive/refs/heads/main.zip)して展開します（または `git clone` します）。
 **Windows：** **`START-HERE.bat`** をダブルクリック。**Linux：** 4gbVramStrata フォルダーで **`./setup.sh`** を実行します。
 
 手順は NVIDIA でも AMD でも同じです。インストーラーがカードを見つけて、それに合うエンジンを用意します。
@@ -225,7 +256,7 @@ AI がグラフィックカード、RAM、ディスクを調べて、合うモ�
 - **ポート 8080 がすでに使われていると表示される。** 4gbVramStrata はもう動いています。そのウィンドウを探してください。
 
 ほかの問題と解決方法：[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)。それでも解決しない場合は
-[issue](https://github.com/VecSzn/PolyStrata/issues) を作成し、4gbVramStrata フォルダーにある `strata-<model>.log` を添付してください。
+[issue](https://github.com/RandoTeam/4gbVramStrata/issues) を作成し、4gbVramStrata フォルダーにある `strata-<model>.log` を添付してください。
 セキュリティの問題を見つけたら、非公開で報告してください：[SECURITY.md](SECURITY.md)。
 
 ## しくみ

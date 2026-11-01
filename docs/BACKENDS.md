@@ -16,6 +16,7 @@ a second machine, a Windows laptop whose card has 8 GB.
 | GLM 5.3 Flash | `glm5-next` | `strata-fourgbvram` | GSQ-RCO 3.0bit, REAP50-Q3_K_M, UD-IQ2_XXS | draft block |
 | Qwen3.6-35B-A3B | `qwen35moe` | `strata-fourgbvram` | Unsloth UD-Q3_K_M, UD-Q2_K_XL and UD-Q4_K_M, 12.6 to 22.7 GB | draft block in the file |
 | Ornith 1.5 35B-A3B | `qwen35moe` | `strata-fourgbvram` | APEX-MTP-I-Compact, I-Mini and I-Quality, 14.4 to 23.7 GB | draft block in the file |
+| Ornith 1.5 122B | `qwen35moe` | `strata-fourgbvram` | Unsloth UD-Q3_K_XL, UD-Q2_K_XL, UD-IQ3_XXS, UD-Q4_K_XL and Q8_0, 44.5 to 132.6 GB | draft block in the file |
 | Gemma 4 26B-A4B | `gemma4` | `strata-fourgbvram` | Unsloth UD-Q3_K_M, UD-Q2_K_XL and UD-Q4_K_M, 10.5 to 16.9 GB | its draft model, a file of 0.46 GB |
 | Tiel Coder 35B-A3B | `qwen35moe` | `strata-fourgbvram` | peculiar-ragdoll's UD-Q3_K_XL, UD-IQ3_XXS and UD-Q4_K_XL, 13.6 to 22.7 GB | draft block in the file |
 | MiniCPM-V 4.7 35B-A3B | `qwen35moe` | `strata-fourgbvram` | OpenBMB Q4_K_M, mix_q3gud_im and Q6_K, 15.5 to 28.5 GB | none: it answers one token at a time |
@@ -35,8 +36,8 @@ The optional CUDA [GDN prefill adapter](DETAILS.md#strata-fourgbvram-chunked-gdn
 ## Install
 
 Setup installs all of them. They are in its list of models, and each has a family name that goes
-straight to it. GLM 5.3 Flash and DeepSeek V4 Flash, the two large ones, have pages of their own,
-[GLM.md](GLM.md) and [DEEPSEEK.md](DEEPSEEK.md):
+straight to it. The larger models have pages of their own,
+[GLM.md](GLM.md), [DEEPSEEK.md](DEEPSEEK.md) and [ORNITH.md](ORNITH.md):
 
 ```bash
 ./setup.sh --family qwen36
@@ -44,6 +45,10 @@ straight to it. GLM 5.3 Flash and DeepSeek V4 Flash, the two large ones, have pa
 
 ```bash
 ./setup.sh --family ornith
+```
+
+```bash
+./setup.sh --family ornith122
 ```
 
 ```bash
@@ -74,6 +79,11 @@ straight to it. GLM 5.3 Flash and DeepSeek V4 Flash, the two large ones, have pa
 | `ornith` | Ornith 1.5 35B-A3B | APEX-MTP-I-Compact | 17.4 GB | about 22 GB |
 | | | APEX-MTP-I-Mini | 14.4 GB | about 18 GB |
 | | | APEX-MTP-I-Quality | 23.7 GB | about 28 GB |
+| `ornith122` | Ornith 1.5 122B | Unsloth UD-Q3_K_XL, three files | 59.8 GB | about 47 GB (needs a 16 GB+ card, ~47 GB beside 24 GB) |
+| | | Unsloth UD-Q2_K_XL | 44.5 GB | about 32 GB beside a 24 GB card |
+| | | Unsloth UD-IQ3_XXS | 49.5 GB | about 37 GB beside a 24 GB card |
+| | | Unsloth UD-Q4_K_XL, three files | 79.7 GB | about 66 GB beside a 24 GB card |
+| | | Unsloth Q8_0, four files | 132.6 GB | about 119 GB beside a 24 GB card |
 | `gemma4` | Gemma 4 26B-A4B | Unsloth UD-Q3_K_M and its draft model | 13.2 GB | about 18 GB |
 | | | Unsloth UD-Q2_K_XL and the draft model | 11.0 GB | about 15 GB |
 | | | Unsloth UD-Q4_K_M and the draft model | 17.4 GB | about 21 GB |
@@ -1994,6 +2004,95 @@ In a Claude Code session, turns of about 188 tokens had looked slower with `--st
 the laptop, with Qwen3.6 UD-Q3_K_M as setup runs it, six turns of 188 tokens behind 16,000 took 418 to 489 ms each
 with either value, two rounds of each in turn. The new prompts of 300, 500 and 800 tokens after them took 499 to
 844 ms with 1,024 and 1,276 to 1,432 with 256, where their calls copy ahead and the CPU takes no share.
+
+### Less of the PC's RAM and VRAM
+
+On the laptop (RTX 4070 Laptop 8 GB, 32 GB of RAM), Qwen3.6 UD-Q3_K_M held the whole of its 15.9 GiB file in its
+working set after the benchmark's 32K prompt: 17.9 GiB with 1.4 GiB of pinned memory. The dense weights and the
+experts the card has were read through the mapping on their way to VRAM, and their pages stayed. Now:
+
+- The dense weights' pages leave the working set once they are on the card. Between requests the experts the card
+  has leave it too, the half used most lately: the CPU reads one of them only after an answer moves it out of the
+  cache, and an answer moves the least used ones out. With every cached expert's pages dropped, LFM2.5's first short
+  chat moved 624 of its 838 cached experts out and wrote at 70 tokens/s where 80. The file cache keeps the pages,
+  which the system counts as available and gives to whatever needs memory.
+- Pinned memory 1.18 to 1.43 GiB → 0.17: the two staging chunks are 64 MiB each where 512 (a 32K prompt read as
+  fast), the follower uploads through two buffers where it had one for each of the 64 uploads it may have in
+  flight (515 MiB of LFM2.5's), and a long read's pinned rows are given back between requests. The chunks were
+  allocated before the engine looks at the PC's free RAM for its VRAM reserve, so the line for a tight PC moved
+  from 4 to 5 GiB over the model's files with them: the same PC in the same state keeps the reserve it had.
+- The staging buffer is 128 MiB by default on an NVIDIA card where a read can widen it (one card; ROCm keeps 2
+  GiB, untested there), and a read of several
+  batches widens it to a layer's experts with VRAM the expert cache lends (`--stage-read-mib`, which was off). The
+  cache holds that VRAM while an answer is written: Qwen3.6 2,712 experts where 2,444, Gemma 4 1,166 where 1,013.
+  Prompts of 300 and 1,000 tokens read as fast, of 3,000 to 6,000 up to 2% slower (Qwen3.6 1,388 tokens/s where
+  1,408 at 3,000, 1,587 where 1,623 at 5,000). The experts the cache gave up come back through the follower while
+  the answer is written, not before it (57 ms of Gemma 4's 3,000-token read).
+
+| Qwen3.6 UD-Q3_K_M, 32K prompt | 0.1.45-poly.6 | now | now, `--ram-experts-mib 6144` |
+| --- | --- | --- | --- |
+| Working set, peak | 17.9 GiB | 13.9 | 7.3 |
+| Working set between requests | 17.9 GiB | 13.1 | 7.1 |
+| Experts in VRAM | 2,444 | 2,712 | 2,712 |
+
+The last column is from a later run with the same prompt. Writing, three rounds each, tokens/s, 0.1.45-poly.6 and
+now: Qwen3.6 83.1 and 84.8 after the short prompt, 80.0 and 80.0 after the 32K one; Gemma 4 UD-Q3_K_M 72.0 and
+72.9, 56.2 and 56.1; LFM2.5 UD-Q4_K_XL 89.8 and 92.0, 67.2 and 67.6. On Linux (an RTX PRO 6000 held to about 8 GB)
+Qwen3.6's resident memory went from 17.8 to 12.6 GiB.
+
+With a cache the size 0.1.45-poly.6 gives it (`--stage-mib 2048 --stage-read-mib 0`) the answers are the same
+token for token. Checked as a release is, the experts held still and no guesses, a short prompt and a 3,000-token one,
+96 tokens each: eight models with the flash-attention paths off and the four of the Qwen3.6 family with them on. With
+the defaults the cache holds more experts, the CPU and the card share the work another way and their sums round
+apart: Clover APEX-I-NanoPlus parted after 16 tokens of the short prompt.
+
+`--ram-experts-mib N` holds N MiB of RAM for the routed experts the card does not have, while an answer is written
+as well as between requests; without it every one of them stays in RAM. It is off by default because it writes
+slower, as below. It says so at the start:
+
+    strata-fourgbvram: 6144 MiB of RAM for the 10.1 GiB of experts outside VRAM; the others come from the file cache when a token needs them (--ram-experts-mib, -1 for all)
+
+It was measured with 6,144 MiB on files with 6 to 12 GiB of experts outside VRAM, not with more.
+
+Three quarters of the budget are the experts the profile and this run used most, read through the mapping as before:
+their pages are the file cache's, so the RAM holds them once. The last quarter is a pool of slots, each a private
+copy. A call's experts outside both are read into free slots by eight threads, with ReadFile in pieces of 256 KiB,
+and the next layer's eight likeliest experts for each token are read ahead from the router's guess. A slot goes to
+the expert read once before the one read again (two queues). The slots come in one size for each size of expert:
+Qwen3.6 UD-Q3_K_M's are 1.30 MiB in 37 layers and 1.42, 1.59 and 1.88 MiB in the other four, and its 1.5 GiB of
+slots hold 1,163 of them where one size for all held 815.
+
+A larger pool was slower. Its copies are private and the file cache keeps the same pages, so with all 6 GiB as slots
+the system dropped the other experts from the file cache and a run read 7.5 to 11 GiB from the SSD. Read through the
+mapping, an expert takes the RAM once.
+
+What a read of a 1.3 MiB expert in the file cache costs on the laptop: through the mapping 257 µs on one thread and
+86 µs each with eight; with ReadFile 155 and 66 µs. With eight threads a piece of 64 KiB took 89 to 109 µs and one of
+256 KiB 143 to 154, so the cost is mostly per call: 256 KiB pieces wrote 1.5% faster after the 32K prompt and 2.2% in
+the chat after it. PrefetchVirtualMemory did not make pages already in the file cache faster to touch. A read thread
+spins for 2 ms before it sleeps; on the lab's card that and the 256 KiB pieces together wrote 7.6% faster after the
+32K prompt (182.97 tokens/s where 170.08) and as fast in the chat after it. Why the spin helps is not known.
+
+The laptop, the release's engine with and without `--ram-experts-mib 6144`, the two in turn, four rounds, the
+medians of the last three. Other programs held part of the card's VRAM in this run, so both kept 2,357 experts in
+VRAM after the first chat (2,445 in an earlier one):
+
+| Qwen3.6 UD-Q3_K_M | default, every expert in RAM | `--ram-experts-mib 6144` |
+| --- | ---: | ---: |
+| Working set after the load | 11.7 GiB | 6.5 |
+| at most: short chat / after the 32K prompt | 14.3 / 14.0 | 6.7 / 7.3 |
+| between requests | 12.8 | 7.1 |
+| Writing, tokens/s: the first short chat | 71.6 | 69.4 |
+| after the 32K prompt | 65.4 | 63.7 |
+| the short chat after it | 84.2 | 72.9 |
+| 1,024 tokens of a short chat, one run | 90.6 | 78.3 |
+
+Two earlier runs with the same code wrote 5.8% and 7.7% slower after the 32K prompt and 9.6% and 8.4% slower in
+the chat after it. On Linux (the lab's RTX PRO 6000 held to about 8 GB) it held 7.0 to 7.7 GiB where 12.3 to 14.3,
+and wrote 6.7% slower after the 32K prompt and 11.9% in the chat after it (182.97 and 204.65 tokens/s where 196.12
+and 232.18); one run each, 1,024 tokens of a short chat at 196.5 where 227.7 and 512 after the 32K prompt at 180.4
+where 200.6. With the experts held still and no guesses (`--expert-swaps 0 --cpu-share 0 --tail-skip 0 --window 1`)
+the 256 tokens of each of the three answers were the same as with every expert in RAM, on Windows and on Linux.
 
 ### Qwen3.6 on two engines
 

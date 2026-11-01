@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
   - name: Troubleshooting and known issues
-    url: https://github.com/VecSzn/PolyStrata/blob/main/docs/DETAILS.md#troubleshooting
+    url: https://github.com/RandoTeam/4gbVramStrata/blob/main/docs/DETAILS.md#troubleshooting
     about: Symptom-to-fix table for crashes, out of memory, hangs, and port problems.

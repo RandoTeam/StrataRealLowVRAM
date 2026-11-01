@@ -121,6 +121,26 @@ What the numbers say:
   model; both are worth a try on yours.
 - **Six CPU threads are not faster than twelve** on either model, so the old configs' `--threads 6` only cost speed.
 
+## After the poly.7 merge
+
+The engine this project ships was updated to v0.1.45-poly.7 from
+[PolyStrata](https://github.com/VecSzn/PolyStrata) on 2026-11-01 (slots sized by each layer's experts, read-ahead of
+every token's guess, page work queued behind the reads). The same harness, the same prompt, the same settings — only
+these four were re-measured:
+
+| Model and setting | Reads a 2,000-token prompt | Writes 128 tokens | Experts at load |
+| --- | ---: | ---: | ---: |
+| Clover, engine defaults | 514 tokens/s | 30.5 tokens/s | 421 (0.4 GiB) |
+| Clover, `--tail-skip 6` | 521 tokens/s | 36.4 tokens/s | 421 (0.4 GiB) |
+| Flint, engine defaults | 414 tokens/s | 33.8 tokens/s | 561 (0.7 GiB) |
+| Flint, `--prompt-batch 512` | 366 tokens/s | 36.7 tokens/s | 710 (0.9 GiB) |
+
+Against poly.6: Clover's answers are unchanged (30.5 against 31.3, and 36.4 against 36.3 with `--tail-skip 6`), Flint's
+are **38% faster** (33.8 against 24.5) and **16% faster with `--prompt-batch 512`** (36.7 against 31.5). The expert cache
+at load more than doubled on both (Clover 247 → 421, Flint 342 → 561): the engine now gives each layer's experts the
+slot size they need instead of one size for all. The tables above are poly.6 numbers; every setting there other than
+these four was not measured again.
+
 ## Measuring your own
 
 The server prints the same lines for your requests, so a chat and a long prompt are enough. For a run with numbers
