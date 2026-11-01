@@ -2,7 +2,8 @@
 rem Update 4gbVramStrata without starting the model (#475): the newest code (git pull, when this folder is a git clone), then
 rem what START-HERE.bat does before a start - the engine (a new one when this version needs it), the Python packages,
 rem each installed model's settings and draft subset. The model files are not touched. Start the model later with
-rem START-HERE.bat. Options are passed on to setup.py.
+rem START-HERE.bat. Options are passed on to setup.py. The bundled Python (python\ beside this file) is used when
+rem there is one: START-HERE.bat, which this file runs, picks it.
 setlocal
 title 4gbVramStrata - update
 cd /d "%~dp0"
@@ -70,7 +71,7 @@ rem All of it in one block: cmd reads a .bat file while it runs it, and the git 
     )
   ) else (
     echo  This copy of 4gbVramStrata was not made with git, so it cannot fetch new files itself. Download the newest one:
-    echo    https://github.com/VecSzn/PolyStrata/archive/refs/heads/main.zip
+    echo    https://github.com/RandoTeam/4gbVramStrata/archive/refs/heads/main.zip
     echo  unzip it anywhere and run START-HERE.bat ^(or UPDATE.bat^) in it: it finds the model files in 4gbVramStrata-data
     echo  and sets itself up the same way - nothing big is downloaded again.
     echo  Checking this copy's engine and settings meanwhile ...
