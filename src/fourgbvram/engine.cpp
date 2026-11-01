@@ -596,25 +596,6 @@ void Engine::hfree(void* p) {
     ck(cudaFreeHost(p), "freeing pinned memory");
 }
 
-// A write into VRAM and a run of zeros in it, both on st_.
-//
-// They used to be plain cudaMemcpy()/cudaMemset(), which run on the implicit (legacy) stream.  That stream is
-// NOT ordered against this engine's - every one of them is created with cudaStreamNonBlocking - so none of the
-// cudaStreamSynchronize(cs(st_)) that guard VRAM waits for those copies.  The load fills the expert cache with
-// them, and the first request whose prompt is longer than kKvGrow reaches cover() with rows to map: cover()
-// asks shrink_cache() for the VRAM, and shrink_cache() gives pieces back (vmm_unmap, "the card must be done
-// with them") while the load's last copies are still writing them.  The card then says
-// "rms_norm: an illegal memory access" at the first token of the prompt - for any prompt over kKvGrow tokens, on
-// any architecture (LFM2.5 and Qwen3.6 alike), and never for a shorter one, whose cover() has nothing to map
-// and so never gives VRAM back.  On st_ the same copies are behind the syncs that were already there.
-void Engine::h2d(void* dst, const void* src, size_t bytes) {
-    ck(cudaMemcpyAsync(dst, src, bytes, cudaMemcpyHostToDevice, cs(st_)), "a copy into VRAM");
-}
-
-void Engine::zero_vram(void* dst, size_t bytes) {
-    ck(cudaMemsetAsync(dst, 0, bytes, cs(st_)), "zeroing VRAM");
-}
-
 // A container whose memory is not much more than the model's files.  The file cache cannot hold them beside
 // the engine, so an answer reads experts from the disk: on a pod with 80 GiB and two RTX 3080s, GLM REAP50's
 // 79 GB file wrote at 6 tokens/s where 20.  And the pod ended the engine with SIGKILL in half of its long reads,
