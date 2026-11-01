@@ -6789,22 +6789,25 @@ def fourgbvram_setup(a, family, gpu, hip, cuda_tk, multi, ram, data, elsewhere, 
     say(f"  {model}: {d['about']}; download {d['download_gb']:.0f} GB. The file is read in place: about {fit} of")
     say(f"  its {d['arena_gb']:.0f} GB of experts fit {'these cards' if multi else 'this card'}, the rest stay in RAM "
         "(the OS file cache).")
-    if room < beside + 2:
+    if room < beside:
         enc = vision == "gpu"                          # the encoder's share may be what does not fit
-        tight = room >= beside                         # it starts; what it does not get is an expert cache
         confirm_risk(
             f"{title} takes about {beside} GB of VRAM before any expert (measured on a 32 GB card at a 32K context)" +
             (f" and its image encoder {fam['vision_vram_gb']} GB" if enc else "") +
-            (f"; {gpu_name(gpu)} has {room:.0f} GB, so it starts with an empty expert cache and every answer's experts "
-             "are computed on the CPU: much slower than a card with 2 GB more. Measured on a 4 GB card at 32K, Clover "
-             "held 0.2 GiB of its experts and wrote 31 tokens/s, Flint 0.4 GiB and 24.5 tokens/s" if tight else
-             f"; {gpu_name(gpu)} has less than it takes to start"),
+            f"; {gpu_name(gpu)} has less than it takes to start",
             bool(a.model), a.yes,
-            (f"{title} has {room:.0f} GB of VRAM: the expert cache would start empty" if tight else
-             f"{title} needs more VRAM than {room:.0f} GB"),
+            f"{title} needs more VRAM than {room:.0f} GB",
             ("--vision cpu keeps the image encoder off the card; " if enc else "") +
             f"--family {family} --model {model} --yes installs it anyway")
         warn(f"going on with {room:.0f} GB of VRAM, as you chose")
+    elif room < beside + 2:
+        # It starts: what setup's 2 GB buy is an expert cache and a draft head, not the floor it takes to run, so this
+        # is a warning and not a question (#5; docs/BENCH-4GB.md: Clover and Flint run this way on a 4 GB card).
+        warn(f"{title} takes about {beside} GB of VRAM before any expert, so about {room - beside:.1f} GB of this card "
+             f"are left for its experts: it starts with an empty or nearly empty expert cache and computes most of "
+             f"every answer's experts on the CPU, much slower than a card with 2 GB more. Measured on a 4 GB card at "
+             f"32K: Clover held 0.2 GiB of its 10,240 experts and wrote 33 tokens/s, Flint 0.4 GiB of 12,032 and 38 "
+             f"tokens/s (docs/BENCH-4GB.md)")
     elif vram < 30:
         ran = fam.get("ran_on_gb", 32)                 # a card of 8 GB reports 8,188 MiB
         warn((f"{title} has run on no card under {ran} GB. " if round(vram) < ran else "") +
