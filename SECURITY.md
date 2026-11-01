@@ -4,12 +4,12 @@
 
 Please report anything that should not be public until it is fixed **privately**, through GitHub's private
 vulnerability reporting: the repository's **Security** tab, **Report a vulnerability**
-([direct link](https://github.com/RandoTeam/StrataRealLowVRAM/security/advisories/new)). Say what you found, how to reproduce it
+([direct link](https://github.com/RandoTeam/4gbVramStrata/security/advisories/new)). Say what you found, how to reproduce it
 (the request, the config keys involved, the 4gbVramStrata version), and what an attacker gains. We answer there, fix it in
 a release, and credit you in the advisory unless you ask us not to.
 
 Ordinary hardening ideas and findings that are safe to discuss in public are welcome as an
-[issue](https://github.com/RandoTeam/StrataRealLowVRAM/issues) (#544 collects audit findings) or as a pull request, which we
+[issue](https://github.com/RandoTeam/4gbVramStrata/issues) (#544 collects audit findings) or as a pull request, which we
 review like our own code.
 
 Supported: the latest release. Fixes go into the next release, not into older ones.

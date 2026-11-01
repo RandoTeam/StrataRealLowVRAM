@@ -7,7 +7,7 @@ body:
     value: |
       Thanks for the report.
 
-      Please search the [open issues](https://github.com/RandoTeam/StrataRealLowVRAM/issues?q=is%3Aissue+state%3Aopen) first — this may already be tracked.
+      Please search the [open issues](https://github.com/RandoTeam/4gbVramStrata/issues?q=is%3Aissue+state%3Aopen) first — this may already be tracked.
   - type: textarea
     id: what
     attributes:
@@ -34,4 +34,4 @@ body:
     value: |
       A couple of extras that help a lot:
 
-      - Check the [troubleshooting table](https://github.com/RandoTeam/StrataRealLowVRAM/blob/main/docs/DETAILS.md#troubleshooting) first, many reports are already solved there.
+      - Check the [troubleshooting table](https://github.com/RandoTeam/4gbVramStrata/blob/main/docs/DETAILS.md#troubleshooting) first, many reports are already solved there.

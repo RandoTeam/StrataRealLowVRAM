@@ -151,7 +151,7 @@ Qué necesita cada uno de los seis (Qwen3.6, Clover, Ornith 1.5, Gemma 4, Tiel C
 ¿Usas un asistente de programación con IA (Claude Code, Cursor, Codex, GitHub Copilot, ...)? Pega esto en él:
 
 ```text
-Set up 4gbVramStrata on this PC for me: https://github.com/RandoTeam/StrataRealLowVRAM - follow docs/AI_SETUP.md in that repository.
+Set up 4gbVramStrata on this PC for me: https://github.com/RandoTeam/4gbVramStrata - follow docs/AI_SETUP.md in that repository.
 ```
 
 Revisa tu tarjeta gráfica, tu RAM y tu disco, y elige el modelo que cabe. Luego lo instala, lo arranca y te explica
@@ -160,7 +160,7 @@ cómo conectar tus aplicaciones. Las herramientas de IA también pueden instalar
 
 ### O hazlo tú mismo
 
-[Descarga 4gbVramStrata](https://github.com/RandoTeam/StrataRealLowVRAM/archive/refs/heads/main.zip) y descomprímelo (o usa `git clone`).
+[Descarga 4gbVramStrata](https://github.com/RandoTeam/4gbVramStrata/archive/refs/heads/main.zip) y descomprímelo (o usa `git clone`).
 **Windows:** haz doble clic en **`START-HERE.bat`**. **Linux:** ejecuta **`./setup.sh`** en la carpeta de 4gbVramStrata.
 
 **Mac (Apple Silicon, M1 a M5, macOS 15 o posterior):** instala una vez las Command Line Tools de Apple (`xcode-select --install` en Terminal; no hace falta Xcode). Luego abre Terminal en la carpeta de 4gbVramStrata y ejecuta **`./setup.sh`**. Compila el motor de Mac en tu Mac (unos 7 minutos), hace las mismas preguntas, descarga el modelo y lo arranca. La próxima vez, `./setup.sh` arranca enseguida. Qué tamaño cabe en tu Mac y qué velocidad tiene: [docs/MAC.md](docs/MAC.md). El motor de Mac solo ejecuta Qwen3.8-Flash-Next; los otros once modelos necesitan una tarjeta NVIDIA o AMD.
@@ -269,7 +269,7 @@ Reinicia 4gbVramStrata (`START-HERE.bat` o `./setup.sh`) después del cambio. Pa
 - **Dice que el puerto 8080 ya está en uso.** 4gbVramStrata ya está en marcha. Busca su ventana.
 
 Más problemas y sus soluciones: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md). ¿Sigues atascado? Abre un
-[issue](https://github.com/RandoTeam/StrataRealLowVRAM/issues) y adjunta `strata-<model>.log` de la carpeta de 4gbVramStrata. ¿Has
+[issue](https://github.com/RandoTeam/4gbVramStrata/issues) y adjunta `strata-<model>.log` de la carpeta de 4gbVramStrata. ¿Has
 encontrado un problema de seguridad? Infórmalo en privado: [SECURITY.md](SECURITY.md).
 
 ## ¿Cómo funciona?
