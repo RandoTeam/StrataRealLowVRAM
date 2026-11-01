@@ -135,7 +135,7 @@ Qwen3.6、Clover、Ornith 1.5、Gemma 4、Tiel Coder 和 MiniCPM-V 这六个模�
 你在用 AI 编程助手吗（Claude Code、Cursor、Codex、GitHub Copilot 等）？把下面这段粘贴给它：
 
 ```text
-Set up 4gbVramStrata on this PC for me: https://github.com/RandoTeam/StrataRealLowVRAM - follow docs/AI_SETUP.md in that repository.
+Set up 4gbVramStrata on this PC for me: https://github.com/RandoTeam/4gbVramStrata - follow docs/AI_SETUP.md in that repository.
 ```
 
 它会检查你的显卡、内存和硬盘，选出合适的模型。然后安装并启动它，再告诉你怎么连接你的应用。AI 工具也可以通过
@@ -143,7 +143,7 @@ Set up 4gbVramStrata on this PC for me: https://github.com/RandoTeam/StrataRealL
 
 ### 或者自己动手
 
-[下载 4gbVramStrata](https://github.com/RandoTeam/StrataRealLowVRAM/archive/refs/heads/main.zip) 并解压（或者用 `git clone`）。
+[下载 4gbVramStrata](https://github.com/RandoTeam/4gbVramStrata/archive/refs/heads/main.zip) 并解压（或者用 `git clone`）。
 **Windows：** 双击 **`START-HERE.bat`**。**Linux：** 在 4gbVramStrata 文件夹里运行 **`./setup.sh`**。
 
 **Mac（Apple 芯片，M1 到 M5，macOS 15 或更新版本）：** 先安装一次 Apple 的 Command Line Tools（在终端里运行 `xcode-select --install`；不需要 Xcode 本身）。然后在 4gbVramStrata 文件夹里打开终端，运行 **`./setup.sh`**。它会在你的 Mac 上编译 Mac 版引擎（大约 7 分钟），问同样的问题，下载模型并启动。下次运行 `./setup.sh` 会马上启动。哪个大小适合你的 Mac、速度如何：[docs/MAC.md](docs/MAC.md)。Mac 版引擎只能跑 Qwen3.8-Flash-Next，另外十一个模型需要 NVIDIA 或 AMD 显卡。
@@ -246,7 +246,7 @@ Set up 4gbVramStrata on this PC for me: https://github.com/RandoTeam/StrataRealL
 - **提示 8080 端口已被占用。** 4gbVramStrata 已经在运行了。找一下它的窗口。
 
 更多问题和解决办法：[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)。还是解决不了？提交一个
-[issue](https://github.com/RandoTeam/StrataRealLowVRAM/issues)，并附上 4gbVramStrata 文件夹里的 `strata-<model>.log`。发现了安全问题？
+[issue](https://github.com/RandoTeam/4gbVramStrata/issues)，并附上 4gbVramStrata 文件夹里的 `strata-<model>.log`。发现了安全问题？
 请私下报告：[SECURITY.md](SECURITY.md)。
 
 ## 它是怎么工作的？

@@ -53,7 +53,7 @@ main() {
     fi
   else
     echo "This copy of 4gbVramStrata was not made with git, so it cannot fetch new files itself. Download the newest one:"
-    echo "  https://github.com/RandoTeam/StrataRealLowVRAM/archive/refs/heads/main.zip"
+    echo "  https://github.com/RandoTeam/4gbVramStrata/archive/refs/heads/main.zip"
     echo "unzip it anywhere and run ./setup.sh (or ./update.sh) in it: it finds the model files in 4gbVramStrata-data and"
     echo "sets itself up the same way - nothing big is downloaded again."
     echo "Checking this copy's engine and settings meanwhile ..."
