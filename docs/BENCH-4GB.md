@@ -121,25 +121,30 @@ What the numbers say:
   model; both are worth a try on yours.
 - **Six CPU threads are not faster than twelve** on either model, so the old configs' `--threads 6` only cost speed.
 
-## After the poly.7 merge
+## The engine this release ships
 
-The engine this project ships was updated to v0.1.45-poly.7 from
-[PolyStrata](https://github.com/VecSzn/PolyStrata) on 2026-11-01 (slots sized by each layer's experts, read-ahead of
-every token's guess, page work queued behind the reads). The same harness, the same prompt, the same settings — only
-these four were re-measured:
+The zip's engine is built with CUDA 13.0 for sm_75, 80, 86, 89 and 120 (RTX 20 to RTX 50) with `STRATA_PORTABLE`, from
+v0.1.45-poly.7 (slots sized by each layer's experts, read-ahead of every token's guess, page work queued behind the
+reads). The same harness, the same prompt, the same settings — only these four were re-measured, the median of three
+runs, except Flint's defaults: six runs, because its first two in a fresh process read at 112 and 258 tokens/s while
+the card's clocks settled.
 
 | Model and setting | Reads a 2,000-token prompt | Writes 128 tokens | Experts at load |
 | --- | ---: | ---: | ---: |
-| Clover, engine defaults | 514 tokens/s | 30.5 tokens/s | 421 (0.4 GiB) |
-| Clover, `--tail-skip 6` | 521 tokens/s | 36.4 tokens/s | 421 (0.4 GiB) |
-| Flint, engine defaults | 414 tokens/s | 33.8 tokens/s | 561 (0.7 GiB) |
-| Flint, `--prompt-batch 512` | 366 tokens/s | 36.7 tokens/s | 710 (0.9 GiB) |
+| Clover, engine defaults | 522 tokens/s | 33.4 tokens/s | 421 (0.4 GiB) |
+| Clover, `--tail-skip 6` | 519 tokens/s | 38.3 tokens/s | 421 (0.4 GiB) |
+| Flint, engine defaults | 420 tokens/s | 38.5 tokens/s | 561 (0.7 GiB) |
+| Flint, `--prompt-batch 512` | 372 tokens/s | 39.9 tokens/s | 710 (0.9 GiB) |
 
-Against poly.6: Clover's answers are unchanged (30.5 against 31.3, and 36.4 against 36.3 with `--tail-skip 6`), Flint's
-are **38% faster** (33.8 against 24.5) and **16% faster with `--prompt-batch 512`** (36.7 against 31.5). The expert cache
-at load more than doubled on both (Clover 247 → 421, Flint 342 → 561): the engine now gives each layer's experts the
-slot size they need instead of one size for all. The tables above are poly.6 numbers; every setting there other than
-these four was not measured again.
+Against poly.6 (505 / 31.3, 506 / 36.3, 379 / 24.5, 335 / 31.5): the answers are 6% faster on Clover (5% with
+`--tail-skip 6`) and 27 to 57% faster on Flint, and the expert cache at load more than doubled on both (Clover 247 →
+421, Flint 342 → 561), because the engine now gives each layer's experts the slot size they need instead of one size
+for all.
+
+The same source built with CUDA 12.8 on the development PC measured 30.5, 36.4, 33.8 and 36.7 written tokens/s with
+the same settings, so the CUDA 13 build is faster on all four. How much of that is codegen and how much the card
+being warm was not separated. The tables above are poly.6 numbers; every setting there other than these four was not
+measured again.
 
 ## Measuring your own
 
