@@ -1,6 +1,6 @@
 # Intel Arc (experimental)
 
-PolyStrata 0.1.39 includes an **experimental Intel Arc engine**: PolyStrata's own engine ported to SYCL (Intel oneAPI).
+4gbVramStrata 0.1.39 includes an **experimental Intel Arc engine**: 4gbVramStrata's own engine ported to SYCL (Intel oneAPI).
 maxfridbe wrote it in [#423](https://github.com/Niko1221/Strata/pull/423), with fixes from the people testing it.
 The code is in `sycl/`, and the port's own notes, measurements and maintenance procedure are in
 [docs/INTEL.md](INTEL.md). This page covers what you need, how to build it, and what has been tested.
@@ -64,17 +64,17 @@ images (not wired on Intel).
   `sycl/setup_intel.py` runs the engine in the `strata-sycl-dev` image built from `sycl/tools/Dockerfile`, and the
   engine is built in that image too ("Build with Docker" below). On Ubuntu: `sudo apt install docker.io git`, then
   `sudo usermod -aG docker,render $USER` and log in again. Note that the Dockerfile starts from a community
-  llama.cpp SYCL image (`ghcr.io/snailium/...`), not an Intel or PolyStrata image.
+  llama.cpp SYCL image (`ghcr.io/snailium/...`), not an Intel or 4gbVramStrata image.
 - VRAM: the port keeps the experts on the card (`--stream-experts`). A 32 GB card holds the Coder IQ1_M or IQ2_XS.
   Smaller cards mirror part of the experts in RAM and are slower.
 
 ## Build with Docker (what `setup --backend sycl` uses)
 
 Two commands, the same as in [INTEL.md](INTEL.md), "How to build it" (about 10 minutes the first time). From the checkout,
-called `PolyStrata` here:
+called `4gbVramStrata` here:
 
 ```sh
-cd PolyStrata
+cd 4gbVramStrata
 docker build -t strata-sycl-dev sycl/tools            # once: ~6 minutes, a 13 GB image
 H=$(basename "$PWD")
 # Arc B-series: bmg-g31 (Pro B70), bmg-g21 (B580, B570, Pro B60). Arc A-series (Alchemist): leave out AOT (JIT) and use build-sycl

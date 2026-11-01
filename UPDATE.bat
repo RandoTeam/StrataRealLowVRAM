@@ -1,10 +1,10 @@
 @echo off
-rem Update PolyStrata without starting the model (#475): the newest code (git pull, when this folder is a git clone), then
+rem Update 4gbVramStrata without starting the model (#475): the newest code (git pull, when this folder is a git clone), then
 rem what START-HERE.bat does before a start - the engine (a new one when this version needs it), the Python packages,
 rem each installed model's settings and draft subset. The model files are not touched. Start the model later with
 rem START-HERE.bat. Options are passed on to setup.py.
 setlocal
-title PolyStrata - update
+title 4gbVramStrata - update
 cd /d "%~dp0"
 rem All of it in one block: cmd reads a .bat file while it runs it, and the git pull can change this very file.
 (
@@ -15,7 +15,7 @@ rem All of it in one block: cmd reads a .bat file while it runs it, and the git 
       pause
       exit /b 1
     )
-    echo  Getting the newest PolyStrata ^(git pull^) ...
+    echo  Getting the newest 4gbVramStrata ^(git pull^) ...
     git pull --ff-only
     if errorlevel 1 (
       rem The history was rewritten on 2026-10-06, see #1276: a clone from before has no commit in common with origin/main.
@@ -69,9 +69,9 @@ rem All of it in one block: cmd reads a .bat file while it runs it, and the git 
       )
     )
   ) else (
-    echo  This copy of PolyStrata was not made with git, so it cannot fetch new files itself. Download the newest one:
+    echo  This copy of 4gbVramStrata was not made with git, so it cannot fetch new files itself. Download the newest one:
     echo    https://github.com/VecSzn/PolyStrata/archive/refs/heads/main.zip
-    echo  unzip it anywhere and run START-HERE.bat ^(or UPDATE.bat^) in it: it finds the model files in PolyStrata-data
+    echo  unzip it anywhere and run START-HERE.bat ^(or UPDATE.bat^) in it: it finds the model files in 4gbVramStrata-data
     echo  and sets itself up the same way - nothing big is downloaded again.
     echo  Checking this copy's engine and settings meanwhile ...
   )

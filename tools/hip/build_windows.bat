@@ -1,5 +1,5 @@
 @echo off
-rem PolyStrata's HIP (AMD) engine for Windows, and the ready-made zip setup.py downloads (strata-windows-x64-hip.zip).
+rem 4gbVramStrata's HIP (AMD) engine for Windows, and the ready-made zip setup.py downloads (strata-windows-x64-hip.zip).
 rem
 rem   tools\hip\build_windows.bat              build strata.exe + strata-device.exe and package dist\strata-windows-x64-hip.zip
 rem   tools\hip\build_windows.bat tests        also build the HIP unit tests (ctest in build-hip-win; they need an AMD GPU)
@@ -42,10 +42,11 @@ if exist "%STAMP%" set /p HAVE=<"%STAMP%"
 if not "!HAVE!"=="!WANT!" (
   echo Installing ROCm %STRATA_ROCM_VERSION% [%EXTRAS%] into %ROCM_VENV% ...
   "%ROCM_VENV%\Scripts\python.exe" -m pip install --disable-pip-version-check --index-url "%STRATA_ROCM_INDEX%" "rocm[%EXTRAS%]==%STRATA_ROCM_VERSION%" || exit /b 1
-  "%ROCM_VENV%\Scripts\rocm-sdk.exe" init || exit /b 1
+  "%ROCM_VENV%\Scripts\python.exe" -m rocm_sdk init || exit /b 1
   >"%STAMP%" echo !WANT!
 )
-for /f "delims=" %%R in ('"%ROCM_VENV%\Scripts\rocm-sdk.exe" path --root') do set "ROCM=%%R"
+rem rocm_sdk through the venv's python.exe: pip's rocm-sdk.exe names the folder the venv was made in
+for /f "delims=" %%R in ('"%ROCM_VENV%\Scripts\python.exe" -m rocm_sdk path --root') do set "ROCM=%%R"
 if not exist "%ROCM%\lib\llvm\bin\clang++.exe" (echo ROCm has no compiler in "%ROCM%" & exit /b 1)
 set "ROCM_F=%ROCM:\=/%"
 set "BITCODE=%ROCM_F%/lib/llvm/amdgcn/bitcode"

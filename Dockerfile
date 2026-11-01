@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 #
-# PolyStrata: Qwen3.8-Flash-Next on NVIDIA GPUs (RTX 30/40/50, 12+ GB VRAM; two or
+# 4gbVramStrata: Qwen3.8-Flash-Next on NVIDIA GPUs (RTX 30/40/50, 12+ GB VRAM; two or
 # three cards can share one model, 8 GB each - docs/MULTI_GPU.md).
 #
 # The engine is compiled during docker build, so the first container start only
@@ -28,7 +28,7 @@
 # GGUF_DIR (GGUF files you already have), RESIDENT_BUDGET_GIB, KV_STREAMING.
 #
 # Only the model files, the prepared pack, the MTP layer and the install config
-# live in the /data volume; the engine is part of the image. PolyStrata loads 32-62 GB
+# live in the /data volume; the engine is part of the image. 4gbVramStrata loads 32-62 GB
 # into RAM, so a capped container needs -e LOW_RAM=on: setup.py reads the RAM from
 # /proc/meminfo, which here is the host's total, not the container's limit. Add an
 # API key before exposing the port to a network: -e API_KEY=<secret>. Pass
@@ -79,7 +79,7 @@ arch = os.environ.get("CUDA_ARCHITECTURES", "75;80;86;89;120").strip().strip('"'
 vision = "gpu" if os.environ.get("BUILD_VISION", "1") == "1" else "none"
 
 setup.cmake_build(setup.ROOT, setup.ROOT / "build", "strata",
-    ["-DSTRATA_ENABLE_CUDA=ON", "-DSTRATA_BUILD_TESTS=OFF",
+    ["-DSTRATA_ENABLE_CUDA=ON", "-DSTRATA_Q6K_EXPERTS=ON", "-DSTRATA_MMQ_KQUANTS=ON", "-DSTRATA_BUILD_TESTS=OFF",
      f"-DCMAKE_CUDA_ARCHITECTURES={arch}", f"-DCMAKE_CUDA_COMPILER={nvcc}",
      f"-DSTRATA_GGML_DIR={llama}"], None, "build-strata.bat")
 if vision != "none":

@@ -1,4 +1,4 @@
-"""tools/needle_bench.py - needle-in-a-haystack recall through a running PolyStrata server.
+"""tools/needle_bench.py - needle-in-a-haystack recall through a running 4gbVramStrata server.
 
 A long text is built from files in this repository (its docs and source code, and the llama.cpp docs setup downloads
 into third_party/), a code word is hidden in it at a chosen depth, and the model is asked for it through the normal

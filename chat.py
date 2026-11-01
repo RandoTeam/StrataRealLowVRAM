@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""A tiny terminal chat for a running PolyStrata server (start it with run-<model>.bat / run-<model>.sh first, or
-let `python polystrata.py --model <name>` start it).
+"""A tiny terminal chat for a running 4gbVramStrata server (start it with run-<model>.bat / run-<model>.sh first, or
+let `python fourgbvramstrata.py --model <name>` start it).
 
     python chat.py [--port 8080] [--think none|low|medium|high]
 
@@ -112,7 +112,7 @@ def chat(base: str, think: str = "medium", max_tokens: int = 4096, key: str = ""
     url = base + "/v1/chat/completions"
     gray, reset = ("\033[90m", "\033[0m") if sys.stdout.isatty() else ("", "")
     messages, pending = [], []
-    print(f"PolyStrata chat ({url}).  /image <path> = attach a picture, /think none|low|medium|high (now: {think}), "
+    print(f"4gbVramStrata chat ({url}).  /image <path> = attach a picture, /think none|low|medium|high (now: {think}), "
           f"/model = the model and how to change it, /reset = new conversation, /quit = leave.")
     while True:
         try:

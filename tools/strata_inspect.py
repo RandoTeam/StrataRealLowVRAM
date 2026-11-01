@@ -1,4 +1,4 @@
-"""Which PolyStrata model a GGUF is - and whether PolyStrata can run it - from its header alone.
+"""Which 4gbVramStrata model a GGUF is - and whether 4gbVramStrata can run it - from its header alone.
 
 Reads only the files' headers (a few MB each, by HTTP range requests for a remote file) with quantscope, prints the
 real storage of every weight group (bits per weight, quantization types), then compares the routed experts and the
@@ -29,7 +29,12 @@ import quantscope as qs  # noqa: E402
 
 FINGERPRINTS = ROOT / "data" / "gguf_fingerprints.json"
 ARCH = "qwen4exp"                                       # Qwen3.8-Flash-Next's general.architecture
-PREVIEW_ARCHS = {"qwen35moe": "Qwen3.6-35B-A3B"}         # model families PolyStrata knows but does not run yet (T0)
+PREVIEW_ARCHS = {"qwen35moe": "Qwen3.6-35B-A3B"}         # model families 4gbVramStrata knows but does not run yet (T0)
+# strata-fourgbvram engine architectures: general.architecture -> FAMILIES[family]["title"] from setup.py
+# (setup.py's FOURGBVRAM_GGUF_ARCHS lists the arch set; keep these values byte-identical to those titles so
+# resolve_custom_gguf can map a "family" verdict back to --family/--model)
+FOURGBVRAM_ARCHS = {"gemma4": "Gemma 4 26B-A4B", "glm5-next": "GLM 5.3 Flash", "glm5next": "GLM 5.3 Flash",
+              "deepseek4": "DeepSeek V4 Flash", "lfm2moe": "LFM2.5-24B-A2B", "flint": "Flint 40B-A2.5B"}
 
 # the files setup installs: (family, model, ModelScope repository, file name prefix) - for --fingerprints
 KNOWN = [
@@ -89,18 +94,22 @@ def load_fingerprints(path: Path = FINGERPRINTS) -> dict:
 
 
 def verdict(fp: dict, table: dict) -> tuple[str, str]:
-    """(kind, sentence): kind is "known" (a file setup installs, under any name), "family" (another family PolyStrata
-    runs on its own engine path: Qwen3.6), "layout" (the same routed-expert
-    layout as one: a fine-tune made with the same recipe, untested), "no" (PolyStrata cannot run it) or "untested"
-    (naming the tensors whose quantization no file PolyStrata runs has for them)."""
+    """(kind, sentence): kind is "known" (a file setup installs, under any name), "family" (another family 4gbVramStrata
+    runs on its own engine path - Qwen3.6 on its CUDA/HIP path, or a strata-fourgbvram model such as Gemma 4, GLM,
+    DeepSeek, LFM, Flint), "layout" (the same routed-expert
+    layout as one: a fine-tune made with the same recipe, untested), "no" (4gbVramStrata cannot run it) or "untested"
+    (naming the tensors whose quantization no file 4gbVramStrata runs has for them)."""
     known = {k: v for k, v in table.items() if not k.startswith("_")}
     if fp["arch"] in PREVIEW_ARCHS:
-        return "family", (f"{PREVIEW_ARCHS[fp['arch']]} (architecture {fp['arch']!r}): PolyStrata runs it on its own "
+        return "family", (f"{PREVIEW_ARCHS[fp['arch']]} (architecture {fp['arch']!r}): 4gbVramStrata runs it on its own "
                           "engine path in the NVIDIA (CUDA) and AMD (HIP) builds, not yet on Intel Arc (SYCL); setup "
-                          "installs it with --family qwen36-strata, and with --family qwen36 on the strata-poly "
+                          "installs it with --family qwen36-strata, and with --family qwen36 on the strata-fourgbvram "
                           "engine")
+    if fp["arch"] in FOURGBVRAM_ARCHS:
+        return "family", (f"{FOURGBVRAM_ARCHS[fp['arch']]} (architecture {fp['arch']!r}): 4gbVramStrata runs it on the "
+                          "strata-fourgbvram engine; give its folder with --gguf-dir")
     if fp["arch"] != ARCH:
-        return "no", f"not Qwen3.8-Flash-Next (architecture {fp['arch']!r}): PolyStrata runs only that model"
+        return "no", f"not Qwen3.8-Flash-Next (architecture {fp['arch']!r}): 4gbVramStrata runs only that model"
     exact = [k for k, v in known.items() if v["expert_bytes"] == fp["expert_bytes"] and v["bytes"] == fp["bytes"]
              and v["tensors"] == fp["tensors"]]
     if exact:
@@ -114,17 +123,17 @@ def verdict(fp: dict, table: dict) -> tuple[str, str]:
     runs = set().union(*(v["expert_bytes"] for v in known.values()))
     other = sorted(set(fp["expert_bytes"]) - runs)
     if other:
-        return "no", ("its routed experts use " + ", ".join(other) + ", a quantization no file PolyStrata runs uses "
-                      "(PolyStrata's expert kernels cover " + ", ".join(sorted(runs)) + ")")
+        return "no", ("its routed experts use " + ", ".join(other) + ", a quantization no file 4gbVramStrata runs uses "
+                      "(4gbVramStrata's expert kernels cover " + ", ".join(sorted(runs)) + ")")
     seen = table.get("_roles", {})
     new = [f"{r} {'/'.join(t for t in ts if t not in seen.get(r, []))}" for r, ts in fp.get("roles", {}).items()
            if any(t not in seen.get(r, []) for t in ts)]
-    head = ("its routed experts use only quantizations PolyStrata runs (" + ", ".join(fp["expert_bytes"]) +
+    head = ("its routed experts use only quantizations 4gbVramStrata runs (" + ", ".join(fp["expert_bytes"]) +
             "), but this file is not one setup installs: not tested (and setup still refuses the GGUF names "
             "it lists as unsupported, such as UD-Q2_K_XL: this is a header reading, not a promise that it runs)")
     if new:
-        return "untested", head + ". Stored differently from every file PolyStrata runs: " + ", ".join(new)
-    return "untested", head + "; every tensor uses a quantization some file PolyStrata runs has for it"
+        return "untested", head + ". Stored differently from every file 4gbVramStrata runs: " + ", ".join(new)
+    return "untested", head + "; every tensor uses a quantization some file 4gbVramStrata runs has for it"
 
 
 def make_fingerprints(out: Path) -> None:

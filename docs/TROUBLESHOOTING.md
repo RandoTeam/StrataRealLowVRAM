@@ -5,8 +5,8 @@ error messages, with the older engine fixes, is in the [details](DETAILS.md#trou
 
 ## While installing or starting
 
-**My PC froze, or got very slow, the first time PolyStrata started.**
-That's normal while it starts, most of all the first time. PolyStrata loads 35-55 GB into your RAM, locks part of it for
+**My PC froze, or got very slow, the first time 4gbVramStrata started.**
+That's normal while it starts, most of all the first time. 4gbVramStrata loads 35-55 GB into your RAM, locks part of it for
 the graphics card, and works out how much of the model fits on your GPU. The mouse can freeze for a few minutes.
 **Wait, and don't close the window.** The next starts are much faster. Still frozen after 10 minutes? Restart the
 PC, close other programs (browsers use a lot of RAM) and try again. If it keeps happening, pick a smaller size (Q2_0
@@ -15,17 +15,22 @@ or IQ2_XS).
 **It stopped while downloading or installing.**
 Run `START-HERE.bat` (Linux: `./setup.sh`) again. It continues where it stopped.
 
+**"blk.N.ffn_gate_exps.weight and blk.N.ffn_up_exps.weight have different types, which this engine does not run".**
+The file quantizes each expert's gate and up in two different formats, as IsValorum's APEX-I NanoPlus files do.
+Engines before 0.1.45-poly.6 refused such files; run `UPDATE.bat` (Linux: `./update.sh`) and it loads
+([issue 103](https://github.com/VecSzn/PolyStrata/issues/103)).
+
 **It says the NVIDIA driver is too old.**
 Update it (NVIDIA App or [nvidia.com/drivers](https://www.nvidia.com/drivers)), restart the PC, and run
 `START-HERE.bat` again.
 
 **It says port 8080 is already in use.**
-PolyStrata is already running. Look for its window. Or another program uses the port: `START-HERE.bat --port 8081`.
+4gbVramStrata is already running. Look for its window. Or another program uses the port: `START-HERE.bat --port 8081`.
 Only an address that is really taken says "already in use". Any other reason (Windows keeps the port reserved, or
 the config's `"host"` is not an address of this PC) is printed as what the OS said, with what to change (#769).
 
-**"Windows blocked the PolyStrata engine (or the image encoder) ... Smart App Control".**
-On a clean Windows 11, Smart App Control refuses programs that are not signed, and PolyStrata's `strata.exe` and
+**"Windows blocked the 4gbVramStrata engine (or the image encoder) ... Smart App Control".**
+On a clean Windows 11, Smart App Control refuses programs that are not signed, and 4gbVramStrata's `strata.exe` and
 `strata-vision.exe` are not (#735). Turn it off (Windows Security > App & browser control > Smart App Control
 settings; it cannot be turned back on without a reset of Windows), or, if only the image encoder is blocked, run
 `START-HERE.bat --setup --vision no`.
@@ -39,7 +44,7 @@ The repository's history was cleaned up on 2026-10-06, so a clone made before th
 The 0.1.40.2 scripts handle it: when no tracked file is edited they keep your old commits in the branch
 `pre-cleanup-backup` and move the clone to the new history; otherwise they print the two commands for you. Your models,
 settings and engine are untracked files and are never touched. An older UPDATE.bat / update.sh (before 0.1.40.2) cannot
-do this itself: run these once in the PolyStrata folder, then use UPDATE.bat as usual (add `git stash` first if `git status`
+do this itself: run these once in the 4gbVramStrata folder, then use UPDATE.bat as usual (add `git stash` first if `git status`
 lists edited files):
 
     git fetch origin
@@ -75,7 +80,7 @@ Setup checks the downloaded ready-made engine against the SHA-256 GitHub publish
 Your PC is out of free RAM. Close other programs, or pick a smaller size (Q2_0 or IQ2_XS).
 
 **An answer stopped with "the engine stopped unexpectedly".**
-Usually not enough RAM (on Linux the system then stops the engine). Just send your message again: PolyStrata starts the
+Usually not enough RAM (on Linux the system then stops the engine). Just send your message again: 4gbVramStrata starts the
 engine by itself. If it keeps happening, close other programs or pick a smaller size.
 
 **It says the prompt exceeds the context.**
@@ -120,7 +125,7 @@ are the same, only the copies of the pageable part to the GPU go through the CPU
 `STRATA_PIN_RESERVE_GIB=N` sets the RAM that must stay free (default: `STRATA_RESIDENT_HEADROOM_GIB`, 4 GiB).
 
 **The Windows display driver resets, then the PC blue-screens (0x141, then 0x116 in `nvlddmkm`) during an answer (#961).**
-This is the NVIDIA driver, not PolyStrata: the report shows the same wedge with other CUDA programs on that driver (610.88,
+This is the NVIDIA driver, not 4gbVramStrata: the report shows the same wedge with other CUDA programs on that driver (610.88,
 RTX 4080 SUPER). Try another driver (a Studio one, or an older one) and a lower power limit; if it only happens with
 `--spec 4`, `--spec 0` avoids the verify window while you wait for a driver fix.
 
@@ -139,10 +144,10 @@ setup warns when it finds 13.2.0 or 13.2.1 for such a card, and takes an older 1
 
 **"No AMD GPU found (the amdgpu driver's KFD topology is empty)" on Linux.**
 The kernel's amdgpu driver is not loaded for the card. Integrated Radeon GPUs are listed as not supported; setup
-lists every card it found and whether PolyStrata can use it.
+lists every card it found and whether 4gbVramStrata can use it.
 
 **The engine stops at start with the card's name, its architecture and the build's list.**
-The engine was compiled for another card (for example after moving the PolyStrata folder to another PC). Run
+The engine was compiled for another card (for example after moving the 4gbVramStrata folder to another PC). Run
 `./setup.sh --setup --backend hip`: it compiles the engine for this card's architecture.
 
 **On Windows the engine exits with `0xC0000005` in `amdhip64_7.dll` before it prints anything (#654).**
@@ -155,11 +160,11 @@ folder such as `C:\Temp`.
 **Windows AMD: the driver resets (VIDEO_ENGINE_TIMEOUT_DETECTED / screen flicker / the engine dies mid-answer).**
 Windows gives a GPU about 2 seconds to answer; when a graphics card does not, it resets the driver (a TDR): the screen
 flickers, the engine dies, and the Event Viewer shows `VIDEO_ENGINE_TIMEOUT_DETECTED` (#613, with #579 and #541 on
-Linux). PolyStrata 0.1.39 and newer say "the GPU stopped responding" in the log. It was seen with KV streaming on
+Linux). 4gbVramStrata 0.1.39 and newer say "the GPU stopped responding" in the log. It was seen with KV streaming on
 (`--kv-resident 32768`, which setup turns on from 64K context) while reading a long prompt on a gfx1201 card. Try these
 in order, one at a time, and tell us what changed:
-1. **Send us the evidence.** The last ~80 lines of `strata-<model>.log` in the PolyStrata folder (the server window shows
-   the same lines), your AMD driver version (AMD Software > System), your card and Windows version, the PolyStrata
+1. **Send us the evidence.** The last ~80 lines of `strata-<model>.log` in the 4gbVramStrata folder (the server window shows
+   the same lines), your AMD driver version (AMD Software > System), your card and Windows version, the 4gbVramStrata
    version, and the exact steps (context size, how long the prompt was, which app sent it). If Windows wrote a
    dump, the newest `.dmp` in `C:\Windows\LiveKernelReports\WATCHDOG` (or `C:\Windows\Minidump`) helps; it holds no
    chats, only the driver state.
@@ -175,7 +180,7 @@ in order, one at a time, and tell us what changed:
 6. **Optional, your decision: give Windows more time (`TdrDelay`).** The default is 2 seconds. In the registry,
    `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers`, a DWORD `TdrDelay` of `10` (seconds)
    lets a long GPU job finish before Windows resets the driver; restart the PC. It hides the symptom and does not fix
-   a GPU that has really hung, and a hung GPU then freezes the screen for those 10 seconds. PolyStrata changes no Windows
+   a GPU that has really hung, and a hung GPU then freezes the screen for those 10 seconds. 4gbVramStrata changes no Windows
    setting itself; to undo it, delete the value.
 7. **Driver:** use the newest AMD Software release for your card (Adrenalin, not a Windows Update driver) and restart
    after installing. If it started after a driver update, tell us both versions; going back one version is a fair
@@ -192,4 +197,4 @@ R9700) in the `env` block of the server JSON, then a restart. Experimental, one 
 ## Still stuck?
 
 Look in the [full troubleshooting table](DETAILS.md#troubleshooting), or open an
-[issue](https://github.com/VecSzn/PolyStrata/issues) and attach `strata-<model>.log` from the PolyStrata folder.
+[issue](https://github.com/VecSzn/PolyStrata/issues) and attach `strata-<model>.log` from the 4gbVramStrata folder.

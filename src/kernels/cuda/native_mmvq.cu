@@ -28,6 +28,7 @@
 #include "strata/kernels/q8_1_finite.hpp"
 #include "strata/kernels/iq_kernels.hpp"
 #include "strata/kernels/gfx_arch.hpp"
+#include "strata/core/sm75_series.hpp"
 #include "s26_tsum.cuh"
 #include "slots.cuh"
 #if !defined(__HIPCC__)
@@ -120,6 +121,11 @@ struct IQ4NLBlock {
     half d;
     uint8_t qs[16];
 };
+// MXFP4: a byte of exponent, then 32 four-bit codes.  No alignment: a run of them has blocks at every byte.
+struct MXFP4Block {
+    uint8_t e;
+    uint8_t qs[16];
+};
 static_assert(sizeof(Q5KBlock) == 176 && alignof(Q5KBlock) == 4);
 static_assert(sizeof(Q81Block) == 36 && alignof(Q81Block) == 4);
 static_assert(sizeof(Q20Block) == 18 && alignof(Q20Block) == 2 && offsetof(Q20Block, qs) == 2);
@@ -142,6 +148,7 @@ static_assert(sizeof(Q50Block) == 22 && alignof(Q50Block) == 2 &&
               offsetof(Q50Block, qh) == 2 && offsetof(Q50Block, qs) == 6);
 static_assert(sizeof(Q80Block) == 34 && alignof(Q80Block) == 2 && offsetof(Q80Block, qs) == 2);
 static_assert(sizeof(IQ4NLBlock) == 18 && alignof(IQ4NLBlock) == 2 && offsetof(IQ4NLBlock, qs) == 2);
+static_assert(sizeof(MXFP4Block) == 17 && alignof(MXFP4Block) == 1 && offsetof(MXFP4Block, qs) == 1);
 
 __device__ __forceinline__ float warp_sum(float x) {
 #pragma unroll
@@ -192,7 +199,7 @@ __global__ void native_swiglu_quantize_q8_1_kernel(const float* __restrict__ gat
     if (i % Q8K == 0) y[i / Q8K].ds = q8_1_ds(d, sum);
 }
 
-// native_add_rms_norm_q8_1: a block a row.  The sum of squares, the scale and the product are poly's rms_norm_kernel
+// native_add_rms_norm_q8_1: a block a row.  The sum of squares, the scale and the product are fourgbvram's rms_norm_kernel
 // with its block size (SUM threads of the block) and its IEEE operations written out (this file is built with
 // --use_fast_math).  Then every thread of the block takes values, a warp 32 of one Q8_1 block, and quantizes them as
 // native_quantize_q8_1_kernel does: more threads than the sum's make the row's quantization fewer steps.
@@ -560,10 +567,14 @@ __device__ __align__(4) int8_t iq4nl_values[16] = {
     -127, -104, -83, -65, -49, -35, -22, -10, 1, 13, 25, 38, 53, 69, 89, 113
 };
 
-__device__ __forceinline__ int2 iq4_table_lookup(int q4) {
+// MXFP4's codes are E2M1 values doubled, so a block's scale is its power of two halved: llama.cpp's kvalues_mxfp4.
+__device__ __align__(4) int8_t mxfp4_values[16] = {0, 1, 2, 3, 4, 6, 8, 12, 0, -1, -2, -3, -4, -6, -8, -12};
+
+// Eight four-bit codes of q4 looked up in a codebook of 16: the even nibbles' values in .x, the odd ones' in .y.
+__device__ __forceinline__ int2 table16_lookup(const int8_t* table, int q4) {
 #if defined(STRATA_HIP_GFX906)
     // AMD: llama.cpp's HIP lookup (see iq_kernels.cu get_int_from_table_16): 4 v_perm_b32 per 8 values
-    const uint32_t* v32 = reinterpret_cast<const uint32_t*>(iq4nl_values);
+    const uint32_t* v32 = reinterpret_cast<const uint32_t*>(table);
     const uint32_t q_even = (uint32_t) q4, q_odd = (uint32_t) q4 >> 4;
     const uint32_t el = __builtin_amdgcn_perm(v32[1], v32[0], q_even & 0x07070707u);
     const uint32_t ol = __builtin_amdgcn_perm(v32[1], v32[0], q_odd & 0x07070707u);
@@ -572,7 +583,7 @@ __device__ __forceinline__ int2 iq4_table_lookup(int q4) {
     return make_int2((int) __builtin_amdgcn_perm(eh, el, 0x03020100u | ((q_even & 0x08080808u) >> 1)),
                      (int) __builtin_amdgcn_perm(oh, ol, 0x03020100u | ((q_odd & 0x08080808u) >> 1)));
 #else
-    const uint32_t* table32 = reinterpret_cast<const uint32_t*>(iq4nl_values);
+    const uint32_t* table32 = reinterpret_cast<const uint32_t*>(table);
     uint32_t tmp[2];
     const uint32_t low_high_selection_indices = 0x32103210 | ((q4 & 0x88888888) >> 1);
 #pragma unroll
@@ -584,6 +595,19 @@ __device__ __forceinline__ int2 iq4_table_lookup(int q4) {
     }
     return make_int2(__byte_perm(tmp[0], tmp[1], 0x6420), __byte_perm(tmp[0], tmp[1], 0x7531));
 #endif
+}
+
+__device__ __forceinline__ int2 iq4_table_lookup(int q4) { return table16_lookup(iq4nl_values, q4); }
+
+// Four bytes from any byte address, little-endian, as llama.cpp's get_int_b1.
+__device__ __forceinline__ int load_int_b1(const void* ptr, int i32) {
+    const auto* x = static_cast<const uint8_t*>(ptr);
+    return x[4 * i32] | x[4 * i32 + 1] << 8 | x[4 * i32 + 2] << 16 | x[4 * i32 + 3] << 24;
+}
+
+// A block's power of two, halved, as llama.cpp's ggml_cuda_e8m0_to_fp32(e) * 0.5f.
+__device__ __forceinline__ float mxfp4_scale(uint8_t e) {
+    return __uint_as_float(e == 0 ? 0x00400000u : (uint32_t) e << 23) * 0.5f;
 }
 
 // Exact pinned vec_dot_iq4_xs_q8_1: a lane consumes one 32-element subblock,
@@ -889,7 +913,22 @@ __device__ __forceinline__ float small_q8_dot(const IQ4NLBlock* __restrict__ w,
     return d * sumi;
 }
 
-// QI=4 for Q4_0/Q5_0/IQ4_NL and QI=8 for Q8_0. With VDR=2 this preserves
+// llama.cpp's vec_dot_mxfp4_q8_1 with VDR 2.
+__device__ __forceinline__ float small_q8_dot(const MXFP4Block* __restrict__ w,
+                                             const Q81Block* __restrict__ x, int iqs) {
+    const int* q8 = reinterpret_cast<const int*>(x->qs) + iqs;
+    int sumi = 0;
+#pragma unroll
+    for (int i = 0; i < 2; ++i) {
+        const int2 v = table16_lookup(mxfp4_values, load_int_b1(w->qs, iqs + i));
+        sumi = STRATA_DP4A(v.x, q8[i], sumi);
+        sumi = STRATA_DP4A(v.y, q8[i + 4], sumi);
+    }
+    const float d = mxfp4_scale(w->e) * __low2float(x->ds);
+    return d * sumi;
+}
+
+// QI=4 for Q4_0/Q5_0/IQ4_NL/MXFP4 and QI=8 for Q8_0. With VDR=2 this preserves
 // the pinned 64/32-block iteration and 2048/1024-element small-K thresholds.
 template<typename Weight, int Qi, bool SmallK>
 __launch_bounds__(WARPS * WARP, 1)
@@ -1270,11 +1309,39 @@ struct SmallTraits<IQ4NLBlock, 4> {
     }
 };
 
+template<>
+struct SmallTraits<MXFP4Block, 4> {
+    using Block = MXFP4Block;
+    static constexpr int DIV = 32, T = 2, KBY = 1, BPI = 2 * WARPS * WARP / 4;
+    __device__ static int kqs(int tid) { return 2 * (tid % 2); }
+    struct W { int2 v[2]; float dw; };
+    __device__ static W load(const Block* __restrict__ w, int iqs) {
+        W r;
+#pragma unroll
+        for (int i = 0; i < 2; ++i) r.v[i] = table16_lookup(mxfp4_values, load_int_b1(w->qs, iqs + i));
+        r.dw = mxfp4_scale(w->e);
+        return r;
+    }
+    __device__ static float apply(const W& r, const Q81Block* __restrict__ x, int iqs) {
+        const int* q8 = reinterpret_cast<const int*>(x->qs) + iqs;
+        int sumi = 0;
+#pragma unroll
+        for (int i = 0; i < 2; ++i) {
+            sumi = STRATA_DP4A(r.v[i].x, q8[i], sumi);
+            sumi = STRATA_DP4A(r.v[i].y, q8[i + 4], sumi);
+        }
+        const float d = r.dw * __low2float(x->ds);
+        return d * sumi;
+    }
+};
+
 // NW warps per block and ROWS rows per block. The EXACT layout (NW = 4, ROWS = 1, or 4 for small K) is the
 // ncols = 1 layout and keeps every column bitwise equal to a single-column call. The UPSTREAM layout is
 // llama.cpp's generic multi-column table (ncols 2-4: 4 warps; 5-8: 2 warps; always 2 rows per block): faster,
 // equal to ncols = 1 only to float rounding (the cross-warp reduction groups partial sums differently).
 bool g_multi_exact = true;   // until the upstream layout is timed on an idle GPU (plan rule: default only what is measured)
+// B6 STRATA_B6_MMVQ_ROWS (lab, default 0 = off): see native_mmvq_set_b6_rows
+int g_b6_rows = [] { const char* v = std::getenv("STRATA_B6_MMVQ_ROWS"); return v ? std::atoi(v) : 0; }();
 
 // S26 STRATA_TSUM=1 (TS): warp 0's NCOLS x ROWS sums as one transposed butterfly (s26_tsum.cuh), bitwise the same
 static bool s26_tsum_on() {
@@ -1424,10 +1491,174 @@ bool q8_0_rows1(int n_in, int n_out) {
     }
 }
 
+// ---- B6 STRATA_B6_MMVQ_ROWS (lab, opt-in): the exact multi-column layout with each column's activation fragment
+// loaded ONCE per weight block and reused across ROWS rows of the block (the default kernel reloads it for every row
+// it applies it to, and the K-quant scales once per column).  A thread keeps the same blocks (kbx = tid / T, stride
+// BPI with WARPS warps), each (row, column) sum adds the same per-block values in the same order, and the cross-warp
+// and warp reductions are the default kernel's: every output is bitwise the default exact layout's, so bitwise a
+// single-column call.  Only the formats with a B6X below; the others keep the default kernel.
+template<typename F> struct B6X { static constexpr bool ok = false; };
+template<> struct B6X<Q6KTraits> {
+    static constexpr bool ok = true;
+    struct X { int u[2]; float d8[2]; };
+    struct W { int vl, vh, sc[2]; float d; };
+    __device__ static X xload(const Q81Block* x, int iqs) {
+        X r;
+        const int off = 4 * (iqs / 16) + (iqs % 16) / 8;   // Q6KTraits::load's bq8_offset
+#pragma unroll
+        for (int i = 0; i < 2; ++i) {
+            r.u[i] = reinterpret_cast<const int*>(x[off + 2 * i].qs)[iqs % 8];
+            r.d8[i] = __low2float(x[off + 2 * i].ds);
+        }
+        return r;
+    }
+    __device__ static W wload(const Q6KBlock* __restrict__ w, int iqs) {
+        const Q6KTraits::W t = Q6KTraits::load(w, iqs);
+        W r;
+        r.vl = t.vl;
+        r.vh = t.vh;
+        r.sc[0] = t.scales[0];
+        r.sc[1] = t.scales[4];
+        r.d = t.d;
+        return r;
+    }
+    __device__ static float dot(const W& w, const X& x) {   // q6_q8_dot_impl, the scales already in registers
+        float sumf = 0.0f;
+#pragma unroll
+        for (int i = 0; i < 2; ++i) {
+            const int vil = (w.vl >> (4 * i)) & 0x0f0f0f0f;
+            const int vih = ((w.vh >> (4 * i)) << 4) & 0x30303030;
+            const int vi = __vsubss4(vil | vih, 0x20202020);
+            sumf += x.d8[i] * (STRATA_DP4A(vi, x.u[i], 0) * w.sc[i]);
+        }
+        return w.d * sumf;
+    }
+};
+template<typename T, int KIND> struct B6XK {   // Q4_K (KIND 4) and Q5_K (KIND 5): the same activation fragment
+    static constexpr bool ok = true;
+    struct X { int u[4]; float d8[2]; };
+    using W = typename T::W;
+    __device__ static X xload(const Q81Block* bq8, int iqs) {
+        X r;
+        const int off = 2 * ((iqs / 2) / 4);   // the traits' bq8_offset
+#pragma unroll
+        for (int i = 0; i < 2; ++i) {
+            const Q81Block* bq8i = bq8 + off + i;
+            r.d8[i] = __low2float(bq8i->ds);
+            const int* q8 = reinterpret_cast<const int*>(bq8i->qs) + ((iqs / 2) % 4);
+            r.u[2 * i] = q8[0];
+            r.u[2 * i + 1] = q8[4];
+        }
+        return r;
+    }
+    __device__ static W wload(const typename T::Block* __restrict__ w, int iqs) { return T::load(w, iqs); }
+    __device__ static float dot(const W& w, const X& x) {
+        const uint8_t* sc = reinterpret_cast<const uint8_t*>(w.aux);
+        if constexpr (KIND == 4) return q4_q8_dot_impl(w.v, x.u, sc, sc + 2, w.dm, x.d8);
+        else return q5_q8_dot_impl(w.vl, w.vh, x.u, sc, sc + 2, w.dm, x.d8);
+    }
+};
+template<> struct B6X<Q4KTraits> : B6XK<Q4KTraits, 4> {};
+template<> struct B6X<Q5KTraits> : B6XK<Q5KTraits, 5> {};
+template<> struct B6X<IQ4XSTraits> {
+    static constexpr bool ok = true;
+    struct X { int u0[4], u1[4]; float dx; };
+    using W = IQ4XSTraits::W;
+    __device__ static X xload(const Q81Block* x, int iqs) {
+        X r;
+#pragma unroll
+        for (int j = 0; j < 4; ++j) {
+            r.u0[j] = reinterpret_cast<const int*>(x[iqs / 4].qs)[j];
+            r.u1[j] = reinterpret_cast<const int*>(x[iqs / 4].qs)[j + 4];
+        }
+        r.dx = __low2float(x[iqs / 4].ds);
+        return r;
+    }
+    __device__ static W wload(const IQ4XSBlock* __restrict__ w, int iqs) { return IQ4XSTraits::load(w, iqs); }
+    __device__ static float dot(const W& w, const X& x) {   // IQ4XSTraits::apply
+        int sumi = 0;
+#pragma unroll
+        for (int j = 0; j < 4; ++j) {
+            sumi = STRATA_DP4A(w.v[j].x, x.u0[j], sumi);
+            sumi = STRATA_DP4A(w.v[j].y, x.u1[j], sumi);
+        }
+        sumi *= w.ls - 32;
+        const float d = w.dw * x.dx;
+        return d * sumi;
+    }
+};
+
+template<typename F, int NCOLS, int ROWS>
+__launch_bounds__(WARPS * WARP, 1)
+__global__ void b6_mmvq_rows_kernel(const typename F::Block* __restrict__ w, const Q81Block* __restrict__ x,
+                                    float* __restrict__ y, int n_in, int n_out) {
+    using XB = B6X<F>;
+    const int tid = WARP * int(threadIdx.y) + int(threadIdx.x);
+    const int row0 = ROWS * int(blockIdx.x);
+    const int blocks_per_row = n_in / F::DIV;
+    const int x_stride = n_in / Q8K;
+    const int kqs = F::kqs(tid);
+    float tmp[NCOLS][ROWS] = {};
+    for (int kbx = tid / F::T; kbx < blocks_per_row; kbx += F::BPI) {
+        const int kby = kbx * F::KBY;
+        typename XB::X xv[NCOLS];
+#pragma unroll
+        for (int j = 0; j < NCOLS; ++j) xv[j] = XB::xload(x + std::size_t(j) * x_stride + kby, kqs);
+#pragma unroll
+        for (int i = 0; i < ROWS; ++i) {
+            if (row0 + i < n_out) {
+                const typename XB::W wv = XB::wload(w + std::size_t(row0 + i) * blocks_per_row + kbx, kqs);
+#pragma unroll
+                for (int j = 0; j < NCOLS; ++j) tmp[j][i] += XB::dot(wv, xv[j]);
+            }
+        }
+    }
+    __shared__ float partial[WARPS - 1][NCOLS][ROWS][WARP];
+    if (threadIdx.y > 0) {
+#pragma unroll
+        for (int j = 0; j < NCOLS; ++j)
+#pragma unroll
+            for (int i = 0; i < ROWS; ++i) partial[threadIdx.y - 1][j][i][threadIdx.x] = tmp[j][i];
+    }
+    __syncthreads();
+    if (threadIdx.y > 0) return;
+#pragma unroll
+    for (int j = 0; j < NCOLS; ++j) {
+#pragma unroll
+        for (int i = 0; i < ROWS; ++i) {
+#pragma unroll
+            for (int l = 0; l < WARPS - 1; ++l) tmp[j][i] += partial[l][j][i][threadIdx.x];
+            tmp[j][i] = warp_sum(tmp[j][i]);
+            if (threadIdx.x == i && row0 + i < n_out) y[std::size_t(j) * n_out + row0 + i] = tmp[j][i];
+        }
+    }
+}
+
+// the B6 launch for a format that has a B6X: true when it ran.  g_b6_rows: 1 = 2 rows per block (the fastest on both
+// cards in b6_mmvq_bench), else 2 / 4 / 8 rows.
+template<typename F, int NCOLS>
+bool b6_launch(const typename F::Block* w, const Q81Block* x, float* y, int n_in, int n_out, cudaStream_t s) {
+    if constexpr (!B6X<F>::ok) {
+        return false;
+    } else {
+        if (g_b6_rows <= 0 || !g_multi_exact || s26_tsum_on() || n_in / F::DIV < 1) return false;
+        const int rows = g_b6_rows == 1 ? 2 : g_b6_rows;
+        const dim3 threads(WARP, WARPS);
+        if (rows == 2)
+            b6_mmvq_rows_kernel<F, NCOLS, 2><<<unsigned((n_out + 1) / 2), threads, 0, s>>>(w, x, y, n_in, n_out);
+        else if (rows == 8)
+            b6_mmvq_rows_kernel<F, NCOLS, 8><<<unsigned((n_out + 7) / 8), threads, 0, s>>>(w, x, y, n_in, n_out);
+        else
+            b6_mmvq_rows_kernel<F, NCOLS, 4><<<unsigned((n_out + 3) / 4), threads, 0, s>>>(w, x, y, n_in, n_out);
+        return true;
+    }
+}
+
 template<typename F, int NCOLS>
 void launch_multi_n(const void* weights, const void* x_q8_1, float* y, int n_in, int n_out, cudaStream_t s) {
     const auto* w = static_cast<const typename F::Block*>(weights);
     const auto* x = static_cast<const Q81Block*>(x_q8_1);
+    if (b6_launch<F, NCOLS>(w, x, y, n_in, n_out, s)) return;   // STRATA_B6_MMVQ_ROWS
     if (!g_multi_exact) {
         constexpr int NW = NCOLS <= 4 ? 4 : 2;
         const unsigned blocks = unsigned((std::size_t(n_out) + 1) / 2);
@@ -1512,9 +1743,71 @@ __global__ void native_mmvq_slots_kernel(S slots, int n_in, int n_out) {
     }
 }
 
+// native_mmvq_slots_kernel when a row's blocks all fall to the first warp's lanes (blocks_per_row * T <= WARP, e.g. an
+// expert's IQ4_XS down projection of 512 values: 2 blocks, 16 lanes): there the other warps only add zeros, so each
+// warp takes rows of its own instead - the same lanes' terms, the same three zero partials and the same warp_sum,
+// bit for bit, with a quarter of the blocks and no shared memory or barrier.  Qwen3.6 UD-Q3_K_M on an RX 7800 XT:
+// the down products were 32% of a decode's GPU time at ~75 GB/s.  Taken where native_mmvq_slots_wide() says so.
+template<typename F, int ROWS, typename S, int G = 1>
+__launch_bounds__(WARPS * WARP)
+__global__ void native_mmvq_slots_warp_kernel(S slots, int n_in, int n_out) {
+    // G row groups a warp, WARP / G lanes each (G = 2 when a row needs 16 lanes or fewer: the IQ4_XS down projection's
+    // 512 values are 16): the full warp_sum's steps between the groups added the zeros of the lanes that had none of
+    // the row, so a group adds those zeros and sums its own lanes - the same bits again
+    constexpr int L = WARP / G;
+    const SlotPtrs at = slot_ptrs(slots, int(blockIdx.y));
+    const auto* w = static_cast<const typename F::Block*>(at.w);
+    const auto* x = static_cast<const Q81Block*>(at.x);
+    float* y = at.y;
+    const int lane = int(threadIdx.x), grp = lane / L, local = lane - grp * L;
+    const int warp_row0 = ROWS * (int(blockIdx.x) * WARPS + int(threadIdx.y)) * G;
+    if (warp_row0 >= n_out) return;   // whole warps: no barrier below
+    const int row0 = warp_row0 + ROWS * grp;
+    const int blocks_per_row = n_in / F::DIV;
+    float tmp[ROWS] = {};
+    if (row0 < n_out) {
+        for (int kbx = local / F::T; kbx < blocks_per_row; kbx += F::BPI) {
+            const int kby = kbx * F::KBY;
+            const int kqs = F::kqs(local);
+#pragma unroll
+            for (int i = 0; i < ROWS; ++i) {
+                if (row0 + i < n_out) {
+                    const std::size_t block = std::size_t(row0 + i) * blocks_per_row + kbx;
+                    tmp[i] += F::apply(F::load(w + block, kqs), x + kby, kqs);
+                }
+            }
+        }
+    }
+#pragma unroll
+    for (int i = 0; i < ROWS; ++i) {
+#pragma unroll
+        for (int l = 0; l < WARPS - 1; ++l) tmp[i] += 0.0f;   // the block kernel's partials of the other warps
+        if constexpr (G == 1) {
+            tmp[i] = warp_sum(tmp[i]);
+        } else {
+#pragma unroll
+            for (int offset = WARP / 2; offset >= L; offset >>= 1) tmp[i] += 0.0f;   // the other group's lanes: zeros
+#pragma unroll
+            for (int offset = L / 2; offset > 0; offset >>= 1) tmp[i] += __shfl_xor_sync(0xffffffff, tmp[i], offset, WARP);
+        }
+        if (local == i && row0 + i < n_out) y[row0 + i] = tmp[i];
+    }
+}
+
 template<typename F, typename S>
 void launch_slots(const S& slots, int count, int n_in, int n_out, cudaStream_t s) {
     const dim3 threads(WARP, WARPS);
+    if (native_mmvq_slots_wide() && n_in / F::DIV * F::T <= WARP && n_in % F::DIV == 0) {
+        constexpr int ROWS = 2;
+        if (n_in / F::DIV * F::T <= WARP / 2) {   // a row in half a warp: two rows' groups a warp
+            const dim3 blocks(unsigned((std::size_t(n_out) + 2 * ROWS * WARPS - 1) / (2 * ROWS * WARPS)), unsigned(count));
+            native_mmvq_slots_warp_kernel<F, ROWS, S, 2><<<blocks, threads, 0, s>>>(slots, n_in, n_out);
+        } else {
+            const dim3 blocks(unsigned((std::size_t(n_out) + ROWS * WARPS - 1) / (ROWS * WARPS)), unsigned(count));
+            native_mmvq_slots_warp_kernel<F, ROWS, S, 1><<<blocks, threads, 0, s>>>(slots, n_in, n_out);
+        }
+        return;
+    }
     if (n_in / F::DIV < F::BPI) {
         constexpr int ROWS = 2;
         const dim3 blocks(unsigned((std::size_t(n_out) + ROWS - 1) / ROWS), unsigned(count));
@@ -1761,6 +2054,33 @@ __global__ void native_q8_1_interleave_kernel(const Q81Block* __restrict__ y, in
     bm[(std::size_t(b) * 8 + p) * cp + c] = q;
     pm[(std::size_t(p) * nb + b) * cp + c] = q;
     if (p == 0) dl[std::size_t(b) * cp + c] = __low2float(blk.ds);
+}
+
+// native_quantize_q8_1_kernel and native_q8_1_interleave_kernel in one launch: the same q8_1 blocks, and the
+// interleaved copy's ints and scales (an int is four codes, gathered from lanes 4p..4p+3 with two shuffles).
+__global__ void native_quantize_q8_1_il_kernel(const float* __restrict__ x, Q81Block* __restrict__ y,
+                                               int* __restrict__ bm, int* __restrict__ pm, float* __restrict__ dl,
+                                               int n_in, int n_total, int cp) {
+    const int i = int(blockIdx.x) * QUANT_THREADS + int(threadIdx.x);
+    if (i >= n_total) return;   // n_total is a multiple of 32: only whole warps return
+    const float xi = x[i];
+    const float amax = warp_max(fabsf(xi));
+    const float sum = warp_sum(xi);
+    const float d = q8_1_finite(amax / 127.0f);
+    const int8_t q = q8_1_quant(xi, d, amax);
+    y[i / Q8K].qs[i % Q8K] = q;
+    const auto ds = q8_1_ds(d, sum);
+    if (i % Q8K == 0) y[i / Q8K].ds = ds;
+    const int lane = int(threadIdx.x) & 31;
+    unsigned v = unsigned(uint8_t(q)) << (8 * (lane & 3));
+    v |= __shfl_xor_sync(0xffffffffu, v, 1);
+    v |= __shfl_xor_sync(0xffffffffu, v, 2);
+    const int nb = n_in / Q8K, c = i / n_in, b = (i - c * n_in) / Q8K, pp = lane >> 2;
+    if ((lane & 3) == 0) {
+        bm[(std::size_t(b) * 8 + pp) * cp + c] = int(v);
+        pm[(std::size_t(pp) * nb + b) * cp + c] = int(v);
+    }
+    if (lane == 0) dl[std::size_t(b) * cp + c] = __low2float(ds);
 }
 
 #endif  // !__HIPCC__
@@ -2324,6 +2644,8 @@ void native_q6_k_unpack(const void* weights) {
 
 void native_mmvq_set_multi_exact(bool exact) { g_multi_exact = exact; }
 bool native_mmvq_multi_exact() { return g_multi_exact; }
+void native_mmvq_set_b6_rows(int mode) { g_b6_rows = mode; }
+int native_mmvq_b6_rows() { return g_b6_rows; }
 
 std::size_t native_q8_1_bytes(int n_in, int ncols) {
     validate_shape(n_in, ncols);
@@ -2331,7 +2653,9 @@ std::size_t native_q8_1_bytes(int n_in, int ncols) {
 }
 
 void native_quantize_q8_1(const float* x, void* x_q8_1, int n_in, int ncols, void* stream) {
-    validate_shape(n_in, ncols);
+    // one flat vector whatever ncols is (below): up to kMmvqSlotsMax columns, a slots launch's activations
+    validate_shape(n_in, 1);
+    if (ncols < 1 || ncols > kMmvqSlotsMax) throw std::invalid_argument("native_quantize_q8_1 requires 1 <= ncols <= 32");
     validate_pointer(x);
     validate_pointer(x_q8_1);
     validate_stream(stream);
@@ -2422,6 +2746,73 @@ void native_q5_k_f32(const void* weights, const float* x, void* scratch_q8_1,
     native_q5_k_mmvq(weights, scratch_q8_1, y, n_in, n_out, ncols, stream);
 }
 
+namespace {
+// Turing: Q2_0 one to four columns with one warp per RPW rows.  The exact layout gives each row four warps, a chunk of
+// a 64-weight block per thread and a cross-warp reduction; at the engine's 2560 inputs (40 blocks a row) 48 of the 128
+// threads have no chunk and the reduction is most of the time (QSA attn_q 2560x12288 at 3 columns: 80 us, 110 GB/s on
+// an RTX 2080 Ti).  Here lane l runs the chunks of the exact kernel's threads l, 32+l, 64+l and 96+l in their loop
+// order, adds the four sums as warp 0 adds the other warps' partials, then the same warp_sum: every output is bit for
+// bit native_q2_0_mmvq_kernel's (one column) and launch_multi's exact layout (two to four).  80 -> 31 us at three
+// columns, 37 -> 25 us at one.  STRATA_Q2_WARP=0 keeps the old kernels; =1 takes this one on any CUDA card.
+constexpr int kQ20WarpRows = 4;
+template <int NCOLS>
+__global__ void __launch_bounds__(WARPS * WARP) q2_0_warp_rows_kernel(const Q20Block* __restrict__ w,
+                                                                      const Q81Block* __restrict__ x,
+                                                                      float* __restrict__ y, int n_in, int n_out) {
+    using F = Q20Traits;
+    constexpr int RPW = kQ20WarpRows;
+    static_assert(F::T == 2 && F::BPI == WARPS * WARP / 2, "the lanes play the exact layout's threads");
+    const int lane = int(threadIdx.x) & (WARP - 1);
+    const int row0 = (int(blockIdx.x) * WARPS + int(threadIdx.x) / WARP) * RPW;
+    if (row0 >= n_out) return;
+    const int bpr = n_in / F::DIV, x_stride = n_in / Q8K;
+    float acc[NCOLS][RPW];
+#pragma unroll
+    for (int v = 0; v < WARPS; ++v) {   // the exact kernel's thread WARP * v + lane
+        const int tid = WARP * v + lane;
+        const int kqs = F::kqs(tid);
+        float tmp[NCOLS][RPW] = {};
+        for (int kbx = tid / F::T; kbx < bpr; kbx += F::BPI) {
+            const int kby = kbx * F::KBY;
+#pragma unroll
+            for (int i = 0; i < RPW; ++i) {
+                if (row0 + i < n_out) {
+                    const F::W wv = F::load(w + std::size_t(row0 + i) * bpr + kbx, kqs);
+#pragma unroll
+                    for (int j = 0; j < NCOLS; ++j) tmp[j][i] += F::apply(wv, x + std::size_t(j) * x_stride + kby, kqs);
+                }
+            }
+        }
+#pragma unroll
+        for (int j = 0; j < NCOLS; ++j)
+#pragma unroll
+            for (int i = 0; i < RPW; ++i) acc[j][i] = v == 0 ? tmp[j][i] : acc[j][i] + tmp[j][i];
+    }
+#pragma unroll
+    for (int j = 0; j < NCOLS; ++j)
+#pragma unroll
+        for (int i = 0; i < RPW; ++i) {
+            const float sum = warp_sum(acc[j][i]);
+            if (lane == i && row0 + i < n_out) y[std::size_t(j) * n_out + row0 + i] = sum;
+        }
+}
+bool q2_0_warp_rows_on() {
+    static int on[16] = {};   // by device ordinal: 0 unknown, 1 yes, -1 no
+    static const int env = [] { const char* v = std::getenv("STRATA_Q2_WARP"); return v ? (v[0] == '0' ? 0 : 1) : -1; }();
+    if (env >= 0) return env == 1;
+    int dev = 0;
+    if (cudaGetDevice(&dev) != cudaSuccess || dev < 0 || dev >= 16) return false;
+    if (on[dev] == 0) {
+        int maj = 0, mnr = 0;
+        const bool ok = cudaDeviceGetAttribute(&maj, cudaDevAttrComputeCapabilityMajor, dev) == cudaSuccess &&
+                        cudaDeviceGetAttribute(&mnr, cudaDevAttrComputeCapabilityMinor, dev) == cudaSuccess;
+        if (!ok) cudaGetLastError();
+        on[dev] = ok && strata::sm75_default(maj, mnr) ? 1 : -1;   // Turing only, with STRATA_SM75_PERF=1
+    }
+    return on[dev] > 0;
+}
+}  // namespace
+
 void native_q2_0_mmvq(const void* weights, const void* x_q8_1, float* y,
                       int n_in, int n_out, int ncols, void* stream) {
     validate_shape(n_in, ncols, 64);
@@ -2431,6 +2822,24 @@ void native_q2_0_mmvq(const void* weights, const void* x_q8_1, float* y,
     validate_pointer(y);
     validate_stream(stream);
     STRATA_WAVE_MMVQ(Q20Traits)
+#if !defined(__HIPCC__)
+    // one column always (bitwise the single-column kernel); two to four only where the exact layout is the one in use
+    if (ncols <= 4 && (ncols == 1 || g_multi_exact) && q2_0_warp_rows_on()) {
+        const auto* w = static_cast<const Q20Block*>(weights);
+        const auto* x = static_cast<const Q81Block*>(x_q8_1);
+        const auto s = static_cast<cudaStream_t>(stream);
+        const int warps = (n_out + kQ20WarpRows - 1) / kQ20WarpRows;
+        const unsigned blocks = unsigned((warps + WARPS - 1) / WARPS);
+        switch (ncols) {
+            case 1: q2_0_warp_rows_kernel<1><<<blocks, WARPS * WARP, 0, s>>>(w, x, y, n_in, n_out); break;
+            case 2: q2_0_warp_rows_kernel<2><<<blocks, WARPS * WARP, 0, s>>>(w, x, y, n_in, n_out); break;
+            case 3: q2_0_warp_rows_kernel<3><<<blocks, WARPS * WARP, 0, s>>>(w, x, y, n_in, n_out); break;
+            default: q2_0_warp_rows_kernel<4><<<blocks, WARPS * WARP, 0, s>>>(w, x, y, n_in, n_out); break;
+        }
+        launch_check();
+        return;
+    }
+#endif
     if (ncols > 1) {
         launch_multi<Q20Traits>(weights, x_q8_1, y, n_in, n_out, ncols, stream);
         launch_check();
@@ -2730,7 +3139,7 @@ bool native_mmvq_supported(int ggml_type) noexcept {
     return ggml_type == 2 || ggml_type == 6 || ggml_type == 7 || ggml_type == 8 || ggml_type == 10 || ggml_type == 11 ||
            ggml_type == 12 || ggml_type == 13 || ggml_type == 14 || ggml_type == 20 ||
            ggml_type == 23 || ggml_type == 42 || ggml_type == 16 || ggml_type == 17 || ggml_type == 18 ||
-           ggml_type == 21 || ggml_type == 22 || ggml_type == 29;
+           ggml_type == 21 || ggml_type == 22 || ggml_type == 29 || ggml_type == 39;
 }
 
 std::size_t native_mmvq_weight_bytes(int ggml_type, int n_in, int n_out) {
@@ -2741,6 +3150,7 @@ std::size_t native_mmvq_weight_bytes(int ggml_type, int n_in, int n_out) {
     case 7: block_elems = 32; block_bytes = 24; break;
     case 8: block_elems = 32; block_bytes = 34; break;
     case 20: block_elems = 32; block_bytes = 18; break;
+    case 39: block_elems = 32; block_bytes = 17; break;
     case 10: block_elems = 256; block_bytes = 84; break;
     case 11: block_elems = 256; block_bytes = 110; break;
     case 12: block_elems = 256; block_bytes = 144; break;
@@ -2769,6 +3179,7 @@ void native_mmvq(int ggml_type, const void* weights, const void* x_q8_1, float* 
     case 7: iq_mmvq(ggml_type, weights, x_q8_1, y, n_in, n_out, ncols, stream); break;
     case 8: native_q8_0_mmvq(weights, x_q8_1, y, n_in, n_out, ncols, stream); break;
     case 20: native_iq4_nl_mmvq(weights, x_q8_1, y, n_in, n_out, ncols, stream); break;
+    case 39: small_mmvq<MXFP4Block, 4>(weights, x_q8_1, y, n_in, n_out, ncols, stream); break;
     case 10: native_q2_k_mmvq(weights, x_q8_1, y, n_in, n_out, ncols, stream); break;
     case 11: native_q3_k_mmvq(weights, x_q8_1, y, n_in, n_out, ncols, stream); break;
     case 12: native_q4_k_mmvq(weights, x_q8_1, y, n_in, n_out, ncols, stream); break;
@@ -2791,7 +3202,7 @@ int slots_kind(int ggml_type) {
     return 0;   // the wave layout has no kernel for it
 #else
     switch (ggml_type) {
-    case 2: case 6: case 8: case 20: case 10: case 11: case 12: case 13: case 14: case 23: case 42: return 1;
+    case 2: case 6: case 8: case 20: case 39: case 10: case 11: case 12: case 13: case 14: case 23: case 42: return 1;
     case 7: case 16: case 17: case 18: case 21: case 22: case 29: return 2;   // the ones native_mmvq() hands to iq_mmvq()
     default: return 0;
     }
@@ -2800,7 +3211,7 @@ int slots_kind(int ggml_type) {
 
 template<typename S>
 void launch_slots_of(int ggml_type, const S& slots, int count, int n_in, int n_out, void* stream) {
-    const bool small = ggml_type == 2 || ggml_type == 6 || ggml_type == 8 || ggml_type == 20;
+    const bool small = ggml_type == 2 || ggml_type == 6 || ggml_type == 8 || ggml_type == 20 || ggml_type == 39;
     validate_shape(n_in, 1, small || ggml_type == 7 ? 32 : ggml_type == 42 ? 64 : 256);
     validate_stream(stream);
     if (slots_kind(ggml_type) == 2) {
@@ -2814,6 +3225,7 @@ void launch_slots_of(int ggml_type, const S& slots, int count, int n_in, int n_o
     case 6: launch_slots<SmallTraits<Q50Block, 4>>(slots, count, n_in, n_out, s); break;
     case 8: launch_slots<SmallTraits<Q80Block, 8>>(slots, count, n_in, n_out, s); break;
     case 20: launch_slots<SmallTraits<IQ4NLBlock, 4>>(slots, count, n_in, n_out, s); break;
+    case 39: launch_slots<SmallTraits<MXFP4Block, 4>>(slots, count, n_in, n_out, s); break;
     case 10: launch_slots<Q2KTraits>(slots, count, n_in, n_out, s); break;
     case 11: launch_slots<Q3KTraits>(slots, count, n_in, n_out, s); break;
     case 12: launch_slots<Q4KTraits>(slots, count, n_in, n_out, s); break;
@@ -2827,10 +3239,22 @@ void launch_slots_of(int ggml_type, const S& slots, int count, int n_in, int n_o
 
 }  // namespace
 
+bool native_mmvq_slots_wide() {
+    static const bool on = [] {
+        const char* v = std::getenv("STRATA_SLOTS_WARP");
+#if defined(__HIPCC__)
+        return v == nullptr || v[0] != '0';
+#else
+        return v != nullptr && v[0] == '1';
+#endif
+    }();
+    return on;
+}
+
 bool native_mmvq_slots(int ggml_type, const MmvqSlots& slots, int count, int n_in, int n_out, void* stream) {
     if (!slots_kind(ggml_type)) return false;
-    if (n_out <= 0 || count < 1 || count > MAX_NCOLS)
-        throw std::invalid_argument("native MMVQ requires n_out > 0 and 1 to 8 matrices");
+    if (n_out <= 0 || count < 1 || count > kMmvqSlotsMax)
+        throw std::invalid_argument("native MMVQ requires n_out > 0 and 1 to 32 matrices");
     for (int i = 0; i < count; ++i) {
         validate_pointer(slots.w[i]);
         validate_pointer(slots.x[i]);
@@ -2858,6 +3282,23 @@ bool native_mmvq_ids(int ggml_type, const MmvqIds& ids, int count, int n_in, int
 std::size_t native_q8_1_il_bytes(int n_in, int ncols) {
     validate_shape(n_in, ncols);
     return std::size_t(n_in / Q8K) * std::size_t(native_q8_1_il_cp(ncols)) * (16 * sizeof(int) + sizeof(float));
+}
+
+void native_quantize_q8_1_il(const float* x, void* x_q8_1, void* x_il, int n_in, int ncols, void* stream) {
+    validate_shape(n_in, ncols);
+    if (ncols < 2 || ncols > 4) throw std::invalid_argument("native_quantize_q8_1_il requires 2 <= ncols <= 4");
+    validate_pointer(x);
+    validate_pointer(x_q8_1);
+    validate_pointer(x_il);
+    validate_stream(stream);
+    const int cp = native_q8_1_il_cp(ncols);
+    const Q81IlParts parts = q8_1_il_parts(x_il, n_in, ncols);
+    const int n_total = n_in * ncols;
+    native_quantize_q8_1_il_kernel<<<unsigned((n_total + QUANT_THREADS - 1) / QUANT_THREADS), QUANT_THREADS, 0,
+                                     static_cast<cudaStream_t>(stream)>>>(
+        x, static_cast<Q81Block*>(x_q8_1), const_cast<int*>(parts.bm), const_cast<int*>(parts.pm),
+        const_cast<float*>(parts.d), n_in, n_total, cp);
+    launch_check();
 }
 
 void native_q8_1_interleave(const void* x_q8_1, void* x_il, int n_in, int ncols, void* stream) {
@@ -2934,6 +3375,17 @@ constexpr IlRows kIlRows_86[] = {
     {14, {{0, 0, 1, 1, 0}, {0, 0, 1, 1, 2}, {0, 0, 1, 1, 1}}},   // Q6_K
     {11, {{1, 2, 2, 2, 2}, {1, 1, 1, 2, 2}, {1, 1, 1, 1, 1}}},   // Q3_K (two runs; 2560x10240 at 4 columns 120 -> 70 us)
 };
+// Turing (sm_75): read off mmvq_il_parity --bench --emit-table on an RTX 2080 Ti 22 GB (SM 1650 MHz), the same 3% rule.
+// The plain multi-column kernels are bound by dp4a throughput on Turing from 2 columns on (IQ4_XS 2560x10240 at 4
+// columns 81.1 -> 37.4 us, the Q5_K head 1671 -> 1045 us); bitwise equal to native_mmvq.  No one-column table here:
+// the engine's dedicated single-column kernels (native_q3_k_mmvq) sum in another order, and the gain was 0.5%.
+constexpr IlRows kIlRows_75[] = {
+    {23, {{2, 2, 2, 2, 2}, {2, 2, 4, 2, 4}, {2, 2, 2, 2, 2}}},   // IQ4_XS
+    {12, {{0, 4, 2, 4, 4}, {1, 2, 2, 2, 2}, {1, 2, 2, 2, 2}}},   // Q4_K
+    {13, {{0, 4, 2, 2, 4}, {1, 4, 2, 2, 2}, {1, 1, 2, 2, 2}}},   // Q5_K
+    {14, {{0, 0, 1, 2, 1}, {0, 2, 2, 4, 4}, {0, 4, 4, 4, 4}}},   // Q6_K
+    {11, {{1, 2, 4, 4, 4}, {1, 2, 4, 4, 4}, {1, 2, 2, 2, 2}}},   // Q3_K
+};
 // One column: rows a warp by n_out class, 0 = native_mmvq's single-column kernels (STRATA_MMVQ_IL_T1=0 turns this off).
 struct Il1Rows { int type; uint8_t r[5]; };
 constexpr Il1Rows kIl1Rows_86[] = {
@@ -2960,6 +3412,7 @@ struct IlArch { int cc; const IlRows* t; size_t n; };
 constexpr IlArch kIlArch[] = {
     {60, kIlRows_60, sizeof(kIlRows_60) / sizeof(IlRows)},   // Pascal GP100: measured on a Tesla P100
     {61, kIlRows_61, sizeof(kIlRows_61) / sizeof(IlRows)},   // Pascal with dp4a: measured on a Tesla P40
+    {75, kIlRows_75, sizeof(kIlRows_75) / sizeof(IlRows)},   // Turing: measured on an RTX 2080 Ti
     {70, kIlRows_70, sizeof(kIlRows_70) / sizeof(IlRows)},   // Volta: PR 1401, measured on a V100-SXM2
     {86, kIlRows_86, sizeof(kIlRows_86) / sizeof(IlRows)},   // 143-dense: RTX A4000 with the real shapes (Q3_K added)
 };
@@ -3039,11 +3492,13 @@ void native_mmvq_il_tune(int rows) { g_tune_rows = rows; }
 
 namespace {
 // sm_80 and newer (measured on sm_86 and sm_120), Volta (sm_70) and Pascal (sm_60, sm_61), each with its own table
-// above; Turing keeps native_mmvq's kernels unchanged
+// above; Turing keeps native_mmvq's kernels unless STRATA_SM75_PERF=1 (kIlRows_75)
 // Volta (PR 1401): opt-in with STRATA_SM70_TABLE=1 until the author confirms on a V100 with the final code
 bool sm70_opt_in() { const char* v = std::getenv("STRATA_SM70_TABLE"); return v != nullptr && std::atoi(v) != 0; }
 // Pascal (sm_60, GP100): the same interleaved kernels (bitwise equal to native_mmvq's, mmvq_il_parity), its own table
 // kIlRows_60.  STRATA_SM60_TABLE=0 keeps native_mmvq's kernels on a P100; any other value (or unset) uses the table.
+// STRATA_SM75_IL=0 / 1 forces the table off / on; unset it follows STRATA_SM75_PERF=1 (Turing only)
+bool sm75_il_on(int major, int minor) { return strata::sm75_switch("STRATA_SM75_IL", major, minor); }
 bool sm60_table_on() { const char* v = std::getenv("STRATA_SM60_TABLE"); return v == nullptr || std::atoi(v) != 0; }
 // Pascal (sm_61: Tesla P40 / P4, GTX 10 series; native dp4a): the same interleaved kernels (bitwise equal to
 // native_mmvq's, mmvq_il_parity), its own table kIlRows_61.  STRATA_SM61_TABLE=0 keeps native_mmvq's kernels.
@@ -3057,8 +3512,8 @@ bool il_arch_ok() {
         int minor = 0;
         cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, dev);
         ok[dev] = (cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, dev) == cudaSuccess &&
-                   (major >= 8 || (major == 7 && minor == 0 && sm70_opt_in()) || (major == 6 && minor == 0 && sm60_table_on()) ||
-                    (major == 6 && minor == 1 && sm61_table_on()))) ? 1 : -1;
+                   (major >= 8 || (major == 7 && minor == 0 && sm70_opt_in()) || (major == 7 && minor == 5 && sm75_il_on(major, minor)) ||
+                    (major == 6 && minor == 0 && sm60_table_on()) || (major == 6 && minor == 1 && sm61_table_on()))) ? 1 : -1;
     }
     return ok[dev] > 0;
 }
@@ -3096,6 +3551,9 @@ void native_mmvq_il(int ggml_type, const void* weights, const void* x_q8_1, cons
 
 #else  // HIP: no interleaved path
 std::size_t native_q8_1_il_bytes(int n_in, int ncols) { return native_q8_1_bytes(n_in, ncols) * 2; }
+void native_quantize_q8_1_il(const float*, void*, void*, int, int, void*) {
+    throw std::invalid_argument("native_quantize_q8_1_il is CUDA only");
+}
 void native_q8_1_interleave(const void*, void*, int, int, void*) {
     throw std::invalid_argument("native_q8_1_interleave is CUDA only");
 }

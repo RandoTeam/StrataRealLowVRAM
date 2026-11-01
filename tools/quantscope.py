@@ -120,7 +120,7 @@ GGML_TYPES = {
     17: "IQ2_XS", 18: "IQ3_XXS", 19: "IQ1_S", 20: "IQ4_NL", 21: "IQ3_S", 22: "IQ2_S",
     23: "IQ4_XS", 24: "I8", 25: "I16", 26: "I32", 27: "I64", 28: "F64", 29: "IQ1_M",
     30: "BF16", 34: "TQ1_0", 35: "TQ2_0", 39: "MXFP4",
-    42: "Q2_0",  # ISTA-DASLab GSQ-RCO 2-bit (PolyStrata, llama.cpp fork type)
+    42: "Q2_0",  # ISTA-DASLab GSQ-RCO 2-bit (4gbVramStrata, llama.cpp fork type)
 }
 
 

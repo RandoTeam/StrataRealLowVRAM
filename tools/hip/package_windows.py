@@ -36,9 +36,9 @@ ASSET = "strata-windows-x64-hip.zip"
 PROGRAMS = ("strata.exe", "strata-device.exe")
 DYNAMIC = ("amd_comgr.dll",)                     # LoadLibrary'd by amdhip64_7.dll: not in any import table
 CRT = ("msvcp140.dll", "msvcp140_1.dll", "msvcp140_2.dll", "vcruntime140.dll", "vcruntime140_1.dll")
-KPACKS = ("blas_lib",)       # rocblas.dll's own device code; rocSOLVER's (27 MB per arch) is never launched by PolyStrata
+KPACKS = ("blas_lib",)       # rocblas.dll's own device code; rocSOLVER's (27 MB per arch) is never launched by 4gbVramStrata
 LICENSES = ("rocblas", "rocsolver", "hipblas", "hipblas-common", "hipblaslt", "amd_comgr", "rocm-core")
-NOTICE = """PolyStrata's Windows HIP engine ships these AMD ROCm components unmodified, from AMD's TheRock Python wheels
+NOTICE = """4gbVramStrata's Windows HIP engine ships these AMD ROCm components unmodified, from AMD's TheRock Python wheels
 (ROCm {rocm}, https://nightly.repo.amd.com/rocm/whl-next/, built from https://github.com/ROCm/TheRock):
 
 {dlls}

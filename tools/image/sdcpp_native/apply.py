@@ -1,4 +1,4 @@
-"""tools/image/sdcpp_native/apply.py - put PolyStrata's native Qwen-Image-2.1 DiT runner into a stable-diffusion.cpp
+"""tools/image/sdcpp_native/apply.py - put 4gbVramStrata's native Qwen-Image-2.1 DiT runner into a stable-diffusion.cpp
 checkout at the pinned commit (tools/image/qimage.py SD_CPP_COMMIT).  Idempotent; the stock runner stays the
 default: sd-cli uses the native one only with --model-args qwen_image_2_1_native=1 (serve/images.py adds it when the
 config's "native" is true), and only in CUDA / HIP builds.

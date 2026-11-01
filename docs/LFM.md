@@ -1,6 +1,6 @@
-# LFM2.5-24B-A2B (`strata-poly`)
+# LFM2.5-24B-A2B (`strata-fourgbvram`)
 
-`strata-poly`, the engine of GLM 5.3 Flash and the smaller models, also runs Liquid AI's LFM2.5-24B-A2B: llama.cpp's
+`strata-fourgbvram`, the engine of GLM 5.3 Flash and the smaller models, also runs Liquid AI's LFM2.5-24B-A2B: llama.cpp's
 architecture `lfm2moe`, read from the GGUF files of Unsloth and Liquid AI. The server, the web app and the API are the
 ones the README describes.
 
@@ -26,8 +26,8 @@ Setup takes UD-Q4_K_XL, or UD-Q3_K_XL when the PC has too little RAM for it; the
 
 ## How fast
 
-The README's numbers are PolyStrata's own benchmark through the server, the test every model of this engine gets
-([BACKENDS.md](BACKENDS.md#a-prompt-of-30000-tokens)): `polystrata.py benchmark --prompt-tokens 24000`, a short chat
+The README's numbers are 4gbVramStrata's own benchmark through the server, the test every model of this engine gets
+([BACKENDS.md](BACKENDS.md#a-prompt-of-30000-tokens)): `fourgbvramstrata.py benchmark --prompt-tokens 24000`, a short chat
 and a prompt built from this repository's documents, 256 tokens written after each, three runs a size and the last
 two below. The engine is 4a644a8d's, with the run configs setup writes for each machine: on both, a prompt is read
 2,048 tokens at a time.
@@ -73,7 +73,7 @@ to 21,666 tokens/s; a README cell has the highest of the four.
 On the laptop, UD-Q4_K_XL through each server with the same prompts
 ([the runs](../bench/results/2026-10-15-laptop-lfm25-llamacpp-b11540/README.md)):
 
-| | PolyStrata | llama.cpp b11540, `--n-cpu-moe 25` | llama.cpp b11540, `--fit on` |
+| | 4gbVramStrata | llama.cpp b11540, `--n-cpu-moe 25` | llama.cpp b11540, `--fit on` |
 | --- | ---: | ---: | ---: |
 | Reads about 4,000 tokens | 2,193 to 2,215 tokens/s | 498 to 505 | 483 to 485 |
 | Writes after them | 89 to 94 tokens/s | 57.7 to 58.0 | 55.1 to 55.3 |
@@ -84,14 +84,14 @@ On the laptop, UD-Q4_K_XL through each server with the same prompts
 llama.cpp that [Strata](https://github.com/Niko1221/Strata) v0.1.39 vendors, every layer on the card and flash
 attention on:
 
-| | PolyStrata | llama.cpp, batch of 512 (its default) | llama.cpp, batch of 2,048 |
+| | 4gbVramStrata | llama.cpp, batch of 512 (its default) | llama.cpp, batch of 2,048 |
 | --- | ---: | ---: | ---: |
 | Reads 29,816 tokens | 23,400 tokens/s (18,700 with a batch of 1,024) | 13,311 | 23,614 |
 | Writes, one token at a time | 452 tokens/s | 455 | |
 | Writes after 29,816 tokens, one at a time | 387 tokens/s | 369 | |
 
-With a batch of 2,048 llama.cpp reads the prompt as fast as PolyStrata, 1% faster, and writes as fast one token
-at a time; after the long prompt PolyStrata writes 5% faster. Its guesses add to that where the answer repeats the
+With a batch of 2,048 llama.cpp reads the prompt as fast as 4gbVramStrata, 1% faster, and writes as fast one token
+at a time; after the long prompt 4gbVramStrata writes 5% faster. Its guesses add to that where the answer repeats the
 prompt.
 
 ## Long contexts
@@ -118,7 +118,7 @@ UD-Q4_K_XL, a context of 131,072 and prompts read 2,048 tokens at a time:
   probabilities are 0.087 apart at most.
 - A window of guesses writes the same tokens as one token at a time, with the experts on the CPU: 300 tokens after
   a prompt of 26 tokens and after one of 4,259.
-- `poly_attend_test`, `poly_norm_q8_test`, `poly_shortconv_test` and `poly_route_test` check the kernels written for
+- `fourgbvram_attend_test`, `fourgbvram_norm_q8_test`, `fourgbvram_shortconv_test` and `fourgbvram_route_test` check the kernels written for
   it against the ones they stand for; `serve/test_lfm2.py` the tool calls and the chat template.
 
 ## How the sizes compare
@@ -161,8 +161,8 @@ The decode numbers are UD-Q4_K_XL on the RTX 5090 with the engine's guesses, aft
 - RAM for the experts the card does not hold. They are read from the mapped file while the model answers, so they
   should stay in the OS file cache: setup's estimate is in the table above. All five sizes have run on the laptop
   with 32 GB, but Q8_0 fills it and is slow there.
-- Linux or Windows 10 / 11. AMD cards: the engine compiles for them on Linux, and this model has not been tried on
-  one; setup says so.
+- Linux or Windows 10 / 11. AMD cards: the engine compiles for them on Linux and under Windows as
+  well (AMD's TheRock wheels); this model has not been tried on one, and setup says so.
 
 ## Install
 

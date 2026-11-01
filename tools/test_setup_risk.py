@@ -142,7 +142,7 @@ class Context(unittest.TestCase):
         self.assertNotIn("Kept as you chose: it may be slower", out)
 
     def test_the_earlier_install_keeps_its_context(self):
-        """An update (a new copy of PolyStrata) set up like the earlier install keeps its 256K instead of capping it."""
+        """An update (a new copy of 4gbVramStrata) set up like the earlier install keeps its 256K instead of capping it."""
         with tempfile.TemporaryDirectory() as d:
             prev = Path(d) / "strata-iq3_s.json"
             prev.write_text(json.dumps({"args": ["--max-context", "262144", "--kv", "int8"], "port": 8080}))
@@ -157,7 +157,7 @@ class Context(unittest.TestCase):
 
 
 class BrokenEarlierConfig(unittest.TestCase):
-    """#459: a new copy of PolyStrata set up like an earlier install skips an earlier config that does not parse (an
+    """#459: a new copy of 4gbVramStrata set up like an earlier install skips an earlier config that does not parse (an
     empty strata-*.json crashed START-HERE with JSONDecodeError) and goes on as a fresh install; configs are written
     whole (a temporary file moved over the old one)."""
     RAM64, GPU32 = PROFILES["64GB-1x32GB"]

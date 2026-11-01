@@ -1,6 +1,6 @@
 # Older GPUs (experimental)
 
-PolyStrata's supported cards are NVIDIA RTX 20 / 30 / 40 / 50 and the AMD cards in [AMD_HIP.md](AMD_HIP.md). The cards
+4gbVramStrata's supported cards are NVIDIA RTX 20 / 30 / 40 / 50 and the AMD cards in [AMD_HIP.md](AMD_HIP.md). The cards
 below run through **opt-in, experimental** paths that community members wrote and measured on their own machines. The
 maintainers have none of these cards: each path is compile-checked and unit-tested here, and the ready-made engines
 and their output stay exactly as they were. Numbers are the reporters' own, on one machine each.
@@ -58,7 +58,7 @@ The choice is kept in the model's config (`"cuda": 12`): its starts and `UPDATE.
 their own engine. Setting the model up again chooses again (by its cards; add `--cuda 12` to keep a forced choice). A Pascal / Volta card added to a model at a start (`--gpus`) moves that model to the
 CUDA 12 engine.
 
-`--cuda 12` is also the way to run PolyStrata with an NVIDIA driver older than 580: CUDA 12 needs 528 or newer on Windows
+`--cuda 12` is also the way to run 4gbVramStrata with an NVIDIA driver older than 580: CUDA 12 needs 528 or newer on Windows
 (527.41, NVIDIA's minor-version compatibility) and 525 on Linux; setup's "driver too old" stop says so. Such old
 drivers were not tested here.
 
@@ -71,13 +71,15 @@ N`), where it runs the CUDA 13 engine.
 
 ### GLM 5.3 Flash, Qwen3.6, Ornith 1.5, Gemma 4 and Tiel Coder
 
-These run on strata-poly, whose ready-made engine (Windows) is built with CUDA 13. With `--cuda 12` setup compiles
-strata-poly here instead, on Windows or Linux, with a CUDA 12.x toolkit (12.8 or newer for an RTX 50 card), and the
-image encoder with it. It goes in `engine-poly\` in place of the ready-made one, for every model of that engine; a
+These run on strata-fourgbvram, whose ready-made engine (Windows) is built with CUDA 13. With `--cuda 12` setup compiles
+strata-fourgbvram here instead, on Windows or Linux, with a CUDA 12.x toolkit (12.8 or newer for an RTX 50 card), and the
+image encoder with it. It goes in `engine-fourgbvram\` in place of the ready-made one, for every model of that engine; a
 later setup without `--cuda 12` takes the ready-made one back. #220 is the Qwen engine's prompt path and does not
-apply here: on an RTX 5090 with driver 570, strata-poly built with CUDA 12.8 read Tiel Coder's 31,516-token prompts
-at 6,200 to 6,700 tokens/s. On a Pascal or Volta card setup adds `-DSTRATA_EXPERIMENTAL_SM60=ON`; strata-poly
-compiles for sm_61 and sm_70 with CUDA 12.4 and 12.8. It has not run on such a card. Built as compute_61 PTX only and
+apply here: on an RTX 5090 with driver 570, strata-fourgbvram built with CUDA 12.8 read Tiel Coder's 31,516-token prompts
+at 6,200 to 6,700 tokens/s. On a Pascal or Volta card setup adds `-DSTRATA_EXPERIMENTAL_SM60=ON`; strata-fourgbvram
+compiles for sm_61 and sm_70 with CUDA 12.4 and 12.8. On two Tesla V100-PCIE-32GB, built with CUDA 12.9.1, it ran
+Qwen3.6 UD-Q3_K_M split over both cards at 157 tokens/s in a chat and read 4K and 16K prompts at 2,615 and 2,778
+tokens/s ([issue 88](https://github.com/VecSzn/PolyStrata/issues/88)). Built as compute_61 PTX only and
 run on an RTX 3080, which takes the Pascal code paths, Qwen3.6's greedy answer matched llama.cpp's for 60 of 64
 tokens (the sm_86 build: 64) and differed after that by a near tie. On Windows, with CUDA 12.9 and Visual Studio's
 14.44 compiler, it builds for sm_61 and for sm_89; the sm_89 build wrote the same 200 tokens of Qwen3.6 UD-Q2_K_XL as
@@ -160,6 +162,29 @@ Two things to know when measuring on such a card:
   --adapt-swaps 0 --pcie-frac 0`: an expert computed on the CPU rounds differently for a lone token than in a window
   of several (`native_gu_mt_min`), and how many drafts a window holds depends on timing. Add `STRATA_IQ_MT_MIN=1`
   (and `STRATA_PREFILL_CPU_SHARE=0`, `STRATA_ROUTE_TAIL_SKIP=0`) to compare two builds' answers byte for byte.
+
+### Tesla P100 (sm_60): building it again, and what ran (October 2026)
+
+Since 91fe6531 the `--kv int8` readers in `src/fourgbvram/kernels.cu` called `__dp4a`, which compute capability 6.0 does not
+have, so a build with `60` in `CMAKE_CUDA_ARCHITECTURES` stopped at `identifier "__dp4a" is undefined`. They now use
+`STRATA_DP4A` from `strata/kernels/dp4a.hpp`, as the i-quant kernels do; every other card compiles to `__dp4a` as
+before. The fourgbvram path's three cuBLAS calls use `CUBLAS_GEMM_DEFAULT`, as the Qwen3.8-Flash-Next engine does, instead of the
+tensor-op hint (the P100 has no tensor cores).
+
+Built with CUDA 12.8 and gcc 14, `-DSTRATA_EXPERIMENTAL_SM60=ON`, `CMAKE_CUDA_ARCHITECTURES="60;61;75"`, with today's
+block sizes and launch bounds unchanged:
+
+- One Tesla P100-PCIE-16GB (driver 580.178.04) in a host with a Xeon E5-2450 v2 (AVX, no AVX2 or FMA) and 46 GB of
+  RAM. The default build stops there with SIGILL; `-DSTRATA_ISA_FLOOR=avx` ([Older CPUs](INSTALL.md#older-cpus-experimental))
+  runs. Tiel Coder 35B-A3B UD-Q5_K_XL, `--max-context 16384`: 5,341 of 10,240 routed experts in VRAM; a 6,085-token
+  prompt in 80 s, then 40 tokens at 27.7 tok/s; a 205-token prompt, then 128 tokens at 39.4 tok/s.
+- One Tesla P100-PCIE-16GB in a host with two Xeon Gold 6148 and 117 GB of RAM. GLM-5.3 Flash REAP50 Q3_K_M with its
+  expert profile, `--max-context 8192 --layer-split auto`: 616 of 6,192 routed experts in VRAM; a 4,768-token prompt
+  in 80 s, then 40 tokens at 1.4 tok/s; a 28-token prompt, then 128 tokens at 3.7 tok/s. Most experts run on the CPU
+  here, which sets that speed.
+
+Neither engine log shows a CUDA error, and both answers read correctly. One card each, so these are single-machine
+numbers, not a support claim.
 
 ### Quadro RTX 8000: measurements of existing switches
 

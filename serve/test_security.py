@@ -76,7 +76,7 @@ class HostCheck(unittest.TestCase):
 class OriginCheck(unittest.TestCase):
     def test_accepted(self):
         names = LOCAL | {"box"}
-        self.assertTrue(origin_allowed("http://127.0.0.1:8095", "127.0.0.1:8095", names))      # PolyStrata's own page
+        self.assertTrue(origin_allowed("http://127.0.0.1:8095", "127.0.0.1:8095", names))      # 4gbVramStrata's own page
         self.assertTrue(origin_allowed("http://192.168.1.20:8095", "192.168.1.20:8095", names))  # ... by LAN IP
         self.assertTrue(origin_allowed("http://localhost:3000", "127.0.0.1:8095", names))      # a local app
         self.assertTrue(origin_allowed("http://[::1]:3000/", "127.0.0.1:8095", names))

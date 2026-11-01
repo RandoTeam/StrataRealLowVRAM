@@ -1,35 +1,35 @@
-# PolyStrata's MCP server: let your AI assistant install and run PolyStrata
+# 4gbVramStrata's MCP server: let your AI assistant install and run 4gbVramStrata
 
 `tools/strata_mcp.py` is an [MCP](https://modelcontextprotocol.io) server for the AI assistant you already use
 (Claude Code, Claude Desktop, Cursor, VS Code, Codex ...). Add it once, then ask in plain words:
 
-- "Install PolyStrata for this PC."
-- "Start PolyStrata." / "Stop PolyStrata."
-- "Is PolyStrata running? How much VRAM does it use?"
-- "Which PolyStrata model fits my PC?"
-- "PolyStrata didn't start - what does the log say?"
-- "How fast is PolyStrata on this PC?" (a short speed test)
-- "How do I connect Open WebUI / the OpenAI SDK / Claude Code to PolyStrata?"
+- "Install 4gbVramStrata for this PC."
+- "Start 4gbVramStrata." / "Stop 4gbVramStrata."
+- "Is 4gbVramStrata running? How much VRAM does it use?"
+- "Which 4gbVramStrata model fits my PC?"
+- "4gbVramStrata didn't start - what does the log say?"
+- "How fast is 4gbVramStrata on this PC?" (a short speed test)
+- "How do I connect Open WebUI / the OpenAI SDK / Claude Code to 4gbVramStrata?"
 
-The assistant calls the server's tools. The tools run PolyStrata's own setup and start the model the way the start
+The assistant calls the server's tools. The tools run 4gbVramStrata's own setup and start the model the way the start
 scripts do. It is one Python file that uses only the standard library, so it works before setup has created
 `.venv`. It needs Python 3.10 or newer, 64-bit on Windows.
 
 It is not the same thing as [Tools from MCP servers](DETAILS.md#tools-from-mcp-servers). That feature
-(`serve/mcp.py`) lets the *PolyStrata model* call tools from your MCP servers in its chat page. This page is the other
-direction: *your assistant* manages PolyStrata.
+(`serve/mcp.py`) lets the *4gbVramStrata model* call tools from your MCP servers in its chat page. This page is the other
+direction: *your assistant* manages 4gbVramStrata.
 
 ## Add it
 
-You need a copy of PolyStrata: the zip from GitHub, or `git clone https://github.com/VecSzn/PolyStrata`. Below,
-`C:\Users\you\PolyStrata` (Windows) and `/home/you/PolyStrata` (Linux) stand for that folder. Use `python3` on Linux. On
+You need a copy of 4gbVramStrata: the zip from GitHub, or `git clone https://github.com/VecSzn/PolyStrata`. Below,
+`C:\Users\you\4gbVramStrata` (Windows) and `/home/you/4gbVramStrata` (Linux) stand for that folder. Use `python3` on Linux. On
 Windows, use `py` if `python` is not on your PATH.
 
 ### Claude Code
 
 ```bash
-claude mcp add strata -- python C:\Users\you\PolyStrata\tools\strata_mcp.py         # Windows
-claude mcp add strata -- python3 /home/you/PolyStrata/tools/strata_mcp.py           # Linux
+claude mcp add strata -- python C:\Users\you\4gbVramStrata\tools\strata_mcp.py         # Windows
+claude mcp add strata -- python3 /home/you/4gbVramStrata/tools/strata_mcp.py           # Linux
 ```
 
 Add `--scope user` to have it in every project. `/mcp` in Claude Code shows that it is connected.
@@ -43,13 +43,13 @@ Open Settings > Developer > Edit Config (`claude_desktop_config.json`) and add:
   "mcpServers": {
     "strata": {
       "command": "python",
-      "args": ["C:\\Users\\you\\PolyStrata\\tools\\strata_mcp.py"]
+      "args": ["C:\\Users\\you\\4gbVramStrata\\tools\\strata_mcp.py"]
     }
   }
 }
 ```
 
-On Linux, use `"command": "python3"` and `"args": ["/home/you/PolyStrata/tools/strata_mcp.py"]`. Restart Claude
+On Linux, use `"command": "python3"` and `"args": ["/home/you/4gbVramStrata/tools/strata_mcp.py"]`. Restart Claude
 Desktop after the change.
 
 ### Cursor
@@ -62,7 +62,7 @@ Claude Desktop's:
   "mcpServers": {
     "strata": {
       "command": "python",
-      "args": ["C:\\Users\\you\\PolyStrata\\tools\\strata_mcp.py"]
+      "args": ["C:\\Users\\you\\4gbVramStrata\\tools\\strata_mcp.py"]
     }
   }
 }
@@ -78,13 +78,13 @@ Use `.vscode/mcp.json` in a workspace, or run "MCP: Open User Configuration" fro
     "strata": {
       "type": "stdio",
       "command": "python",
-      "args": ["C:\\Users\\you\\PolyStrata\\tools\\strata_mcp.py"]
+      "args": ["C:\\Users\\you\\4gbVramStrata\\tools\\strata_mcp.py"]
     }
   }
 }
 ```
 
-On Linux, use `"command": "python3"` and `"args": ["/home/you/PolyStrata/tools/strata_mcp.py"]`.
+On Linux, use `"command": "python3"` and `"args": ["/home/you/4gbVramStrata/tools/strata_mcp.py"]`.
 
 ### Codex CLI
 
@@ -93,17 +93,17 @@ In `~/.codex/config.toml`:
 ```toml
 [mcp_servers.strata]
 command = "python"
-args = ['C:\Users\you\PolyStrata\tools\strata_mcp.py']    # Linux: command = "python3", args = ["/home/you/PolyStrata/tools/strata_mcp.py"]
+args = ['C:\Users\you\4gbVramStrata\tools\strata_mcp.py']    # Linux: command = "python3", args = ["/home/you/4gbVramStrata/tools/strata_mcp.py"]
 tool_timeout_sec = 180                                # strata_stop / strata_benchmark can take longer than 60 s
 ```
 
 ### Any other MCP client
 
-The command is `python <PolyStrata folder>/tools/strata_mcp.py`. The transport is stdio. It speaks MCP revision
+The command is `python <4gbVramStrata folder>/tools/strata_mcp.py`. The transport is stdio. It speaks MCP revision
 2025-06-18, and also 2025-03-26 and 2024-11-05.
 
-`--root <folder>` manages a PolyStrata folder other than the one the file is in. For example:
-`python D:\tools\strata_mcp.py --root D:\PolyStrata`.
+`--root <folder>` manages a 4gbVramStrata folder other than the one the file is in. For example:
+`python D:\tools\strata_mcp.py --root D:\4gbVramStrata`.
 
 ## The tools
 
@@ -137,7 +137,7 @@ It then runs the same steps `START-HERE.bat` / `setup.sh` run:
 
 1. It creates `.venv` with the Python it runs on, if `.venv` is missing.
 2. It runs `setup.py --yes --no-start --family ... --model ... --context ... --vision ...` as a background process.
-   The output goes to `.strata-mcp/setup.log` in the PolyStrata folder.
+   The output goes to `.strata-mcp/setup.log` in the 4gbVramStrata folder.
 
 The tool returns at once. Call it again to see the step (1-7), the download percentage, or setup's error message.
 Everything setup has finished is skipped on the next run, and downloads resume. If the AI app closes, the install
@@ -173,29 +173,29 @@ If a config of the folder sets an `api_key`, the tool sends that key with its ow
   unknown argument, a model or family setup does not offer, or a `gpus` value other than digits and commas is
   refused before anything runs. Commands are passed as argument lists; nothing goes through a shell.
 - **Paths.** The only path argument is `data_dir`. It must be one of:
-  - the current PolyStrata data folder;
-  - a folder inside the PolyStrata folder;
-  - a new absolute folder whose name starts with `PolyStrata` (e.g. `D:\PolyStrata-data`), whose parent exists, and which is
+  - the current 4gbVramStrata data folder;
+  - a folder inside the 4gbVramStrata folder;
+  - a new absolute folder whose name starts with `4gbVramStrata` (e.g. `D:\4gbVramStrata-data`), whose parent exists, and which is
     not in a system folder.
 
   `..`, relative paths and network (UNC) paths are refused. Logs are read only from `.strata-mcp/` and from the
-  engine log a config names, if that log is inside the PolyStrata folder or the data folder.
+  engine log a config names, if that log is inside the 4gbVramStrata folder or the data folder.
 - **Only its own processes.** The server records the process id *and start time* of every process it starts, in
   `.strata-mcp/*.json`. It only ends a process when both match, so a process id the OS has given to another program
-  is never touched. A PolyStrata started some other way (its window, a run script, a service) is only asked over its
+  is never touched. A 4gbVramStrata started some other way (its window, a run script, a service) is only asked over its
   API to unload the model. To end that server, close its window.
 - **Big downloads need a yes.** `strata_install` does nothing until it is called with `confirm: true`. The plan
   shows the download size and the free space first, and the install is refused if the disk is too small.
 - **Local only.** The server checks `127.0.0.1` and never changes the network settings: it does not install with
-  `--host 0.0.0.0` or an API key. To share PolyStrata on your network, run setup yourself (see
+  `--host 0.0.0.0` or an API key. To share 4gbVramStrata on your network, run setup yourself (see
   [Using it](DETAILS.md#using-it)). Experimental options are left off too: the speed projection, rope scaling past
   262K and `--build`. Run setup by hand for those.
 
 ## Troubleshooting
 
 - **The assistant does not see the tools.** Run the command by hand:
-  `python C:\Users\you\PolyStrata\tools\strata_mcp.py`. It should print `[strata-mcp] ready (PolyStrata folder ...)` to
-  stderr and wait for input (Ctrl+C ends it). If it reports `not a PolyStrata folder`, the path is wrong or `--root` is
+  `python C:\Users\you\4gbVramStrata\tools\strata_mcp.py`. It should print `[strata-mcp] ready (4gbVramStrata folder ...)` to
+  stderr and wait for input (Ctrl+C ends it). If it reports `not a 4gbVramStrata folder`, the path is wrong or `--root` is
   needed. Python older than 3.10 is refused.
 - **The install failed.** Ask the assistant for the setup log (`strata_logs` with `source: setup`), or open
   `.strata-mcp/setup.log`. Setup's `[X]` line says what to fix. Then install again: every finished step is skipped.

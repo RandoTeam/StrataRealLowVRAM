@@ -193,7 +193,7 @@ class Base(unittest.TestCase):
             mock.patch.object(setup, "get_prebuilt", lambda *a, **k: eng),
             mock.patch.object(setup, "download", fake_download),
             mock.patch.object(setup, "check_shards", lambda shards: None),
-            mock.patch.object(setup, "verify_sha256", lambda s, size, sha: self.verified.append((s.name, size, sha))),
+            mock.patch.object(setup, "verify_sha256", lambda s, size, sha, own=False: self.verified.append((s.name, size, sha))),
             mock.patch.object(setup, "run", fake_run),
             mock.patch.object(setup, "refresh_draft_vocab", lambda *a, **k: None),
             mock.patch.object(setup, "write_run_script", lambda tag, cfg, port, *_: self.t / f"start-{tag}.bat"),
@@ -547,13 +547,13 @@ class IQ4XS(Base):
         self.assertEqual(code, 1, out)
         self.assertNotIn("[ok] RAM", out)
         self.assertIn("[!]  RAM: 4 GB (less than", out)
-        self.assertIn("This PC cannot run PolyStrata yet", out)
-        self.assertNotIn("This PC can run PolyStrata", out)
+        self.assertIn("This PC cannot run 4gbVramStrata yet", out)
+        self.assertNotIn("This PC can run 4gbVramStrata", out)
         # 16 GB fits no size of Qwen3.8-Flash-Next, and it fits sizes of the smaller models
         code, out, _ = self.main(["--check"], ram=16.0, m=X)
         self.assertEqual(code, 0, out)
         self.assertIn("[!]  RAM: 16 GB (less than", out)
-        self.assertIn("This PC can run PolyStrata", out)
+        self.assertIn("This PC can run 4gbVramStrata", out)
 
     def test_engine_0138(self):
         code, out, cfg = self.main(["--context", "8192"], version="0.1.37", m=X)

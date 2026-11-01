@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One command that measures this PolyStrata install the way it is used, and writes a report you can share.
+"""One command that measures this 4gbVramStrata install the way it is used, and writes a report you can share.
 
     BENCH.bat                      (Windows)        ./bench.sh        (Linux)        python tools/strata_bench.py
 
@@ -64,7 +64,7 @@ BURST_MAX_TOKENS = 128
 
 # --------------------------------------------------------------------------------------------------------- redaction
 def redactor(extra: list[str] = (), key: str = ""):
-    """-> f(text) -> text with this machine's home folders, user and host names, the PolyStrata folder, IP addresses and the
+    """-> f(text) -> text with this machine's home folders, user and host names, the 4gbVramStrata folder, IP addresses and the
     API key replaced.  Applied to everything that is written or printed from the server's or the machine's own text."""
     subs: list[tuple[re.Pattern, str]] = []
 
@@ -127,7 +127,7 @@ def try_json(base, path, key="", timeout=20):
 
 def chat(base: str, key: str, messages: list, max_tokens: int, think: bool = False, tools=None, timeout: float = 3600) -> dict:
     """One streamed chat request -> {first, total, text, usage, timings, err}.  `first` is the seconds to the first
-    non-empty content or reasoning piece (keep-alives and empty deltas ignored)."""
+    non-empty content, reasoning or tool-call piece (keep-alives and empty deltas ignored)."""
     body = {"model": "strata", "stream": True, "max_tokens": max_tokens, "temperature": 0, "messages": messages}
     if tools:
         body["tools"] = tools
@@ -157,7 +157,8 @@ def chat(base: str, key: str, messages: list, max_tokens: int, think: bool = Fal
                 for ch in j.get("choices") or []:
                     dl = ch.get("delta") or {}
                     piece = (dl.get("content") or "") + (dl.get("reasoning_content") or "")
-                    if piece:
+                    # a turn can be a tool call alone (LFM2.5 calls one though the agent prompt asks it not to)
+                    if piece or dl.get("tool_calls"):
                         if first is None:
                             first = time.perf_counter() - t0
                         pieces += 1
@@ -500,6 +501,20 @@ def gpu_info_local() -> dict:
         m2 = re.search(r"Driver version:\s*(\S+)", v)
         if m2:
             info["rocm_driver"] = m2.group(1)
+    if not info["gpus"] and os.name != "nt":
+        # ROCm from AMD's Python wheels (a container, setup's .venv) has no rocm-smi: the amdgpu driver's sysfs files
+        # name the cards the way the server reads them (the run was labelled "cpu" before)
+        try:
+            if str(ROOT) not in sys.path:
+                sys.path.insert(0, str(ROOT))
+            from serve.telemetry import _Amd
+            cards = []
+            while (card := _Amd(len(cards))).ok():
+                total = card.read().get("mem_total")
+                cards.append({"name": card.name(), "vram_mib": total >> 20 if total else None, "driver": None})
+            info["gpus"] = cards
+        except Exception:   # noqa: BLE001 - a report without the card's name is still a report
+            pass
     if not info["gpus"] and os.name == "nt":
         # #1587: Windows with only an AMD card has neither nvidia-smi nor rocm-smi; the display class in the registry
         # names the card, its VRAM and its driver (the run was labelled "CPU only" before)
@@ -818,7 +833,7 @@ def render_readme(res: dict) -> str:
          f"- CPU: {mc.get('cpu') or 'not read'} ({mc.get('cpu_cores') or '?'} cores, {mc.get('cpu_threads') or '?'} threads); "
          f"installed RAM: {mc.get('ram_gib') or '?'} GiB; storage: not measured",
          f"- OS: {mc.get('os')}; GPU driver: {mc.get('gpu_driver') or 'not read'}; CUDA: {mc.get('cuda') or 'not read'}",
-         f"- PolyStrata: project {mc.get('strata_version') or '?'}, commit {mc.get('strata_commit') or 'not a git checkout'}; "
+         f"- 4gbVramStrata: project {mc.get('strata_version') or '?'}, commit {mc.get('strata_commit') or 'not a git checkout'}; "
          f"engine {mc.get('engine_version') or 'not read'}",
          "- Background workloads and power limits: not recorded", "",
          "## Model and configuration", "",
@@ -832,7 +847,7 @@ def render_readme(res: dict) -> str:
     if env:
         L += ["Environment of the config: " + ", ".join(f"`{k}={v}`" for k, v in env.items()), ""]
     L += ["## Method", "",
-          f"Run by `{p['command']}` against the HTTP API of a PolyStrata server "
+          f"Run by `{p['command']}` against the HTTP API of a 4gbVramStrata server "
           f"({'started by the benchmark from the install configuration' if p['started_server'] else 'already running'}); model loading is not "
           f"timed. One warm-up chat and a 1K prompt are discarded first. Every prompt starts with a unique tag, so the conversation "
           f"cache cannot help the fresh-prompt tests.", "",
@@ -917,8 +932,18 @@ def write_results(res: dict, parent: Path, red, log_lines: list[str]) -> Path:
 
 
 # --------------------------------------------------------------------------------------------------------- main
+def server_base(host, port) -> str:
+    """The address to talk to for a locally started server. The config's `host` is the interface the server
+    binds - a specific IP, or a wildcard that is not connectable as written - so it cannot be polled as-is.
+    An explicit `--url` bypasses this; there the caller knows the address."""
+    host = host or "127.0.0.1"
+    host = {"0.0.0.0": "127.0.0.1", "::": "::1"}.get(host, host)     # wildcard binds accept loopback
+    authority = f"[{host}]" if ":" in host and not host.startswith("[") else host
+    return f"http://{authority}:{port}"
+
+
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="Measure this PolyStrata install and write a shareable report (see the top of this file).")
+    ap = argparse.ArgumentParser(description="Measure this 4gbVramStrata install and write a shareable report (see the top of this file).")
     ap.add_argument("--config", help="the model config to run (default: the newest strata-*.json of this folder)")
     ap.add_argument("--url", help="use the server already running at this address (http://127.0.0.1:8080) instead of starting one")
     ap.add_argument("--port", type=int, help="the port to start the server on (default: the config's)")
@@ -954,8 +979,13 @@ def main(argv=None) -> int:
                 cfg_path = found[0]
                 if len(found) > 1:
                     say(f"Several models are installed; using {cfg_path.name} (the one used last). Pick another with --config FILE.")
+        if a.config and not cfg_path.is_file():          # a start script's name, or a typo
+            names = ", ".join(p.name for p in find_configs()) or "none"
+            print(f"{a.config}: no such run config. --config takes a model's strata-<model>.json; the ones here: "
+                  f"{names}", file=sys.stderr)
+            return 2
         if cfg_path is None or not cfg_path.is_file():
-            print("No PolyStrata model is set up in this folder: run START-HERE.bat (Windows) or ./setup.sh (Linux) first, "
+            print("No 4gbVramStrata model is set up in this folder: run START-HERE.bat (Windows) or ./setup.sh (Linux) first, "
                   "or give --url of a running server.", file=sys.stderr)
             return 2
         cfg = json.loads(cfg_path.read_text(encoding="utf-8-sig"))
@@ -964,18 +994,18 @@ def main(argv=None) -> int:
         base = a.url.rstrip("/")
     else:
         port = a.port or int(cfg.get("port", 8080))
-        base = f"http://127.0.0.1:{port}"
+        base = server_base(cfg.get("host"), port)
     red = redactor(key=key)
     started = False
     try:
         if is_strata(base, key):
-            say(f"Using the PolyStrata server already running at {base}.")
+            say(f"Using the 4gbVramStrata server already running at {base}.")
         elif a.url:
-            print(f"No PolyStrata server answers at {base}.", file=sys.stderr)
+            print(f"No 4gbVramStrata server answers at {base}.", file=sys.stderr)
             return 2
         else:
             if try_json(base, "/health", key, 3) is not None:
-                print(f"Port {port} is used by something that is not PolyStrata: pass --port N.", file=sys.stderr)
+                print(f"Port {port} is used by something that is not 4gbVramStrata: pass --port N.", file=sys.stderr)
                 return 2
             log_path = Path(tempfile.gettempdir()) / f"strata-bench-{os.getpid()}.log"
             say(f"Starting {cfg_path.name} on port {port} (loading takes 1-3 minutes; the PC may be slow meanwhile) ...")

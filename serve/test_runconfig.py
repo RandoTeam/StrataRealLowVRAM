@@ -1,6 +1,6 @@
 """serve/test_runconfig.py - #564: the web page's Settings view of the run config (GET / POST /config), against the
 mock engine: only the listed keys change, every other key of the file stays, a bad value changes nothing, and only
-PolyStrata's own page may write it (JSON, no foreign Origin, the API key when one is set).
+4gbVramStrata's own page may write it (JSON, no foreign Origin, the API key when one is set).
 
     python -m unittest serve.test_runconfig
 """

@@ -1,6 +1,6 @@
-# GLM 5.3 Flash (`strata-poly`)
+# GLM 5.3 Flash (`strata-fourgbvram`)
 
-PolyStrata adds a second engine, `strata-poly`, that runs GLM 5.3 Flash. It sits beside `strata`, which still runs
+4gbVramStrata adds a second engine, `strata-fourgbvram`, that runs GLM 5.3 Flash. It sits beside `strata`, which still runs
 Qwen3.8-Flash-Next as before. The server, the web app and the API are the same for both: a run config names the
 engine it starts.
 
@@ -18,11 +18,11 @@ It is early. This project has built and run it on one machine, with Linux and on
 | Model | `GLM-5.3-Flash-GSQ-RCO-3.0bit-q4kattn.gguf`, 113.6 GB, from [neuralll/GLM-5.3-Flash-GSQ-RCO-3.0bit-Q4Kattn-GGUF](https://huggingface.co/neuralll/GLM-5.3-Flash-GSQ-RCO-3.0bit-Q4Kattn-GGUF) |
 | Context | 32K |
 
-| | `strata-poly` | llama.cpp ([neurall's fork](https://github.com/neurall/llama.cpp)), stock settings |
+| | `strata-fourgbvram` | llama.cpp ([neurall's fork](https://github.com/neurall/llama.cpp)), `-ngl 999 -fa on`, `-ncmoe` lowered until the card is full |
 | --- | ---: | ---: |
-| Writes answers | 46 tokens/s after the prompt of 11,673 tokens and 62 to 66 after the one of 29,069, 62 to 65 for a 400-token answer to a short one | 26 tokens/s |
-| Reads a prompt of 3,059 tokens | 641 to 648 tokens/s | about 265 tokens/s |
-| Reads a prompt of 11,673 tokens | 760 to 817 tokens/s | |
+| Writes answers | 46 tokens/s after the prompt of 11,673 tokens and 62 to 66 after the one of 29,069, 62 to 65 for a 400-token answer to a short one | 25.5 to 29.7 tokens/s |
+| Reads a prompt of 3,059 tokens | 641 to 648 tokens/s | 61, 154 to 157, 273 to 278 tokens/s with `-ub` 512, 2048, 4096 |
+| Reads a prompt of 11,673 tokens | 760 to 817 tokens/s | 61, 199, 353 tokens/s with `-ub` 512, 2048, 4096 |
 | Reads a prompt of 29,069 tokens | 740 to 782 tokens/s | |
 | Starts | about 7 s with the file in the page cache | |
 
@@ -34,10 +34,16 @@ two runs of the build of 2026-10-06, which read the three prompts at 610 to 620,
 and wrote 47 to 51 after the long ones; the 400-token answer is that build's, and came at 64 to 65 from this one.
 The 29,069-token prompt starts like the 11,673-token one before it, so its first 10,240 tokens are not read
 again. An earlier build, measured the same way without the draft block, wrote 26.7 to 27.7 tokens/s and read the
-three prompts at 373, 334 and 312; [BACKENDS.md](BACKENDS.md#what-was-tuned) has what changed since. llama.cpp was
-not run again.
+three prompts at 373, 334 and 312; [BACKENDS.md](BACKENDS.md#what-was-tuned) has what changed since.
 
-The README's row for 3.0BIT is PolyStrata's own benchmark through the server, the test every model of this engine
+This table first gave llama.cpp at its stock settings, 26 tokens/s writing and about 265 reading. On 2026-10-21 it
+ran again on the same kind of machine with the same prompt ids, its experts placed by hand: the fork at c504768,
+`-ngl 999 -fa on -t 24 -c 16384`, and `-ncmoe` lowered until the card was full, 35 with the default batch of 512
+and 37 with `-ub 2048` and `-ub 4096`. A larger batch reads a prompt faster there and writes at the same speed, so
+the tuned runs end where the stock one did. On that machine the engine of 2f9d0e4d read the two prompts at 629 to
+634 and 799 to 802 tokens/s and wrote 42 to 53 tokens/s after them with the draft block, 44 to 48 without.
+
+The README's row for 3.0BIT is 4gbVramStrata's own benchmark through the server, the test every model of this engine
 gets ([BACKENDS.md](BACKENDS.md#a-prompt-of-30000-tokens)), with the engine of the ready-made release: a short chat
 written at 59 to 66 tokens/s, and a prompt of 29,154 tokens read whole at 820 to 824, with the first token after
 36 s and the answer after it written at 62 to 64. The build before read a prompt of 28,354 tokens there at 784 to
@@ -58,7 +64,7 @@ such a tie.
   so they should stay in the OS file cache: about 86 GB of the 107 GB on a 32 GB card. Setup's estimate for that card
   is 96 GB of RAM. It has run with 120 GB only. In a container, the memory limit must leave about 8 GB above the
   model's files: with less, answers read experts from the disk, and the container may end the engine
-  ([MULTI_GPU.md](MULTI_GPU.md#the-strata-poly-models) has the pod it happened on). The engine says so at load.
+  ([MULTI_GPU.md](MULTI_GPU.md#the-strata-fourgbvram-models) has the pod it happened on). The engine says so at load.
 - 114 GB of disk for the model file, and 3 GB for its draft block.
 
 ## Sizes
@@ -105,7 +111,7 @@ draft block, 2.8 GB, once for every size that needs it. The web app is at
 `http://127.0.0.1:8080`. After that, `./setup.sh` starts the model again without asking.
 
 - The compile needs g++ and the CUDA toolkit (12.8 or newer for an RTX 50 card). Setup offers to install what is
-  missing. The ready-made `strata-poly` of a release is for Windows only.
+  missing. The ready-made `strata-fourgbvram` of a release is for Windows only.
 - You already have the GGUF: `./setup.sh --family glm --gguf-dir /folder/with/the/file`.
 - The other options are the README's: `--context`, `--port`, `--host`, `--api-key`, `--gpu`, `--gpus`,
   `--layer-split`, `--yes`, `--no-start`.
@@ -113,8 +119,8 @@ draft block, 2.8 GB, once for every size that needs it. The web app is at
 
 On the test machine, with the file already on the disk, this took about five minutes.
 
-Setup writes the run config `strata-glm-3.0bit.json` and `run-glm-3.0bit.sh` into the PolyStrata folder, the engine into
-`engine-poly/`, and the tokenizer and the expert profile into the data folder. The profile starts as the counts in
+Setup writes the run config `strata-glm-3.0bit.json` and `run-glm-3.0bit.sh` into the 4gbVramStrata folder, the engine into
+`engine-fourgbvram/`, and the tokenizer and the expert profile into the data folder. The profile starts as the counts in
 `data/expert-profile-glm.txt`, which come from the test runs here, and the engine updates it after an answer, every
 10 seconds at most, and when it stops.
 
@@ -127,7 +133,7 @@ Build the engine:
 
 ```
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSTRATA_ENABLE_CUDA=ON
-cmake --build build --target strata-poly
+cmake --build build --target strata-fourgbvram
 ```
 
 Write the tokenizer out of the GGUF once:
@@ -140,8 +146,8 @@ Then write a run config, `glm.json`:
 
 ```json
 {
-  "exe": "build/strata-poly",
-  "cwd": "/path/to/PolyStrata",
+  "exe": "build/strata-fourgbvram",
+  "cwd": "/path/to/4gbVramStrata",
   "args": ["--model", "/models/GLM-5.3-Flash-GSQ-RCO-3.0bit-q4kattn.gguf",
            "--max-context", "32768",
            "--expert-profile", "glm.profile",
@@ -246,7 +252,7 @@ goes on from where it stopped, and an edit goes back to the nearest checkpoint.
 | `--max-context N` | 8192 | tokens a conversation can hold |
 | `--threads N` | all usable | CPU threads for the experts that are not in VRAM |
 | `--vram-reserve-mib N` | a thirty-second of the card, 256 to 768, or a sixteenth, 512 to 1024, kept whole, when the PC's free RAM is within 4 GiB of the model's files; else half of it after the first request | VRAM left free beside the expert cache |
-| `--layer-split S` | the first card alone | the model's layers across the cards the engine sees: `auto` (by each card's free VRAM) or the first layer of each later card, as `20` or `20,30` ([MULTI_GPU.md](MULTI_GPU.md#the-strata-poly-models)) |
+| `--layer-split S` | the first card alone | the model's layers across the cards the engine sees: `auto` (by each card's free VRAM) or the first layer of each later card, as `20` or `20,30` ([MULTI_GPU.md](MULTI_GPU.md#the-strata-fourgbvram-models)) |
 | `--expert-profile FILE` | | expert use counts, read at the start and written back after an answer, every 10 seconds at most, and at the end |
 | `--no-gpu-experts` | | keep every routed expert on the CPU |
 | `--any-node` | | on a PC with several NUMA nodes, let the CPU threads run on any of them |
@@ -257,7 +263,8 @@ goes on from where it stopped, and an edit goes back to the nearest checkpoint.
 | `--no-draft` | | do not run the block that guesses ahead |
 | `--draft-model FILE.gguf` | | a file of the same model to take that block from, when `--model` has none; setup passes the one it downloaded |
 | `--draft-vocab N` | 131072 for Qwen3.6, Ornith and Tiel Coder, all of it for the others | the block guesses among the vocabulary's first N tokens; 0 = all |
-| `--kv-whole` | on an AMD card | give the attention caches VRAM for the whole context at load, not as the conversation grows; setup writes it for an AMD card, where ROCm keeps the VRAM the expert cache gives back ([AMD_HIP.md](AMD_HIP.md#strata-poly-on-amd-beta)) |
+| `--kv-whole` | on an AMD card | give the attention caches VRAM for the whole context at load, not as the conversation grows; setup writes it for an AMD card, where ROCm keeps the VRAM the expert cache gives back ([AMD_HIP.md](AMD_HIP.md#strata-fourgbvram-on-amd-beta)) |
+| `--kv fmt` | fp16 | the K and V attention caches' format: `fp16` (default, unchanged); `q8_0` (ggml Q8_0 blocks: one fp16 scale a 32-value block of int8 codes: half the KV VRAM, the same answers on the tested models; `qwen35moe`'s); `int8` / `int8k` (Gemma 4's: the same rule in two arrays, so a reader takes four codes to a load; `int8k` keeps only the keys' side quantized) ([Q8_KV.md](Q8_KV.md)) |
 | `--prompt-batch N` | 1024 | prompt tokens read at a time, 1 to 4096; about 1.4 MiB of VRAM each |
 | `--stage-mib N` | 2048 | VRAM the experts outside the cache pass through while a prompt is read |
 | `--stage-ahead N` | 1024 | from N tokens, a batch copies those experts before the layer has chosen, as does every batch of a prompt of N tokens or more that is read several at a time; 0 = never |
@@ -270,24 +277,46 @@ goes on from where it stopped, and an edit goes back to the nearest checkpoint.
 | `--conversation-cache-min-free-mib N` | 2560 | park only while this much physical RAM stays free |
 | `--eos-ids ID,ID,...` | from the GGUF | tokens that end a reply |
 | `--tail-skip N` | 0; setup gives Qwen3.6 6 | an expert outside VRAM that every token of a window ranks at place N+1 or later among its experts is left out: faster, and the answers move a little |
+| `STRATA_FREEZE_EXPERTS` | not set | hold the split of the routed experts between the card and the CPU still for the engine's whole run, so a greedy answer is a function of the request alone: same request, same answer, bit for bit. With guesses on (`--window` above 1 and a block or `--lookup`) the block's guesses and their windows still take their sizes from the machine's pace, which the freeze does not hold: on the cards measured so far it repeated with them on (RX 9060 XT, several thread counts and loads) and on one RTX 4070 laptop it did not — add `--window 1` for a repeat wherever the guesses are on. Measured cost: nothing measurable on the default path, 4-7% at a short prompt with the freeze set |
 
-`strata-poly` with no arguments prints the list, with the options for running it without the server.
+`strata-fourgbvram` with no arguments prints the list, with the options for running it without the server.
+
+`--kv q8_0` is new: it stores the attention K and V caches as ggml Q8_0 blocks and is opt-in for the
+`qwen35moe` models. [Q8_KV.md](Q8_KV.md) has the format, the measured VRAM saving (46.88% at 131072), the
+fp16↔q8_0 parity on Tiel, Ornith and Occamy, and what was left alone (the `strata` engine, `glm5next`, Gemma 4,
+the default path).
+
+Gemma 4 has its own pair beside it: `--kv int8` (both sides quantized) and `--kv int8k` (the keys' side only,
+the values in fp16), with the same Q8_0 rule — the block's largest magnitude over 127 as the delta,
+`roundf(x / delta)` as the code — but the codes and the deltas in two arrays instead of ggml's 34-byte
+`block_q8_0`, so a reader takes four codes to an aligned load and a decode step is one `__dp4a`
+(`src/fourgbvram/kernels.cu`, `store_int8` / `attend_int8`; above 16K keys, an int8 tensor-core MMA). A prompt batch
+converts the codes it needs to halves once — O(rows) against an attention's O(rows²) — and cuBLAS takes it from
+there, as llama.cpp does on CUDA. Both are rejected for any other architecture at load
+(`--kv int8 and --kv int8k are Gemma 4's; for a qwen35moe model use --kv q8_0`). The figures: the kernel unit
+test (`fourgbvram_kv_int8_test`, 35 checks) agrees with ggml's own quantizer to the bit, and on a Gemma 4 26B the
+three formats run within run-to-run scatter of each other (prompt 984.0 / 941.8 / 968.1 ms and decode 37.68 /
+38.22 / 38.01 tok/s for fp16 / int8 / int8k, RTX 4070 Laptop, medians of 15) with the answers kept.
 
 ## What is missing
 
 - Other files of the model. The engine reads the layouts of four converters (neurall's llama.cpp fork,
   patrickbdevaney's, antirez's and Unsloth's), a model in several files, and the weight types llama.cpp's kernels
   have. Only the three sizes above have been run: setup offers no other.
-- A ready-made `strata-poly` off Windows, or for a driver older than CUDA 13's: setup compiles it there.
+- A ready-made `strata-fourgbvram` off Windows, or for a driver older than CUDA 13's: setup compiles it there.
 - GLM on Windows, by this project: no PC with the RAM for it was at hand, and setup asks before it installs it
   there. A user ran 3.0BIT on Windows 10 with an RTX 5090 D v2 (24 GB) and 128 GB of RAM
   ([issue 10](https://github.com/VecSzn/PolyStrata/issues/10)): 1,483 experts in VRAM, 26 to 30 tokens/s after
   a short prompt, 10K tokens read at 375 to 395. The context set to 1,048,576 in the run config loaded and
   answered, and one request of 557K tokens was read at 286 tokens/s with the three facts planted in it found.
-- Intel cards, and AMD cards on Windows. On Linux setup compiles the engine for an AMD card
-  ([AMD_HIP.md](AMD_HIP.md#strata-poly-on-amd-beta)), a beta tested with Qwen3.6 and Ornith on an RX 7600; GLM
-  itself has not been tried on one, and setup says so. Two NVIDIA cards can share the model
-  ([MULTI_GPU.md](MULTI_GPU.md#the-strata-poly-models)): REAP50 has run on two 10 GB cards under Linux.
+  With 0.1.44.1-poly.5 a request of 1,002,452 tokens was read in 45.7 minutes (66.3 with poly.2), the three
+  facts found, and from the second request after it the engine wrote at 25 to 30 tokens/s again.
+- Intel cards, and Gemma 4 and GLM on an AMD card. On Linux setup compiles the engine for an AMD card
+  ([AMD_HIP.md](AMD_HIP.md#strata-fourgbvram-on-amd-beta)), a beta tested with Qwen3.6 and Ornith on an RX 7600, and
+  setup compiles it under Windows too (AMD's TheRock wheels in `.rocm-win`), where one model, Tiel Coder,
+  has run on an RX 9070 XT; GLM itself has not been tried on an AMD card, and setup says so. Two NVIDIA cards can
+  share the model ([MULTI_GPU.md](MULTI_GPU.md#the-strata-fourgbvram-models)): REAP50 has run on two 10 GB cards under
+  Linux.
 - Pictures. The model's image input is not read.
 - Several requests decoded together (`"parallel"`). Requests wait their turn.
 - `--prompt-cache-root` and `--turn-token`. Checkpoints are taken by position.

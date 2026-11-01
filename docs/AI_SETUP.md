@@ -1,7 +1,7 @@
-# Installing PolyStrata for a user (instructions for AI agents)
+# Installing 4gbVramStrata for a user (instructions for AI agents)
 
 This page is written for an AI coding assistant (Claude Code, Cursor, Codex, GitHub Copilot, ...) that a user asked to
-set up PolyStrata on their PC. PolyStrata runs the Qwen3.8-Flash-Next model locally on one NVIDIA or AMD graphics card plus
+set up 4gbVramStrata on their PC. 4gbVramStrata runs the Qwen3.8-Flash-Next model locally on one NVIDIA or AMD graphics card plus
 system RAM, and serves an OpenAI- and Anthropic-compatible API on `http://127.0.0.1:8080`. The human-oriented
 version of everything below is [INSTALL.md](INSTALL.md).
 
@@ -13,7 +13,7 @@ Work through the steps in order. Tell the user what you are doing in plain words
   access from other devices, use `--host 0.0.0.0` **together with** `--api-key <a long random secret>`, and give the
   user the key. Never put a tunnel or port forward in front of a server without a key.
 - Do not change the user's system beyond what setup does (setup installs Python for the user account if needed,
-  and everything else inside the PolyStrata folder and its `PolyStrata-data` folder). Ask before installing drivers.
+  and everything else inside the 4gbVramStrata folder and its `4gbVramStrata-data` folder). Ask before installing drivers.
 - The model download is ~70 GB (94 GB for Unsloth's UD-IQ4_XS, 111 GB for UD-Q4_K_XL). Confirm the user is fine with that before you
   start, especially on a metered connection.
 - Setup is long-running (an hour or more on a slow connection). Run it in the background or with a long timeout and
@@ -23,7 +23,7 @@ Work through the steps in order. Tell the user what you are doing in plain words
 ## 1. Check the PC
 
 The quickest way is setup's own check, which prints the GPU(s), driver, RAM, CPU, free disk and whether this PC can run
-PolyStrata, and installs nothing except Python and the `.venv` it needs to run (step 2 gets the repository first):
+4gbVramStrata, and installs nothing except Python and the `.venv` it needs to run (step 2 gets the repository first):
 
 ```
 Windows:  START-HERE.bat --check
@@ -54,14 +54,14 @@ Requirements (details: [INSTALL.md](INSTALL.md#what-you-need)):
 
 If the PC does not meet them, say which part is missing and stop.
 
-## 2. Get PolyStrata
+## 2. Get 4gbVramStrata
 
 ```
 git clone https://github.com/VecSzn/PolyStrata.git
 ```
 
 Without git: download https://github.com/VecSzn/PolyStrata/archive/refs/heads/main.zip and unzip it. Pick a drive with
-enough free space: the model files go to a `PolyStrata-data` folder **next to** the PolyStrata folder (or `--data-dir <path>`
+enough free space: the model files go to a `4gbVramStrata-data` folder **next to** the 4gbVramStrata folder (or `--data-dir <path>`
 on another drive).
 
 ## 3. Pick the model
@@ -93,6 +93,12 @@ on a PC with too little RAM for it; QAD-Q4_0, UD-Q6_K_XL and Q8_0 are by name. I
 only to companies with less than 10 million US dollars of yearly revenue. Take it only when the user asks for it,
 and read [LFM.md](LFM.md) first.
 
+`--family flint` (Flint 40B-A2.5B, by Recursive) runs on that engine as well, experimental: Linux or Windows, one
+NVIDIA card, an 18 to 42 GB download, about 22 to 46 GB of RAM beside an 8 GB card by setup's estimate, no images.
+Leave `--model` out: setup takes UD-Q4_K_XL where the PC has about 15 GB of RAM past that estimate (40 GB beside an
+8 GB card), else UD-Q3_K_XL; UD-Q6_K_XL and Q8_0 are by name. Its license is Apache 2.0. Take it only when the user
+asks for it, and read [FLINT.md](FLINT.md) first.
+
 `--family qwen36`, `--family ornith` and `--family gemma4` (Qwen3.6-35B-A3B, Ornith 1.5, Gemma 4 26B-A4B) are
 smaller models on GLM's engine, and experimental too: Linux or Windows, one NVIDIA card, an 11 to 24 GB download,
 about 15 to 28 GB of RAM beside an 8 GB card by setup's estimate, by size. On Windows setup compiles the engine
@@ -102,9 +108,17 @@ has three sizes. Leave `--model` out: setup takes UD-Q3_K_M (APEX-I-COMPACT for 
 with too little RAM for it. The largest is by name, `--model UD-Q4_K_M` or `--model APEX-I-QUALITY`.
 Take one only when the user asks for it; [BACKENDS.md](BACKENDS.md#install) has what was measured.
 
+`--family kolibri` (Kolibri 1, by Aleph Alpha, in Hob-forge's own GGUF conversion) is a new model on the same
+engine, and experimental: Linux or Windows, one or two NVIDIA cards of 8 GB or more (it has run on one and on two
+32 GB V100s, and on a 12 GB one under Windows), a 29 to 48 GB download, about 33 to 52 GB of RAM beside an 8 GB
+card by setup's estimate and about 16 to 26 GB beside a 32 GB one, no images and no draft model. At 131K context
+one 32 GB V100 wrote 91 tokens/s and read a 32K prompt at 1,017 tokens/s (first token 32.7 s); two with the
+layers split wrote 93 and read it at 2,179 (first token 15.3 s); three runs, the medians above. `--model`
+takes Q4_K_M, Q2_K on a PC with little RAM, or Q3_K_M by name. The support is new, the GGUF independent: ask first.
+
 ## 4. Run setup without questions
 
-From the PolyStrata folder (Windows: in `cmd`, or `cmd /c START-HERE.bat ...` from PowerShell):
+From the 4gbVramStrata folder (Windows: in `cmd`, or `cmd /c START-HERE.bat ...` from PowerShell):
 
 ```
 Windows:  START-HERE.bat --yes --family qwen --model IQ2_XS --no-start
@@ -123,6 +137,9 @@ The flags (all of them: `START-HERE.bat --help`):
 | `--gpu N` / `--gpus 0,1` / `--gpus all` | one card, or several sharing the model (default: the card with the most VRAM) |
 | `--backend cuda\|hip` | NVIDIA or AMD engine; chosen by itself on a PC with only one kind of card |
 | `--data-dir PATH` | where the 70-120 GB of model files go |
+| `--custom-gguf PATH` | install one custom GGUF; setup reads the header and picks family/size. Not for nvfp4 packs |
+| `--gguf-dir PATH` | run GGUFs you already have by name; strata-fourgbvram also accepts same-arch fine-tunes. Not for nvfp4 packs |
+| `--inspect` | print what setup would read from a GGUF; no install |
 | `--port N` | the server port (default 8080) |
 | `--host H --api-key K` | listen beyond this PC; **only together with a key** |
 | `--no-start` | install only, do not start the server |
@@ -150,7 +167,7 @@ Notes:
 - It downloads about 70 GB from Hugging Face; how long depends on their connection (at 100 Mbit/s roughly 1.5-2
   hours). It can be stopped and continues where it left off.
 - Then it prepares the model for their PC (a few minutes) and, on AMD on Linux, compiles the engine.
-- **When the model starts, the PC can be slow or stop responding for 1-3 minutes** (longest the first time): PolyStrata
+- **When the model starts, the PC can be slow or stop responding for 1-3 minutes** (longest the first time): 4gbVramStrata
   loads 35-55 GB into RAM and locks part of it for the graphics card. That is normal; they should not close the window.
 - Nothing leaves their PC: the model runs locally.
 
@@ -185,7 +202,7 @@ curl http://127.0.0.1:8080/v1/chat/completions -H "Content-Type: application/jso
 ```
 
 With an API key, add `-H "Authorization: Bearer <key>"`. The server window prints a `ready: http://127.0.0.1:8080/v1`
-line when it is ready; the engine log is `strata-<model>.log` in the PolyStrata folder.
+line when it is ready; the engine log is `strata-<model>.log` in the 4gbVramStrata folder.
 
 ## 8. Connect the user's apps
 
@@ -196,11 +213,11 @@ line when it is ready; the engine log is `strata-<model>.log` in the PolyStrata 
 - **Codex CLI and other Responses API apps:** `http://127.0.0.1:8080/v1/responses` (stateless; Codex's
   `config.toml`: [DETAILS.md](DETAILS.md#the-responses-api-and-codex-cli)).
 - **Claude Code:** `ANTHROPIC_BASE_URL=http://127.0.0.1:8080`, `ANTHROPIC_MODEL` set to a Claude model name it knows
-  (PolyStrata ignores the name), and any `ANTHROPIC_AUTH_TOKEN` (or the configured key). Add
+  (4gbVramStrata ignores the name), and any `ANTHROPIC_AUTH_TOKEN` (or the configured key). Add
   `"fit_max_tokens": true` to `strata-<model>.json`: Claude Code asks for 32,000 tokens of answer in every request,
   and the server refuses a request whose prompt leaves less room than that in the context.
 - **Thinking level:** `"reasoning_effort": "none" | "low" | "medium" | "high"` (default high).
-- PolyStrata answers one request at a time; `"parallel": N` in the model's config (or setup `--parallel N`) decodes up to
+- 4gbVramStrata answers one request at a time; `"parallel": N` in the model's config (or setup `--parallel N`) decodes up to
   N together ([BATCHING.md](BATCHING.md)). API details: [DETAILS.md](DETAILS.md#using-it).
 
 ## 9. When something fails
@@ -209,7 +226,7 @@ line when it is ready; the engine log is `strata-<model>.log` in the PolyStrata 
 | --- | --- |
 | `the NVIDIA driver is too old` | The user updates the driver (NVIDIA App or nvidia.com/drivers) and restarts; rerun setup. |
 | Download or install stopped | Rerun the same setup command; it continues. |
-| `port 8080 is already in use` | PolyStrata is already running (check `/health`), or use `--port 8081`. |
+| `port 8080 is already in use` | 4gbVramStrata is already running (check `/health`), or use `--port 8081`. |
 | Very slow, disk busy, or "the engine stopped unexpectedly" | Not enough free RAM: close programs, or set up a smaller size (`--setup --model Q2_0` or IQ2_XS). |
 | `ExpertCache: cudaMalloc(...) failed: out of memory` with free VRAM (Windows) | The page file is off or tiny: set a fixed size (Custom size, the same initial and maximum size, e.g. 65536 MB) and restart; a page file Windows grows on demand ("System managed") may not grow in time (#60). |
 | `prompt ... exceeds the context` | Rerun setup with `--setup --context <bigger>`. |
@@ -221,6 +238,6 @@ collect `strata-<model>.log` and the setup output, and suggest an issue at https
 
 ## Alternative: the MCP server
 
-PolyStrata also has an MCP server, so an AI tool can check, install, start and stop PolyStrata through tool calls
+4gbVramStrata also has an MCP server, so an AI tool can check, install, start and stop 4gbVramStrata through tool calls
 (`strata_status`, `strata_models`, `strata_install`, `strata_start`, `strata_stop`, `strata_logs`) instead of the
 shell commands above. See [MCP_SERVER.md](MCP_SERVER.md).

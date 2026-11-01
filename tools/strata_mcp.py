@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
-"""tools/strata_mcp.py - an MCP server that lets an AI assistant install, start, check and stop PolyStrata.
+"""tools/strata_mcp.py - an MCP server that lets an AI assistant install, start, check and stop 4gbVramStrata.
 
-    claude mcp add strata -- python /path/to/PolyStrata/tools/strata_mcp.py
+    claude mcp add strata -- python /path/to/4gbVramStrata/tools/strata_mcp.py
 
 Add it to Claude Code, Claude Desktop, Cursor, VS Code, Codex ... (docs/MCP_SERVER.md has every client's snippet) and
-ask your AI "install PolyStrata for this PC", "start PolyStrata", "is PolyStrata running?".  It speaks MCP (JSON-RPC 2.0, one
+ask your AI "install 4gbVramStrata for this PC", "start 4gbVramStrata", "is 4gbVramStrata running?".  It speaks MCP (JSON-RPC 2.0, one
 message per line) over stdin/stdout, uses the Python standard library only (it runs before setup made .venv; Python
 3.10 or newer), and offers a fixed set of tools: strata_status, strata_models, strata_install, strata_start,
 strata_stop, strata_logs, strata_benchmark, strata_connect_info.
 
 Safety: no tool takes a shell command or a free path.  Every argument is checked against setup.py's own choices
-(models, families, contexts ...); the only path argument (install's data_dir) must be the PolyStrata data folder, a folder
-inside the PolyStrata folder, or a new folder named PolyStrata* outside the system folders.  Setup and the model run as
+(models, families, contexts ...); the only path argument (install's data_dir) must be the 4gbVramStrata data folder, a folder
+inside the 4gbVramStrata folder, or a new folder named 4gbVramStrata* outside the system folders.  Setup and the model run as
 background processes this server starts itself; it keeps their process id and start time in .strata-mcp/ and only
-ever stops a process it started (a PolyStrata started elsewhere, e.g. from its own window, is only asked over its API to
+ever stops a process it started (a 4gbVramStrata started elsewhere, e.g. from its own window, is only asked over its API to
 unload the model).
 
-Not to be confused with serve/mcp.py: that is PolyStrata's MCP *client* (the model calling your tools from the chat page).
+Not to be confused with serve/mcp.py: that is 4gbVramStrata's MCP *client* (the model calling your tools from the chat page).
 This file is an MCP *server* for the AI assistant you already use.
 """
 from __future__ import annotations
@@ -44,7 +44,7 @@ VERSION = "0.1.0"
 WIN = os.name == "nt"
 DEFAULT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PORT = 8080
-STATE_DIR = ".strata-mcp"                             # in the PolyStrata folder (git-ignored)
+STATE_DIR = ".strata-mcp"                             # in the 4gbVramStrata folder (git-ignored)
 
 # What setup.py offers, used only when setup.py cannot be imported (the numbers are setup's MODELS / FAMILIES /
 # CONTEXTS; tools/test_strata_mcp.py checks they still match).
@@ -102,17 +102,17 @@ FALLBACK_FAMILIES = {
                                                               "~80 GB of RAM to keep every expert in RAM",
               "tag": "nvfp4-"},
     "glm": {"title": "GLM 5.3 Flash", "about": "another model, with its own engine: Linux, one NVIDIA card (run on "
-                                               "32 GB), 64-128 GB of RAM", "tag": "glm-", "engine": "poly",
+                                               "32 GB), 64-128 GB of RAM", "tag": "glm-", "engine": "fourgbvram",
             "vision": False, "experimental": True},
     "deepseek": {"title": "DeepSeek V4 Flash", "about": "another model on GLM's engine: Linux, one NVIDIA card (run on "
                                                        "32 GB), ~72 GB of RAM beside it; a 91 GB download, no images",
-                 "tag": "dsv4-", "engine": "poly", "vision": False, "experimental": True,
+                 "tag": "dsv4-", "engine": "fourgbvram", "vision": False, "experimental": True,
                  "models": {"UD-IQ2_XXS": {"about": "2-bit i-quant experts (Unsloth Dynamic), 3-bit and MXFP4 where "
                                                     "they write", "download_gb": 90.9, "ram_gb": 72, "arena_gb": 83.9}}},
-    "lfm25": {"title": "LFM2.5-24B-A2B", "about": "on the strata-poly engine: one NVIDIA card, Linux or Windows; a "
+    "lfm25": {"title": "LFM2.5-24B-A2B", "about": "on the strata-fourgbvram engine: one NVIDIA card, Linux or Windows; a "
                                                    "15 GB file, ~20 GB of RAM beside an 8 GB card; four other sizes "
                                                    "too, no images",
-              "tag": "lfm25-", "engine": "poly", "vision": False, "experimental": True,
+              "tag": "lfm25-", "engine": "fourgbvram", "vision": False, "experimental": True,
               "models": {"UD-Q4_K_XL": {"about": "4-bit experts (Unsloth Dynamic), 5- and 6-bit where they write",
                                         "download_gb": 14.9, "ram_gb": 20, "arena_gb": 14.0},
                          "UD-Q3_K_XL": {"about": "3-bit i-quant experts, 4-bit where they write: the least RAM",
@@ -123,46 +123,91 @@ FALLBACK_FAMILIES = {
                                         "download_gb": 21.9, "ram_gb": 27, "arena_gb": 20.9},
                          "Q8_0": {"about": "8-bit throughout: the closest to the model as trained",
                                   "download_gb": 25.5, "ram_gb": 31, "arena_gb": 24.4}}},
+    "flint": {"title": "Flint 40B-A2.5B", "about": "on the strata-fourgbvram engine: one NVIDIA card, Linux or Windows; a "
+                                                    "25 GB file, ~29 GB of RAM beside an 8 GB card; three other sizes "
+                                                    "too, no images",
+              "tag": "flint-", "engine": "fourgbvram", "vision": False, "experimental": True,
+              "models": {"UD-Q4_K_XL": {"about": "4- and 5-bit experts (Unsloth Dynamic)",
+                                        "download_gb": 25.1, "ram_gb": 29, "arena_gb": 23.1},
+                         "UD-Q3_K_XL": {"about": "3-bit i-quant experts, 4-bit where they write: the least RAM",
+                                        "download_gb": 18.5, "ram_gb": 22, "arena_gb": 16.5},
+                         "UD-Q6_K_XL": {"about": "6-bit experts, 8-bit where they write",
+                                        "download_gb": 36.3, "ram_gb": 40, "arena_gb": 34.2},
+                         "Q8_0": {"about": "8-bit throughout: the closest to the model as trained",
+                                  "download_gb": 42.3, "ram_gb": 46, "arena_gb": 40.2}}},
+    "kolibri": {"title": "Kolibri 1",
+                "about": "on the strata-fourgbvram engine, with the kolibri1 patch: Linux or Windows, one or two NVIDIA cards "
+                         "(run on 32 GB, and on 12 GB under Windows); a 48 GB file, ~52 GB of RAM beside an 8 GB "
+                         "card; two other sizes too, no images",
+                "tag": "kolibri1-", "engine": "fourgbvram", "vision": False, "experimental": True,
+                "models": {"Q4_K_M": {"about": "4-bit: Q4_K gate/up, Q6_K down on half the layers",
+                                      "download_gb": 47.5, "ram_gb": 52, "arena_gb": 45.7},
+                           "Q2_K": {"about": "2-bit, the fastest: the least RAM",
+                                    "download_gb": 28.6, "ram_gb": 33, "arena_gb": 26.9},
+                           "Q3_K_M": {"about": "3-bit: the least RAM that still reads well",
+                                      "download_gb": 37.5, "ram_gb": 42, "arena_gb": 35.8}}},
     # a family with sizes of its own ("models"): two of these have a size of one name
-    "qwen36": {"title": "Qwen3.6-35B-A3B", "about": "on the strata-poly engine: one NVIDIA card, Linux or Windows; a "
+    "qwen36": {"title": "Qwen3.6-35B-A3B", "about": "on the strata-fourgbvram engine: one NVIDIA card, Linux or Windows; a "
                                                      "17 GB file, ~21 GB of RAM beside an 8 GB card; a smaller and a "
                                                      "larger size too",
-               "tag": "qwen36-", "engine": "poly", "vision": True, "experimental": True,
+               "tag": "qwen36-", "engine": "fourgbvram", "vision": True, "experimental": True,
                "models": {"UD-Q3_K_M": {"about": "3-bit experts (Unsloth Dynamic), its draft block in the file",
                                         "download_gb": 17.1, "ram_gb": 21, "arena_gb": 14.6},
                           "UD-Q2_K_XL": {"about": "2- and 3-bit i-quant experts (Unsloth Dynamic): the least RAM",
                                          "download_gb": 12.6, "ram_gb": 17, "arena_gb": 10.8},
                           "UD-Q4_K_M": {"about": "4-bit experts (Unsloth Dynamic), 5- and 6-bit where they write",
                                         "download_gb": 22.7, "ram_gb": 27, "arena_gb": 20.1}}},
+    "clover": {"title": "Clover-35B-A3B-Preview", "about": "on the strata-fourgbvram engine: one NVIDIA card, Linux or "
+                                                            "Windows; a 17 GB file, ~20 GB of RAM beside an 8 GB card; "
+                                                            "a smaller and a larger size too, no images",
+               "tag": "clover-", "engine": "fourgbvram", "vision": False, "experimental": True,
+               "models": {"Q3_K_M": {"about": "3-bit experts, 4- and 5-bit where they write",
+                                     "download_gb": 16.8, "ram_gb": 20, "arena_gb": 15.3},
+                          "APEX-I-NANOPLUS": {"about": "2- and 3-bit experts (APEX): the least RAM",
+                                              "download_gb": 12.6, "ram_gb": 16, "arena_gb": 10.8},
+                          "Q4_K_M": {"about": "4-bit experts, 6-bit where they write",
+                                     "download_gb": 21.2, "ram_gb": 25, "arena_gb": 19.5}}},
     "ornith": {"title": "Ornith 1.5 35B-A3B", "about": "Qwen3.6-35B-A3B's architecture, other weights; a 17 GB file, "
                                                         "~22 GB of RAM beside an 8 GB card; a smaller and a larger "
                                                         "size too", "tag": "ornith-",
-               "engine": "poly", "vision": True, "experimental": True,
+               "engine": "fourgbvram", "vision": True, "experimental": True,
                "models": {"APEX-I-COMPACT": {"about": "3- and 4-bit K-quant experts (APEX), its draft block in the "
                                                       "file", "download_gb": 17.4, "ram_gb": 22, "arena_gb": 15.8},
                           "APEX-I-MINI": {"about": "2- and 3-bit experts (APEX): the least RAM",
                                           "download_gb": 14.4, "ram_gb": 18, "arena_gb": 12.9},
                           "APEX-I-QUALITY": {"about": "4- to 6-bit experts (APEX)",
                                              "download_gb": 23.7, "ram_gb": 28, "arena_gb": 21.6}}},
-    "gemma4": {"title": "Gemma 4 26B-A4B", "about": "on the strata-poly engine too; a 13 GB file, ~18 GB of RAM beside an 8 GB "
+    "gemma4": {"title": "Gemma 4 26B-A4B", "about": "on the strata-fourgbvram engine too; a 13 GB file, ~18 GB of RAM beside an 8 GB "
                                                      "card; a smaller and a larger size too", "tag": "gemma4-",
-               "engine": "poly", "vision": True, "experimental": True,
+               "engine": "fourgbvram", "vision": True, "experimental": True,
                "models": {"UD-Q3_K_M": {"about": "3-bit experts (Unsloth Dynamic), and Google's draft model for it",
                                         "download_gb": 13.2, "ram_gb": 18, "arena_gb": 10.3},
                           "UD-Q2_K_XL": {"about": "2-bit i-quant experts (Unsloth Dynamic): the least RAM; the same "
                                                   "draft model", "download_gb": 11.0, "ram_gb": 15, "arena_gb": 8.7},
                           "UD-Q4_K_M": {"about": "4- and 5-bit experts (Unsloth Dynamic); the same draft model",
-                                        "download_gb": 17.4, "ram_gb": 21, "arena_gb": 14.3}}},
+                                        "download_gb": 17.4, "ram_gb": 21, "arena_gb": 14.3},
+                          "QAT-UD-Q4_K_XL": {"about": "Google's QAT weights, 4-bit (Unsloth Dynamic), with their own "
+                                                      "draft model", "download_gb": 14.7, "ram_gb": 19, "arena_gb": 12.8}}},
     "tiel": {"title": "Tiel Coder 35B-A3B", "about": "Ornith 1.5 quantized for coding, with the Sharp chat template; a "
                                                     "17 GB file, ~21 GB of RAM beside an 8 GB card; a smaller and a "
                                                     "larger size too", "tag": "tiel-",
-             "engine": "poly", "vision": True, "experimental": True,
+             "engine": "fourgbvram", "vision": True, "experimental": True,
              "models": {"UD-Q3_K_XL": {"about": "3-bit i-quant experts, 4-bit where they write; its draft block in "
                                                 "the file", "download_gb": 17.2, "ram_gb": 21, "arena_gb": 14.6},
                         "UD-IQ3_XXS": {"about": "2-bit i-quant experts, 3-bit where they write: the least RAM",
                                        "download_gb": 13.6, "ram_gb": 18, "arena_gb": 11.5},
                         "UD-Q4_K_XL": {"about": "4-bit experts, 5- and 6-bit where they write",
                                        "download_gb": 22.7, "ram_gb": 27, "arena_gb": 20.0}}},
+    "minicpmv": {"title": "MiniCPM-V 4.7 35B-A3B", "about": "Qwen3.6-35B-A3B's architecture, OpenBMB's weights, and it "
+                                                            "reads pictures too; a 22 GB file, ~25 GB of RAM beside an "
+                                                            "8 GB card; a smaller and a larger size too",
+                 "tag": "minicpmv-", "engine": "fourgbvram", "vision": True, "experimental": True,
+                 "models": {"Q4_K_M": {"about": "4-bit experts (K-quant), 5- and 6-bit where they write",
+                                       "download_gb": 21.2, "ram_gb": 25, "arena_gb": 19.5},
+                            "mix_q3gud_im": {"about": "3- and 4-bit experts (imatrix mix): the least RAM",
+                                             "download_gb": 15.5, "ram_gb": 19, "arena_gb": 13.8},
+                            "Q6_K": {"about": "6-bit experts (K-quant)",
+                                     "download_gb": 28.5, "ram_gb": 31, "arena_gb": 26.4}}},
 }
 FALLBACK_CONTEXTS = [8192, 32768, 65536, 131072, 204800, 262144, 393216, 524288]
 BENCH_PROMPT = ("Write a short story (about 300 words) about a lighthouse keeper who finds a message in a bottle. "
@@ -468,9 +513,9 @@ def system_folders() -> list[Path]:
                               "/sys", "/usr", "/var", "/snap")]
 
 
-# ------------------------------------------------------------------------------------------------ PolyStrata
+# ------------------------------------------------------------------------------------------------ 4gbVramStrata
 class Strata:
-    """One PolyStrata folder: what is installed there, the PC, and the processes this server started."""
+    """One 4gbVramStrata folder: what is installed there, the PC, and the processes this server started."""
 
     def __init__(self, root: Path | str = DEFAULT_ROOT):
         self.root = Path(root).resolve()
@@ -526,8 +571,8 @@ class Strata:
     # ---- paths
     def settings_path(self) -> Path:
         if WIN:
-            return Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming") / "PolyStrata" / "settings.json"
-        return Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config") / "polystrata" / "settings.json"
+            return Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming") / "4gbVramStrata" / "settings.json"
+        return Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config") / "fourgbvramstrata" / "settings.json"
 
     def data_dir(self) -> Path:
         try:
@@ -535,7 +580,7 @@ class Strata:
         except (OSError, ValueError):
             s = {}
         d = s.get("data_dir") if isinstance(s, dict) else None
-        return Path(d) if d else self.root.parent / "PolyStrata-data"
+        return Path(d) if d else self.root.parent / "4gbVramStrata-data"
 
     def allowed_roots(self) -> list[Path]:
         return [norm(self.root), norm(self.data_dir())]
@@ -846,14 +891,14 @@ class Strata:
         return None
 
     def probe(self, port: int, deep=True) -> dict | None:
-        """What answers on 127.0.0.1:port: a PolyStrata server's facts, {"other": True} for something else, None for
+        """What answers on 127.0.0.1:port: a 4gbVramStrata server's facts, {"other": True} for something else, None for
         nothing."""
         base = f"http://127.0.0.1:{port}"
         st, health = http_json(base + "/health", timeout=self.health_timeout)
         if st == 0:
             return None
         if st != 200 or not isinstance(health, dict) or health.get("service") != "strata":
-            return {"port": port, "other": True, "note": "something else answers on this port (not a PolyStrata server)"}
+            return {"port": port, "other": True, "note": "something else answers on this port (not a 4gbVramStrata server)"}
         info = {"port": port, "url": base, "model": health.get("model"), "context": health.get("max_context"),
                 "images": health.get("images"), "loaded": health.get("loaded"),
                 "api_key_required": bool(health.get("api_key"))}
@@ -1032,8 +1077,8 @@ def tool_defs(models: dict, families: dict, contexts: list) -> list:
                                       "'coder-iq1_m', 'swift-iq3_xxs'); default: the most recently used one"}
     ro = {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": False}
     return [
-        {"name": "strata_status", "title": "PolyStrata status",
-         "description": "Is PolyStrata (the local AI model server) running, and what is installed? Reports the running "
+        {"name": "strata_status", "title": "4gbVramStrata status",
+         "description": "Is 4gbVramStrata (the local AI model server) running, and what is installed? Reports the running "
                         "server (model, engine version, context, busy or idle, VRAM/RAM in use), the installed models "
                         "and data folder, an install in progress, this PC's hardware (OS, CPU, RAM, GPUs, free disk) "
                         "and the model size setup recommends for this PC. Read-only; call it first.",
@@ -1042,19 +1087,20 @@ def tool_defs(models: dict, families: dict, contexts: list) -> list:
              "hardware": {"type": "boolean", "description": "include the hardware check and the recommendation "
                                                             "(default true; takes a second or two)"}}},
          "annotations": ro},
-        {"name": "strata_models", "title": "PolyStrata models",
-         "description": "The models and sizes PolyStrata's setup offers (families: qwen = Qwen3.8-Flash-Next, swift = "
+        {"name": "strata_models", "title": "4gbVramStrata models",
+         "description": "The models and sizes 4gbVramStrata's setup offers (families: qwen = Qwen3.8-Flash-Next, swift = "
                         "Swift 1.5, coder = the Coder, unsloth = Unsloth's ~4-bit, glm = GLM 5.3 Flash, another "
                         "model with its own engine, deepseek = DeepSeek V4 Flash on that engine, lfm25 = LFM2.5-24B-A2B, "
-                        "qwen36 = Qwen3.6-35B-A3B, ornith = Ornith 1.5, gemma4 = Gemma 4 26B-A4B and tiel = Tiel "
+                        "flint = Flint 40B-A2.5B, kolibri = Kolibri 1, qwen36 = Qwen3.6-35B-A3B, ornith = Ornith 1.5, "
+                        "gemma4 = Gemma 4 26B-A4B and tiel = Tiel "
                         "Coder 35B-A3B, 11-25 GB models on that engine), with "
                         "download size, RAM needed, "
                         "whether each fits this PC, which are installed, the context lengths, and the recommendation. "
                         "Read-only.",
          "inputSchema": {"type": "object", "additionalProperties": False, "properties": {}},
          "annotations": ro},
-        {"name": "strata_install", "title": "Install PolyStrata",
-         "description": "Install a PolyStrata model on this PC by running PolyStrata's setup non-interactively in the "
+        {"name": "strata_install", "title": "Install 4gbVramStrata",
+         "description": "Install a 4gbVramStrata model on this PC by running 4gbVramStrata's setup non-interactively in the "
                         "background (Python packages, the engine, a 13-114 GB model download, preparation, start "
                         "script). Without confirm=true it only returns the plan (what would be downloaded, disk "
                         "space): show it to the user and call again with confirm=true once they agree. Returns at "
@@ -1071,11 +1117,13 @@ def tool_defs(models: dict, families: dict, contexts: list) -> list:
                                        "Flash (another model: Linux, one NVIDIA card, 64-128 GB of RAM, a 79 or "
                                        "114 GB download, no images), deepseek = DeepSeek V4 Flash (GLM's "
                                        "engine: Linux, one NVIDIA card, ~72 GB of RAM beside a 32 GB card, a 91 "
-                                       "GB download, no images), lfm25 = LFM2.5-24B-A2B, qwen36 = "
+                                       "GB download, no images), lfm25 = LFM2.5-24B-A2B, flint = Flint 40B-A2.5B, "
+                                       "kolibri = Kolibri 1 (Linux or Windows, one NVIDIA card, ~52 GB of RAM "
+                                       "beside an 8 GB card, a 48 GB download, no images), qwen36 = "
                                        "Qwen3.6-35B-A3B, ornith = Ornith 1.5, gemma4 = Gemma 4 26B-A4B, tiel = "
                                        "Tiel Coder 35B-A3B (GLM's engine: one NVIDIA card, an 11-25 GB download, "
                                        "15-31 GB of RAM beside an 8 GB card by setup's estimate; images with "
-                                       "vision except LFM2.5)"},
+                                       "vision except LFM2.5 and Flint)"},
              "model": {"type": "string", "enum": list(dict.fromkeys(
                            [*models, *(m for f in families.values() for m in f.get("models", ()))])),
                        "description": "the size (quantization): see strata_models"},
@@ -1096,17 +1144,17 @@ def tool_defs(models: dict, families: dict, contexts: list) -> list:
                          "description": "setup's low-RAM mode (default auto)"},
              "port": {**port, "description": "the port the model will listen on (default 8080)"},
              "data_dir": {"type": "string", "maxLength": 260,
-                          "description": "where the model files go (default: the PolyStrata-data folder next to the "
-                                         "PolyStrata folder). Only the current data folder, a folder inside the PolyStrata "
-                                         "folder, or a new absolute path whose last folder is named PolyStrata... "
-                                         "(e.g. D:\\PolyStrata-data) outside system folders"},
+                          "description": "where the model files go (default: the 4gbVramStrata-data folder next to the "
+                                         "4gbVramStrata folder). Only the current data folder, a folder inside the 4gbVramStrata "
+                                         "folder, or a new absolute path whose last folder is named 4gbVramStrata... "
+                                         "(e.g. D:\\4gbVramStrata-data) outside system folders"},
              "confirm": {"type": "boolean", "description": "true = really start the install (after the user agreed "
                                                            "to the plan and the download size)"},
              "cancel": {"type": "boolean", "description": "true = stop the install in progress"}}},
          "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True,
                          "openWorldHint": True}},
-        {"name": "strata_start", "title": "Start PolyStrata",
-         "description": "Start an installed PolyStrata model in the background (as its start script does, without "
+        {"name": "strata_start", "title": "Start 4gbVramStrata",
+         "description": "Start an installed 4gbVramStrata model in the background (as its start script does, without "
                         "opening a browser) and wait until it answers. Loading takes 1-3 minutes and the PC can be "
                         "slow meanwhile; if it is not ready within wait_seconds this returns 'loading' - check again "
                         "with strata_status. The model keeps running until strata_stop.",
@@ -1119,9 +1167,9 @@ def tool_defs(models: dict, families: dict, contexts: list) -> list:
                                              "a tool call after 60 s)"}}},
          "annotations": {"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True,
                          "openWorldHint": False}},
-        {"name": "strata_stop", "title": "Stop PolyStrata",
-         "description": "Stop the PolyStrata model: the engine is unloaded through the server's own API (it frees its "
-                        "VRAM and RAM itself), then the server this tool started is ended. A PolyStrata started "
+        {"name": "strata_stop", "title": "Stop 4gbVramStrata",
+         "description": "Stop the 4gbVramStrata model: the engine is unloaded through the server's own API (it frees its "
+                        "VRAM and RAM itself), then the server this tool started is ended. A 4gbVramStrata started "
                         "elsewhere (e.g. its own window) is only unloaded - close its window to end it. Refuses while "
                         "a request is running unless force=true.",
          "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
@@ -1129,8 +1177,8 @@ def tool_defs(models: dict, families: dict, contexts: list) -> list:
              "force": {"type": "boolean", "description": "stop even while a request is running"}}},
          "annotations": {"readOnlyHint": False, "destructiveHint": True, "idempotentHint": True,
                          "openWorldHint": False}},
-        {"name": "strata_logs", "title": "PolyStrata logs",
-         "description": "The last lines of a PolyStrata log: 'server' (the model server this tool started: loading, "
+        {"name": "strata_logs", "title": "4gbVramStrata logs",
+         "description": "The last lines of a 4gbVramStrata log: 'server' (the model server this tool started: loading, "
                         "requests, errors), 'engine' (the engine's own log for a model), 'setup' (the install). "
                         "Default: the setup log while an install runs, else the server log. Read-only.",
          "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
@@ -1138,16 +1186,16 @@ def tool_defs(models: dict, families: dict, contexts: list) -> list:
              "model": installed_model,
              "lines": {"type": "integer", "minimum": 1, "maximum": 500, "description": "default 80"}}},
          "annotations": ro},
-        {"name": "strata_benchmark", "title": "PolyStrata speed test",
-         "description": "A short fixed request (greedy, thinking off) through the running PolyStrata server; reports "
+        {"name": "strata_benchmark", "title": "4gbVramStrata speed test",
+         "description": "A short fixed request (greedy, thinking off) through the running 4gbVramStrata server; reports "
                         "the output speed (tokens/s) and prompt speed. Takes 10-60 s. Refuses while the model is "
                         "busy.",
          "inputSchema": {"type": "object", "additionalProperties": False, "properties": {
              "port": port,
              "max_tokens": {"type": "integer", "minimum": 16, "maximum": 512, "description": "default 200"}}},
          "annotations": {"readOnlyHint": True, "destructiveHint": False, "openWorldHint": False}},
-        {"name": "strata_connect_info", "title": "Connect to PolyStrata",
-         "description": "How to point other apps at the local PolyStrata server: the OpenAI and Anthropic base URLs, "
+        {"name": "strata_connect_info", "title": "Connect to 4gbVramStrata",
+         "description": "How to point other apps at the local 4gbVramStrata server: the OpenAI and Anthropic base URLs, "
                         "the model id, whether an API key is needed, and ready-to-paste settings for Claude Code, "
                         "Codex CLI, the OpenAI SDK, curl, Cursor/Continue/Open WebUI. Read-only.",
          "inputSchema": {"type": "object", "additionalProperties": False, "properties": {"port": port}},
@@ -1200,13 +1248,13 @@ class Tools:
             out["ports_used_by_other_programs"] = others
         if running:
             r = running[0]
-            summary = (f"PolyStrata is running on port {r['port']}: {r.get('model')}"
+            summary = (f"4gbVramStrata is running on port {r['port']}: {r.get('model')}"
                        + (", busy" if r.get("busy") else ", idle")
                        + ("" if r.get("loaded", True) else " (model unloaded; the next request loads it)"))
         elif "loading" in out:
-            summary = f"PolyStrata is loading {out['loading']['model']} (port {out['loading']['port']})"
+            summary = f"4gbVramStrata is loading {out['loading']['model']} (port {out['loading']['port']})"
         else:
-            summary = "PolyStrata is not running"
+            summary = "4gbVramStrata is not running"
         inst = s.installed()
         job = s.install_job()
         if job:
@@ -1248,17 +1296,17 @@ class Tools:
             raise ToolError("data_dir: network (UNC) paths are not allowed; use a local drive")
         p = Path(os.path.expandvars(raw)).expanduser()
         if not p.is_absolute():
-            raise ToolError("data_dir must be an absolute path (e.g. D:\\PolyStrata-data or /mnt/big/PolyStrata-data)")
+            raise ToolError("data_dir must be an absolute path (e.g. D:\\4gbVramStrata-data or /mnt/big/4gbVramStrata-data)")
         if ".." in p.parts:
             raise ToolError("data_dir must not contain '..'")
         n = norm(p)
         current = norm(s.data_dir())
-        if n == current or is_inside(n, norm(s.root)) or n == norm(s.root.parent / "PolyStrata-data"):
+        if n == current or is_inside(n, norm(s.root)) or n == norm(s.root.parent / "4gbVramStrata-data"):
             pass
         else:
-            if not p.name.lower().startswith("polystrata"):
-                raise ToolError(f"data_dir {raw!r}: a new data folder must be named PolyStrata... (e.g. "
-                                f"{Path(p.anchor or '/') / 'PolyStrata-data'}), so that no other folder is filled with "
+            if not p.name.lower().startswith("fourgbvramstrata"):
+                raise ToolError(f"data_dir {raw!r}: a new data folder must be named 4gbVramStrata... (e.g. "
+                                f"{Path(p.anchor or '/') / '4gbVramStrata-data'}), so that no other folder is filled with "
                                 "model files")
             if not p.parent.is_dir():
                 raise ToolError(f"data_dir {raw!r}: its parent folder {p.parent} does not exist")
@@ -1303,7 +1351,7 @@ class Tools:
                                            data_dir)
             tracked = s.tracked_server()
             if tracked and not tracked.get("ended"):
-                raise ToolError("PolyStrata is running (started by strata_start): stop it first with strata_stop - setup "
+                raise ToolError("4gbVramStrata is running (started by strata_start): stop it first with strata_stop - setup "
                                 "may update the engine files it uses")
             if not confirm:
                 return {"summary": f"Plan: install {plan['title']} ({plan['download_gb']:.0f} GB download"
@@ -1320,10 +1368,10 @@ class Tools:
         if gpu is not None and gpus is not None:
             raise ToolError("give gpu (one card) or gpus (several), not both")
         if backend == "hip" and WIN:
-            raise ToolError("the AMD (hip) backend runs on Linux only; on Windows PolyStrata needs an NVIDIA RTX 20 "
+            raise ToolError("the AMD (hip) backend runs on Linux only; on Windows 4gbVramStrata needs an NVIDIA RTX 20 "
                             "series or newer card")
         if sys.version_info < (3, 10) or (WIN and sys.maxsize <= 2**32):
-            raise ToolError("this Python is too old or 32-bit: PolyStrata's setup needs 64-bit Python 3.10+; run "
+            raise ToolError("this Python is too old or 32-bit: 4gbVramStrata's setup needs 64-bit Python 3.10+; run "
                             + ("START-HERE.bat" if WIN else "./setup.sh") + " once instead (it installs Python)")
         hw = s.hardware()
         rec = s.recommend(hw)
@@ -1337,9 +1385,9 @@ class Tools:
             model = rec["model"] if rec.get("family") == family else ("IQ3_XXS" if "IQ3_XXS" in sizes and
                                                                      hw.get("ram_gb", 0) >= 60 else next(iter(sizes)))
             S = s.setup_module()
-            if families[family].get("engine") == "poly" and S and hw.get("ram_gb"):   # setup's own pick for this PC
+            if families[family].get("engine") == "fourgbvram" and S and hw.get("ram_gb"):   # setup's own pick for this PC
                 cards = [g["vram_gb"] for g in hw.get("gpus", []) if g.get("usable")]
-                model = S.poly_default(sizes, hw["ram_gb"], max(cards, default=0.0))
+                model = S.fourgbvram_default(sizes, hw["ram_gb"], max(cards, default=0.0))
         elif family is None:
             fams = [f for f in families if model in s.sizes(f)]
             if len(fams) > 1:                   # a family's own size yields to MODELS' (Tiel's UD-Q4_K_XL)
@@ -1359,7 +1407,7 @@ class Tools:
             if d.get("budget") and (not hasattr(s.setup_module(), "unsloth_budget") or
                                                 s.setup_module().unsloth_budget(model, hw.get("ram_gb") or 0.0)):
                 context = 8192 if vram < 14 else 32768
-            if families[family].get("engine") == "poly":
+            if families[family].get("engine") == "fourgbvram":
                 context = 32768                         # the one it was measured with, setup's own default
         if vision in ("yes", "gpu", "cpu") and d.get("vision", families[family].get("vision")) is False:
             raise ToolError(f"images are not available with {families[family]['title']} {model} yet: use vision=no")
@@ -1382,7 +1430,7 @@ class Tools:
         short = None
         if free is not None and free < need:
             short = (f"not enough free disk space for {model}: about {need:.0f} GB needed at {target}, "
-                     f"{free:.0f} GB free; free some space or choose data_dir on a bigger drive (e.g. D:\\PolyStrata-data)")
+                     f"{free:.0f} GB free; free some space or choose data_dir on a bigger drive (e.g. D:\\4gbVramStrata-data)")
         args = ["--yes", "--no-start", "--family", family, "--model", model, "--context", str(context),
                 "--vision", vision or "no"]
         if family in ("qwen", "coder"):
@@ -1461,21 +1509,21 @@ class Tools:
             tracked = s.tracked_server()
             if tracked and not tracked.get("ended"):
                 info = s.probe(tracked["port"])
-                return {"summary": f"PolyStrata is already {'running' if info else 'loading'} ({tracked.get('model')}, "
+                return {"summary": f"4gbVramStrata is already {'running' if info else 'loading'} ({tracked.get('model')}, "
                                    f"port {tracked['port']}, started by this MCP server)"
                                    + ("" if tracked.get("model") == desc["model"] else
                                       ": stop it first (strata_stop) to start another model"),
                         "server": info}
             info = s.probe(port, deep=False)
             if info and not info.get("other"):
-                return {"summary": f"a PolyStrata server already runs on port {port} ({info.get('model')}), started "
+                return {"summary": f"a 4gbVramStrata server already runs on port {port} ({info.get('model')}), started "
                                    "outside this MCP server; stop it (close its window) or use another port",
                         "server": info}
             if info or not port_free(port):
                 raise ToolError(f"port {port} is used by another program; choose another port (port=...)")
             py = s.run_python()
             if not Path(py).exists():
-                raise ToolError("PolyStrata's Python environment (.venv) is missing: run the install again")
+                raise ToolError("4gbVramStrata's Python environment (.venv) is missing: run the install again")
             cmd = [py, str(s.root / "serve" / "server.py"), "--engine", "strata", "--config", str(cfg_path),
                    "--port", str(port)]
             if gpu is not None:
@@ -1507,15 +1555,15 @@ class Tools:
                 tail = read_tail(log_path, 15)
                 end_group_leftovers(p.pid)
                 s.save_state("server", None)
-                raise ToolError(f"PolyStrata stopped while starting (exit code {p.poll()}). Its last output:\n"
+                raise ToolError(f"4gbVramStrata stopped while starting (exit code {p.poll()}). Its last output:\n"
                                 + "\n".join(tail))
             info = s.probe(port)
             if info and not info.get("other"):
-                return {"summary": f"PolyStrata is running: {info.get('model')} on http://127.0.0.1:{port}/v1 "
+                return {"summary": f"4gbVramStrata is running: {info.get('model')} on http://127.0.0.1:{port}/v1 "
                                    "(OpenAI and Anthropic APIs; chat page at http://127.0.0.1:" + str(port) + "/)",
                         "server": {**info, "pid": p.pid}}
             if time.time() >= end:
-                return {"summary": f"PolyStrata is loading {desc['model']} (this takes 1-3 minutes; the PC may be slow "
+                return {"summary": f"4gbVramStrata is loading {desc['model']} (this takes 1-3 minutes; the PC may be slow "
                                    "meanwhile). Check with strata_status in a minute.",
                         "loading": {"pid": p.pid, "port": port,
                                     "last_log_line": (read_tail(log_path, 1) or [None])[-1]}}
@@ -1534,12 +1582,12 @@ class Tools:
                 key = s.api_key_for(port)
                 st, body = http_json(f"http://127.0.0.1:{port}/status", api_key=key, timeout=3)
                 if st == 200 and isinstance(body, dict) and body.get("busy") and not force:
-                    raise ToolError("a request is running on PolyStrata right now; wait for it, or call strata_stop "
+                    raise ToolError("a request is running on 4gbVramStrata right now; wait for it, or call strata_stop "
                                     "with force=true to stop anyway")
                 st, body = http_json(f"http://127.0.0.1:{port}/unload", "POST", api_key=key, timeout=120)
                 unloaded = (body or {}).get("status") if isinstance(body, dict) else None
                 if st == 409 and not force:
-                    raise ToolError("PolyStrata is busy (a request is running or queued); call again with force=true "
+                    raise ToolError("4gbVramStrata is busy (a request is running or queued); call again with force=true "
                                     "to stop anyway")
                 proc_terminate(tracked["pid"], tracked["ident"])   # POSIX: SIGTERM = the server's own Ctrl+C path
                 clean = wait_gone(tracked["pid"], tracked["ident"], 30)
@@ -1551,7 +1599,7 @@ class Tools:
                 if gone:
                     end_group_leftovers(tracked["pid"])
                     s.save_state("server", None)
-                return {"summary": "PolyStrata stopped" + ("" if gone else " - but its process still runs; see strata_logs")
+                return {"summary": "4gbVramStrata stopped" + ("" if gone else " - but its process still runs; see strata_logs")
                                    + (" (the engine unloaded itself first)" if unloaded == "unloaded" else ""),
                         "model": tracked.get("model"), "port": port, "engine_unloaded": unloaded,
                         "ended_cleanly": clean}
@@ -1562,16 +1610,16 @@ class Tools:
                     st, body = http_json(f"http://127.0.0.1:{p}/unload", "POST", api_key=key, timeout=120)
                     r = body.get("status") if isinstance(body, dict) else None
                     if st == 409:
-                        raise ToolError("PolyStrata is busy (a request is running); try again when it is done")
+                        raise ToolError("4gbVramStrata is busy (a request is running); try again when it is done")
                     if st == 401:
-                        raise ToolError("PolyStrata (started outside this MCP server) wants an API key this folder's "
+                        raise ToolError("4gbVramStrata (started outside this MCP server) wants an API key this folder's "
                                         "configs do not have; close its window to stop it")
-                    return {"summary": f"PolyStrata on port {p} was started outside this MCP server (its own window or a "
+                    return {"summary": f"4gbVramStrata on port {p} was started outside this MCP server (its own window or a "
                                        f"service), so only its model was unloaded ({r}): its VRAM and RAM are free, "
                                        "but the server still listens and loads the model again on the next request. "
                                        "Close its window to end it completely.",
                             "port": p, "engine_unloaded": r}
-            return {"summary": "PolyStrata is not running"}
+            return {"summary": "4gbVramStrata is not running"}
 
     # ---- strata_logs
     def strata_logs(self, source=None, model=None, lines=80) -> dict:
@@ -1590,7 +1638,7 @@ class Tools:
                 raise ToolError(f"{cfg.name} names no engine log")
             path = Path(raw)
             if not s.allowed(path):
-                raise ToolError(f"{cfg.name}'s log {raw} is outside the PolyStrata folder and its data folder: not shown")
+                raise ToolError(f"{cfg.name}'s log {raw} is outside the 4gbVramStrata folder and its data folder: not shown")
         if not path.exists():
             return {"summary": f"no {source} log yet ({path})", "log": str(path), "lines": []}
         tail = read_tail(path, lines)
@@ -1606,12 +1654,12 @@ class Tools:
                 target = info
                 break
         if target is None:
-            raise ToolError("PolyStrata is not running: start it first (strata_start)")
+            raise ToolError("4gbVramStrata is not running: start it first (strata_start)")
         p = target["port"]
         key = s.api_key_for(p)
         st, stat = http_json(f"http://127.0.0.1:{p}/status", api_key=key, timeout=3)
         if st == 200 and isinstance(stat, dict) and (stat.get("busy") or stat.get("queued")):
-            raise ToolError("PolyStrata is busy with a request; run the speed test when it is idle")
+            raise ToolError("4gbVramStrata is busy with a request; run the speed test when it is idle")
         body = {"model": target.get("model") or "strata", "max_tokens": max_tokens, "temperature": 0,
                 "reasoning_effort": "none", "stream": False,
                 "messages": [{"role": "user", "content": BENCH_PROMPT}]}
@@ -1657,19 +1705,19 @@ class Tools:
         key = "<your api_key from strata-<model>.json>" if key_needed else "none"
         base = f"http://127.0.0.1:{port}"
         return {
-            "summary": (f"PolyStrata {'runs' if target else 'will run'} at {base}: OpenAI base URL {base}/v1, Anthropic "
+            "summary": (f"4gbVramStrata {'runs' if target else 'will run'} at {base}: OpenAI base URL {base}/v1, Anthropic "
                         f"base URL {base}" + (" (an API key is required)" if key_needed else " (any API key works)")),
             "running": bool(target), "openai_base_url": f"{base}/v1", "anthropic_base_url": base,
             "anthropic_messages_endpoint": f"{base}/v1/messages", "chat_page": base + "/", "model": model,
-            "api_key": ("required: the \"api_key\" value in the PolyStrata folder's strata-<model>.json"
+            "api_key": ("required: the \"api_key\" value in the 4gbVramStrata folder's strata-<model>.json"
                         if key_needed else "not required (send any value)"),
             "examples": {
                 "claude_code": {"env": {"ANTHROPIC_BASE_URL": base, "ANTHROPIC_AUTH_TOKEN": key,
                                         "ANTHROPIC_MODEL": "claude-sonnet-4-5"},
-                                "note": "Claude Code needs a Claude model name it knows; PolyStrata ignores the name"},
+                                "note": "Claude Code needs a Claude model name it knows; 4gbVramStrata ignores the name"},
                 "codex_cli": {"file": "~/.codex/config.toml",
                               "toml": f'model = "{model}"\nmodel_provider = "strata"\n\n[model_providers.strata]\n'
-                                      f'name = "PolyStrata"\nbase_url = "{base}/v1"\nwire_api = "chat"'},
+                                      f'name = "4gbVramStrata"\nbase_url = "{base}/v1"\nwire_api = "chat"'},
                 "openai_python": (f'from openai import OpenAI\nclient = OpenAI(base_url="{base}/v1", api_key="{key}")\n'
                                   f'r = client.chat.completions.create(model="{model}", messages=[{{"role": "user", '
                                   f'"content": "Hello!"}}])\nprint(r.choices[0].message.content)'),
@@ -1686,7 +1734,7 @@ class Tools:
 
 
 # ------------------------------------------------------------------------------------------------ MCP over stdio
-INSTRUCTIONS = ("PolyStrata runs a large AI model (Qwen3.8-Flash-Next, a mixture of experts) locally on this PC's GPU and "
+INSTRUCTIONS = ("4gbVramStrata runs a large AI model (Qwen3.8-Flash-Next, a mixture of experts) locally on this PC's GPU and "
                 "RAM, with an OpenAI- and Anthropic-compatible server on http://127.0.0.1:8080. Call strata_status "
                 "first. To install: strata_install (it returns a plan; get the user's OK for the 58-111 GB download, "
                 "then call it with confirm=true; it runs in the background - call it again for progress). Then "
@@ -1731,7 +1779,7 @@ class McpServer:
             self.protocol = asked if asked in PROTOCOLS else PROTOCOL
             return self.result(rid, {"protocolVersion": self.protocol,
                                      "capabilities": {"tools": {"listChanged": False}},
-                                     "serverInfo": {"name": "strata", "title": "PolyStrata", "version": VERSION},
+                                     "serverInfo": {"name": "strata", "title": "4gbVramStrata", "version": VERSION},
                                      "instructions": INSTRUCTIONS})
         if method == "ping":
             return self.result(rid, {})
@@ -1823,7 +1871,7 @@ def install_job(spec_path: str) -> int:
                 print("strata-mcp: .venv has no pip (an earlier run stopped half-way): making it again", flush=True)
                 shutil.rmtree(venv, ignore_errors=True)
             if not py.exists():
-                print(f"strata-mcp: creating PolyStrata's Python environment in {venv} ...", flush=True)
+                print(f"strata-mcp: creating 4gbVramStrata's Python environment in {venv} ...", flush=True)
                 r = subprocess.run([spec["base_python"], "-m", "venv", str(venv)])
                 if r.returncode or not py.exists():
                     print("\n  [X]  could not create the Python environment (.venv)", flush=True)
@@ -1846,9 +1894,9 @@ def install_job(spec_path: str) -> int:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="PolyStrata's MCP server (stdio): install, start, check and stop PolyStrata "
+    ap = argparse.ArgumentParser(description="4gbVramStrata's MCP server (stdio): install, start, check and stop 4gbVramStrata "
                                              "from an AI assistant. See docs/MCP_SERVER.md.")
-    ap.add_argument("--root", help="the PolyStrata folder (default: the one this file is in)")
+    ap.add_argument("--root", help="the 4gbVramStrata folder (default: the one this file is in)")
     ap.add_argument("--install-job", help=argparse.SUPPRESS)
     a = ap.parse_args(argv)
     if a.install_job:
@@ -1858,12 +1906,12 @@ def main(argv=None) -> int:
         return 2
     root = Path(a.root).expanduser().resolve() if a.root else DEFAULT_ROOT
     if not (root / "setup.py").is_file() or not (root / "serve" / "server.py").is_file():
-        log(f"{root} is not a PolyStrata folder (no setup.py / serve/server.py)")
+        log(f"{root} is not a 4gbVramStrata folder (no setup.py / serve/server.py)")
         return 2
     out = sys.stdout.buffer
     sys.stdout = sys.stderr                             # stray prints must never corrupt the protocol stream
     server = McpServer(Strata(root), out)
-    log(f"ready (PolyStrata folder {root})")
+    log(f"ready (4gbVramStrata folder {root})")
     try:
         server.serve(sys.stdin.buffer)
     except KeyboardInterrupt:

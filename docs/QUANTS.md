@@ -2,7 +2,7 @@
 
 This page covers Unsloth's files of the model ([unsloth/Qwen3.8-Flash-Next-GGUF](https://huggingface.co/unsloth/Qwen3.8-Flash-Next-GGUF),
 revision `38bb39e`; the repository's head `766911a` has the same files, byte for byte): what each file stores in
-each layer, which of PolyStrata's kernels run those formats on each kind of hardware, and how close each file comes to
+each layer, which of 4gbVramStrata's kernels run those formats on each kind of hardware, and how close each file comes to
 the Q8_0 reference. Setup and the per-file details: [UD-Q4_K_XL](UNSLOTH_Q4.md), [UD-Q6_K_XL](UNSLOTH_Q6.md),
 [MODELS.md](MODELS.md).
 

@@ -28,13 +28,14 @@ td.log
 # created by setup.py on the user's machine
 /.venv/
 /build/
-/third_party/llama.cpp
+/third_party/llama.cpp*
 /models/
 /packs/
 /mtp/
 /run-*.bat
 /run-*.sh
 /strata-*.json
+/strata-*.json.bak
 /strata-*.log
 /strata-*.warm-start
 /build-strata.bat
@@ -50,9 +51,9 @@ build-vision-cuda12.bat
 # setup.py outputs (engine, downloads) and release builds
 /engine/
 /engine-cuda12/
-/engine-poly/
-/build-strata-poly.bat
-/build-vision-poly.bat
+/engine-fourgbvram/
+/build-strata-fourgbvram.bat
+/build-vision-fourgbvram.bat
 /engine-glm/
 /build-strata-glm.bat
 /build-release*/
@@ -67,3 +68,6 @@ build-vision-cuda12.bat
 
 /.ccache/
 /.rocm-win/
+
+# local Windows HIP packaging output
+dist-hip/

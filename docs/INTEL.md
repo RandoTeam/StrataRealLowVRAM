@@ -1,7 +1,7 @@
-# PolyStrata on an Intel Arc
+# 4gbVramStrata on an Intel Arc
 
-PolyStrata's engine is CUDA. On an Intel Arc it runs as **PolyStrata's own engine, ported to SYCL** (`sycl/`, the
-section "The engine itself on Intel" below), behind the same PolyStrata server: OpenAI and Anthropic APIs, streaming,
+4gbVramStrata's engine is CUDA. On an Intel Arc it runs as **4gbVramStrata's own engine, ported to SYCL** (`sycl/`, the
+section "The engine itself on Intel" below), behind the same 4gbVramStrata server: OpenAI and Anthropic APIs, streaming,
 tool calls, MCP and the web app all unchanged. llama.cpp's SYCL backend is the comparison point in the tables (it
 runs the same GGUF at about a third of the speed).
 
@@ -14,7 +14,7 @@ PCIe 3.0 x8 slot (the card trains at Gen3 x8 there; it can do Gen5 x16).
 
 ## What you get (2026-10-01)
 
-| | NVIDIA (PolyStrata engine) | Intel Arc, PolyStrata SYCL port | Intel Arc, llama.cpp |
+| | NVIDIA (4gbVramStrata engine) | Intel Arc, 4gbVramStrata SYCL port | Intel Arc, llama.cpp |
 |---|---|---|---|
 | models | all four | the Coder IQ1_M; the original IQ2_XS too (experts beyond VRAM in the host mirror: 58-64 tok/s) | the Coder (fits VRAM) |
 | model files | the same GGUFs | the same GGUFs + a native pack | the same GGUFs |
@@ -43,7 +43,7 @@ On Ubuntu 24.04 or newer, from nothing. The Intel GPU driver (the `xe` or `i915`
 
    Log out and in again (or reboot) so the groups apply. `docker ps` must work without `sudo`; the `render` group lets
    the container open the GPU.
-2. **Get PolyStrata and build the engine** ("How to build it" below, about 10 minutes the first time).
+2. **Get 4gbVramStrata and build the engine** ("How to build it" below, about 10 minutes the first time).
 3. **Run setup:**
 
         ./setup.sh --backend sycl [setup.py's options, e.g. --model IQ3_S --context 32768 --port 8085]
@@ -76,8 +76,8 @@ questions are setup's own. What changes:
 
 If a future `setup.py` drops a step this relies on, it stops with a message instead of writing a wrong config.
 The models, packs and checkout must sit under the folder `strata-sycl.sh` mounts at `/work` (the one above the
-checkout, or `STRATA_SYCL_ROOT`). An earlier PolyStrata install on the same PC keeps its data folder in
-`~/.config/strata/settings.json`; pass `--data-dir <folder above the checkout>/PolyStrata-data` to put this one under the
+checkout, or `STRATA_SYCL_ROOT`). An earlier 4gbVramStrata install on the same PC keeps its data folder in
+`~/.config/strata/settings.json`; pass `--data-dir <folder above the checkout>/4gbVramStrata-data` to put this one under the
 mount. A symlink to a folder outside the mount does not work in the container; a hard link does.
 
 Then `run-<model>.sh` (or `./setup.sh --backend sycl` again) starts the model. The first start of a 30 GB model
@@ -86,10 +86,10 @@ takes about two minutes. `--port N` and `--host 0.0.0.0` work as in upstream's s
 ## How to build it
 
 The engine is built in Docker, in the `strata-sycl-dev` image (oneAPI 2026.1 compiler, oneMKL and Level Zero, from a
-community llama.cpp SYCL image), so the PC needs no oneAPI. From the checkout (its folder is called `PolyStrata` here; the
+community llama.cpp SYCL image), so the PC needs no oneAPI. From the checkout (its folder is called `4gbVramStrata` here; the
 folder above it is what the container mounts at `/work`):
 
-    cd PolyStrata
+    cd 4gbVramStrata
     docker build -t strata-sycl-dev sycl/tools          # once: about 6 minutes, a 13 GB image
     H=$(basename "$PWD")
 
@@ -107,7 +107,7 @@ device ids). Ahead-of-time code, no compile at the first start:
 
 The build takes about 3 minutes and ends with `BUILD EXIT 0` and `errors: 0`. The binary is `build-sycl-aot/strata`
 (B-series) or `build-sycl/strata` (A-series); setup finds either one. Run the `docker build` again after pulling a
-PolyStrata update that changes `sycl/tools/Dockerfile`, and the `docker run` after every update of the engine (setup
+4gbVramStrata update that changes `sycl/tools/Dockerfile`, and the `docker run` after every update of the engine (setup
 says when the engine is older than it needs).
 
 ## Things that matter on this GPU
@@ -118,7 +118,7 @@ says when the engine is older than it needs).
   the single 28.8 GB tensor of shard 2. `--override-tensor per_layer_token_embd=CPU` keeps it in host
   memory, mmapped and paged from the SSD by row, which is how the model's authors serve it. Host RSS
   stays around 2 GB.
-- **Thinking.** The model reasons before it answers. PolyStrata's web app has the setting; for an API
+- **Thinking.** The model reasons before it answers. 4gbVramStrata's web app has the setting; for an API
   client, put `{"reasoning_effort": "none"}` in `strata-<model>.shared-settings.json` next to the
   config, or send `chat_template_kwargs: {"enable_thinking": false}` per request. Without one of
   those a short `max_tokens` is spent entirely inside the think block and the answer looks empty.
@@ -153,7 +153,7 @@ not fifteen.
 
 ## The engine itself on Intel: the SYCL port (`sycl/`)
 
-Everything above runs the model through llama.cpp. This is the other half: PolyStrata's own engine - the 50 CUDA
+Everything above runs the model through llama.cpp. This is the other half: 4gbVramStrata's own engine - the 50 CUDA
 kernels and the host code that drives them (streams, events, graph capture, pinned memory) - built for the
 Arc with oneAPI. It is a migration of the tree, not a new backend: the engine has no backend seam to slot
 into.
@@ -184,7 +184,7 @@ migration tool.
 4. `sycl/tools/build.sh` - configure + build with icpx inside the image. Two compiler flags are load-bearing:
    `-fp-model=precise` (icpx defaults to a fast FP model) and `-cl-fp32-correctly-rounded-divide-sqrt`
    for the device compiler - the Arc's fp32 divide is not correctly rounded by default (OpenCL allows
-   2.5 ulp), and PolyStrata's quantizers are byte-exact against ggml through `amax / 127`. Measured: without
+   2.5 ulp), and 4gbVramStrata's quantizers are byte-exact against ggml through `amax / 127`. Measured: without
    it `quantize_act_parity` has 303k mismatches, with it none.
 
 **Where it stands (2026-09-29).** The whole tree builds and links: the `strata` binary and 22 kernel
@@ -208,13 +208,13 @@ that returns the n-th Fibonacci number", greedy, 64 tokens:
 Measured on the same card, same 2,185-token prompt, 64 greedy tokens (AOT build, `--spec 2`,
 `--no-prefill-borrow`), against llama.cpp's SYCL build serving the same GGUF:
 
-| | llama.cpp SYCL | PolyStrata SYCL port |
+| | llama.cpp SYCL | 4gbVramStrata SYCL port |
 |---|---|---|
 | prompt reading | 138-319 tok/s | **560 tok/s** (693 at 2,000 tokens, 180 at 300) |
 | decode, suffix drafter only (`--spec 2`) | 24.2-26.0 tok/s | 20.2-20.8 tok/s |
 | decode with the MTP draft layer (`--spec 4 --mtp`) | - | **42.7 tok/s** at the 2,185-token context (81% accepted, 2.9 tokens/round); 45.3 on a short prompt |
 
-Prompt reading is where PolyStrata's design pays (oneMKL GEMM over dequantised experts, the whole model on
+Prompt reading is where 4gbVramStrata's design pays (oneMKL GEMM over dequantised experts, the whole model on
 the card). Decode is at ~80%: a speculative round costs ~53 ms whatever its size and the suffix drafter
 is accepted 9% of the time, so nearly every round yields one token; `--spec 4` (16.9 tok/s) was worse
 than `--spec 2` (20.8) for that reason. The kernels themselves run at 130-160 GB/s of weights on a card
@@ -250,7 +250,7 @@ build-sycl/strata --pack <iq pack> --native <shard1> --ple-gguf <shard2> \
 
 What the port had to get right beyond compiling (each is an entry in `sycl/tools/fixups.py` or a flag):
 
-- **Host-mapped flags.** PolyStrata's decode is a GPU/CPU handshake through host-mapped memory. `volatile`
+- **Host-mapped flags.** 4gbVramStrata's decode is a GPU/CPU handshake through host-mapped memory. `volatile`
   device loads do not bypass the caches on Intel; system-scope atomics do, and they are the only thing
   measured to work (`sycl/probe/doorbell.cpp`, six variants). Host-to-device visibility *during* a kernel
   stays unreliable on this platform, which is why the all-resident path waits for the window instead.
@@ -480,6 +480,24 @@ Kernel level: IQ4_XS 107 -> 323 GB/s at 2 columns (61 -> 212 at 6), Q4_K/Q5_K 1.
 6 tokens (bitwise equal). Switches to the old paths: `STRATA_PLAN_PARALLEL=0`, `STRATA_GR_DOWN_DIRECT=0`,
 `STRATA_MMVQ_WIDE_K=0`. (`iq_parity` reports 10 "missing fixture" failures with and without the change: the oracle
 fixtures are not in the port's tree.)
+
+`STRATA_IQ3S_WIDE=1` (opt-in, 2026-10-10) reads the dense IQ3_S matrices (attn_q, attn_gate, ssm_out, attn_k, the
+shared experts' gate/up) with a wide kernel shaped like the Q4_K..IQ4_XS ones. unitrace, B70, IQ3_XXS, one card, T=1:
+worst attn_k 77 -> 123 GB/s, best attn_q 114 -> 307 GB/s; these matrices take 0.60 ms of kernel time per token
+instead of 1.36 ms. The greedy output parts from the default at token 198 of 256 (the sub-blocks are summed in
+another order). Measured again for 0.1.45 (B70, IQ3_S, stock-like config, 5 interleaved pairs): decode 33.39 -> 33.29 tok/s
+(-0.3%), 4K prompt 40.71 -> 40.79, so it stays opt-in; the gain the author reports is on two cards.
+
+**Q6_K decode kernels (0.1.45, #2340 leadgtr7, #2207 Andy Slater).** The Q6_K wide kernel took its six-bit offset (v - 32)
+through a per-byte saturating subtract; it is now four integer ops (bitwise equal), and the Q4_K / Q5_K / IQ4_XS / Q6_K
+kernels load the Q8_1 activations as one dword-vector. No switch. mmvq_bench Q6_K, B70: 2560x10240 1 column 44.7 -> 26.5 us,
+4 columns 64.5 -> 46.2; A750: 2560x10240 4 columns 251 -> 102 us. End to end on the B70 (IQ3_S, 5 interleaved pairs, answers
+identical): decode 32.24 -> 33.37 tok/s on a story prompt (+3.5%), 39.11 -> 40.77 after a 4K prompt (+4.2%), prompt rate unchanged.
+`STRATA_MMVQ_LARGE_GRF` (default on for Arc A-series only, `=1` forces it on, `=0` off) launches the 2-8 column wide kernels with
+256 registers per thread, where they spilled at 128 (the same bytes are produced either way). `STRATA_Q6_PLANAR` (default on,
+`=0` off) converts the Q6_K output head and the MTP draft head to ql / qh / scales / d planes at load (same bytes, no VRAM change,
+bitwise equal): 2560x248320 on a B70 800 -> 662 us (1 column), 1230 -> 1020 us (4 columns); end to end it adds +0.3% on the B70
+(33.16 -> 33.25 tok/s, within noise) on top of the kernel changes above.
 
 **Two-speed runs, explained (2026-09-30).** Identical greedy runs decode at either ~45 or ~39 tok/s. A per-gather
 trace of the PLE reader (`STRATA_PLE_TRACE=1`) shows the slow runs pay one 226 ms PLE read stall in the first
@@ -743,7 +761,7 @@ Measured on an Arc A750 (8 GB, `i915`, PCIe 4.0) with the Flash-Next IQ3_XXS in 
 
 ## Not done
 
-- Images, on both Intel engines. PolyStrata's vision path encodes with `strata-vision` into embeddings the CUDA
+- Images, on both Intel engines. 4gbVramStrata's vision path encodes with `strata-vision` into embeddings the CUDA
   engine reads; neither the SYCL port nor the llama.cpp config wires it yet.
 - Speculative decoding on the llama.cpp path (the GGUF carries no draft layer llama.cpp can use). The SYCL
   port has it (MTP draft layer, `--mtp`).

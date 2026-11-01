@@ -1,7 +1,7 @@
-"""tools/mtp_pack.py - plan v0.3 P6 prep: the MTP draft block as a PolyStrata GGUF, from the BF16 tensors.
+"""tools/mtp_pack.py - plan v0.3 P6 prep: the MTP draft block as a 4gbVramStrata GGUF, from the BF16 tensors.
 
 llama.cpp's qwen4exp converter drops the MTP head (`supports_mtp_export = False`), and the flyweight MTP GGUF is
-no longer on this PC, so PolyStrata packs its own from the 31 `mtp.*` tensors fetched by tools/mtp_fetch.py:
+no longer on this PC, so 4gbVramStrata packs its own from the 31 `mtp.*` tensors fetched by tools/mtp_fetch.py:
 
     python tools/mtp_pack.py --src Desktop/Strata/mtp-bf16 --experts q2_0 --out mtp-q2_0.gguf
     python tools/mtp_pack.py --src ... --experts q4_0 --out mtp-q4_0.gguf       (acceptance comparison arm)
@@ -12,7 +12,7 @@ Layout: dense tensors (attention, indexer, hyper-connections, shared expert, rou
 
     q2_0   64-element blocks, grid {-1, 0, 1, 2} x d. The scale is chosen per block to MINIMIZE squared error over
            that grid (the ggml reference sets d = max|w| and never uses the +2 level). Same format as the main
-           model's experts, so PolyStrata's CPU VNNI kernel and GPU hit kernel serve it unchanged. ~0.71 GB.
+           model's experts, so 4gbVramStrata's CPU VNNI kernel and GPU hit kernel serve it unchanged. ~0.71 GB.
     q4_0   ggml reference rounding. ~1.42 GB.       q8_0   ggml reference. ~2.67 GB.
 
 This is round-to-nearest, not GSQ: the plan picks the expert format by MEASURED draft acceptance (P0.3/P6), not

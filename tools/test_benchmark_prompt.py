@@ -16,7 +16,7 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-import polystrata  # noqa: E402
+import fourgbvramstrata  # noqa: E402
 
 
 def refused(code):
@@ -40,11 +40,11 @@ class LongPrompt(unittest.TestCase):
         entry = {"id": "m", "backend": "b", "quantization": "q", "context": 32768}
         a = argparse.Namespace(model="m", port=None, api_key="", max_tokens=256, prompt_tokens=[24000], json=None)
         out = io.StringIO()
-        with mock.patch.object(polystrata, "entry_of", lambda m: entry), \
-                mock.patch.object(polystrata, "port_of", lambda e, p: 1), \
-                mock.patch.object(polystrata, "Server", mock.Mock()), \
-                mock.patch.object(polystrata, "run_once", run_once), contextlib.redirect_stdout(out):
-            polystrata.benchmark(a)
+        with mock.patch.object(fourgbvramstrata, "entry_of", lambda m: entry), \
+                mock.patch.object(fourgbvramstrata, "port_of", lambda e, p: 1), \
+                mock.patch.object(fourgbvramstrata, "Server", mock.Mock()), \
+                mock.patch.object(fourgbvramstrata, "run_once", run_once), contextlib.redirect_stdout(out):
+            fourgbvramstrata.benchmark(a)
         return sent, out.getvalue()
 
     def test_a_prompt_that_fits_is_sent_once(self):

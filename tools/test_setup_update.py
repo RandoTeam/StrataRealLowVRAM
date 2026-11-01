@@ -52,7 +52,7 @@ class Update(unittest.TestCase):
         self.assertEqual(dv.call_args[0][1], "en")                 # the model's own subset is kept
         start.assert_not_called()
         call.assert_not_called()
-        self.assertIn("PolyStrata is updated", out)
+        self.assertIn("4gbVramStrata is updated", out)
 
     def test_build_keeps_the_compiled_engine_path(self):
         with tempfile.TemporaryDirectory() as d:
@@ -79,11 +79,11 @@ class Update(unittest.TestCase):
             broken.write_text("{\"args\": [", encoding="utf-8")
             rc, pip, eng, dv, start, call, out = self.run_update([other, broken, p])
         self.assertEqual(rc, 0, out)
-        self.assertIn('skipped strata-notes.json (no "exe" or "args"): it is not a PolyStrata model config', out)
+        self.assertIn('skipped strata-notes.json (no "exe" or "args"): it is not a 4gbVramStrata model config', out)
         self.assertIn("skipped strata-cut.json (not valid JSON)", out)
         dv.assert_called_once()                                     # the real model is still refreshed
         self.assertIn("Qwen IQ3_S: up to date", out)
-        self.assertIn("PolyStrata is updated", out)
+        self.assertIn("4gbVramStrata is updated", out)
 
     def test_installed_configs_lists_only_model_configs(self):
         with tempfile.TemporaryDirectory() as d:
@@ -111,7 +111,7 @@ class SettingsLine(unittest.TestCase):
     fields), so a change made by hand to strata-<model>.json shows without reading the log."""
 
     CFG = {"exe": "x", "host": "0.0.0.0", "port": 8081, "api_key": "secret", "gpu": [0, 1], "fit_max_tokens": True,
-           "args": ["--native", "E:\\PolyStrata\\packs\\iq3_s", "--mtp", "/s/mtp/rt", "m.gguf", "--kv", "int8",
+           "args": ["--native", "E:\\4gbVramStrata\\packs\\iq3_s", "--mtp", "/s/mtp/rt", "m.gguf", "--kv", "int8",
                     "--kv-resident", "32768", "--spec-min-p", "0.5", "--vram-reserve-mib", "2048", "--mmap-experts",
                     "--prefill", "auto"]}
 
@@ -146,14 +146,14 @@ class TailSkip(unittest.TestCase):
 
     def upgraded(self, name, version, args=()):
         with tempfile.TemporaryDirectory() as d:
-            eng = Path(d) / "engine-poly"
+            eng = Path(d) / "engine-fourgbvram"
             eng.mkdir()
             (eng / "BUILD.json").write_text(json.dumps({"version": version}), encoding="utf-8")
             p = Path(d) / "strata-x.json"
-            cfg = {"model_name": name, "exe": str(eng / setup.POLY_EXE), "args": ["--model", "m.gguf", *args]}
+            cfg = {"model_name": name, "exe": str(eng / setup.FOURGBVRAM_EXE), "args": ["--model", "m.gguf", *args]}
             p.write_text(json.dumps(cfg), encoding="utf-8")
             with contextlib.redirect_stdout(io.StringIO()):
-                setup.poly_tail_skip(cfg, p)
+                setup.fourgbvram_tail_skip(cfg, p)
             return json.loads(p.read_text(encoding="utf-8"))["args"]
 
     def test_qwen36_gets_it(self):
@@ -172,20 +172,20 @@ class TailSkip(unittest.TestCase):
 
 
 class KvWhole(unittest.TestCase):
-    """A strata-poly config whose engine is the AMD build gets --kv-whole on update (issue #13); a CUDA one does not."""
+    """A strata-fourgbvram config whose engine is the AMD build gets --kv-whole on update (issue #13); a CUDA one does not."""
 
     def upgraded(self, backend, args=()):
         with tempfile.TemporaryDirectory() as d:
-            eng = Path(d) / "engine-poly"
+            eng = Path(d) / "engine-fourgbvram"
             eng.mkdir()
             meta = {"version": "0.1.42", **({"backend": backend} if backend else {})}
             (eng / "BUILD.json").write_text(json.dumps(meta), encoding="utf-8")
             p = Path(d) / "strata-x.json"
-            cfg = {"model_name": "qwen3.6-35b-a3b-ud-q2_k_xl", "exe": str(eng / setup.POLY_EXE),
+            cfg = {"model_name": "qwen3.6-35b-a3b-ud-q2_k_xl", "exe": str(eng / setup.FOURGBVRAM_EXE),
                    "args": ["--model", "m.gguf", *args]}
             p.write_text(json.dumps(cfg), encoding="utf-8")
             with contextlib.redirect_stdout(io.StringIO()):
-                setup.poly_kv_whole(cfg, p)
+                setup.fourgbvram_kv_whole(cfg, p)
             return json.loads(p.read_text(encoding="utf-8"))["args"]
 
     def test_an_amd_engine_gets_it(self):
@@ -199,8 +199,8 @@ class KvWhole(unittest.TestCase):
 
     def test_no_build_stamp_is_left_alone(self):
         with tempfile.TemporaryDirectory() as d:
-            cfg = {"exe": str(Path(d) / "engine-poly" / setup.POLY_EXE), "args": ["--model", "m.gguf"]}
-            setup.poly_kv_whole(cfg)
+            cfg = {"exe": str(Path(d) / "engine-fourgbvram" / setup.FOURGBVRAM_EXE), "args": ["--model", "m.gguf"]}
+            setup.fourgbvram_kv_whole(cfg)
         self.assertNotIn("--kv-whole", cfg["args"])
 
 

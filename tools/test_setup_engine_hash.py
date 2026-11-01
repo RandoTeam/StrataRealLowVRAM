@@ -31,7 +31,7 @@ ASSET = "strata-windows-x64.zip"
 HIP_ASSET = "strata-windows-x64-hip.zip"
 TAG_BASE = "https://github.com/Niko1221/Strata/releases/download/v0.1.40/"
 LATEST_BASE = "https://github.com/Niko1221/Strata/releases/latest/download/"
-FORK_BASE = "https://github.com/someone/PolyStrata/releases/download/v1.0/"
+FORK_BASE = "https://github.com/someone/4gbVramStrata/releases/download/v1.0/"
 LOCAL_BASE = r"C:\my\mirror"
 
 
@@ -63,7 +63,7 @@ class WhereTheHashComesFrom(unittest.TestCase):
         # The repository used to be hardcoded, so a fork's own tag was looked up under Niko1221/Strata,
         # where it does not exist - every fork install would be refused.
         self.assertEqual(setup.release_of(FORK_BASE),
-                         ("https://api.github.com/repos/someone/PolyStrata/releases", "1.0"))
+                         ("https://api.github.com/repos/someone/4gbVramStrata/releases", "1.0"))
 
     def test_something_that_is_not_a_github_release_url_names_nothing(self):
         # This is the case that mattered: a local folder or a plain mirror used to match no tag, fall
@@ -142,7 +142,7 @@ class DigestLookup(unittest.TestCase):
         seen = self.asked(self.release_json(
             "v1.0", [{"name": ASSET, "size": 9, "digest": "sha256:" + "c" * 64}]))
         self.assertEqual(setup.engine_digest(ASSET, FORK_BASE), (9, "c" * 64))
-        self.assertIn("/repos/someone/PolyStrata/releases/tags/v1.0", seen[0])
+        self.assertIn("/repos/someone/4gbVramStrata/releases/tags/v1.0", seen[0])
 
     def test_none_when_no_digest_is_published(self):
         # No digest is not a pass. The caller refuses.
@@ -337,8 +337,8 @@ class WhatARefusalDoesToTheCaller(unittest.TestCase):
         # get_prebuilt_hip downloads the AMD engine from a SECOND `download(base + ...)` call site, which
         # the first version of this change missed entirely - so AMD users got nothing from it.
         src = (ROOT / "setup.py").read_text(encoding="utf-8")
-        for call in ('download(base + asset, z, "PolyStrata engine")',
-                     'download(base + WIN_HIP_ASSET, z, "PolyStrata AMD engine")'):
+        for call in ('download(base + asset, z, "4gbVramStrata engine")',
+                     'download(base + WIN_HIP_ASSET, z, "4gbVramStrata AMD engine")'):
             i = src.index(call)
             self.assertIn("verify_engine_archive", src[i:i + 400], f"{call} is not verified")
 

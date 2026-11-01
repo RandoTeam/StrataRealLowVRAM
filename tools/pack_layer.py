@@ -1,4 +1,4 @@
-"""PolyStrata P0.S9 - build the pack-layout expert arena from the real GGUF.
+"""4gbVramStrata P0.S9 - build the pack-layout expert arena from the real GGUF.
 
 The architecture (§3.2) defines one expert blob as 1,382,400 bytes:
 

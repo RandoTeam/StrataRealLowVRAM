@@ -1,12 +1,12 @@
 @echo off
-rem Benchmark this PolyStrata install the way it is used and write a report you can share (docs/COMMUNITY_BENCHMARKS.md).
+rem Benchmark this 4gbVramStrata install the way it is used and write a report you can share (docs/COMMUNITY_BENCHMARKS.md).
 rem It starts the model with your settings (or uses the one already running), takes about 10 minutes and changes nothing.
 rem Options: --clients 4 (several requests at once), --long (a 32K prompt), --compare <older results folder>.
 setlocal
-title PolyStrata - benchmark
+title 4gbVramStrata - benchmark
 cd /d "%~dp0"
 if not exist ".venv\Scripts\python.exe" (
-  echo  PolyStrata is not set up here yet: run START-HERE.bat first.
+  echo  4gbVramStrata is not set up here yet: run START-HERE.bat first.
   pause
   exit /b 1
 )

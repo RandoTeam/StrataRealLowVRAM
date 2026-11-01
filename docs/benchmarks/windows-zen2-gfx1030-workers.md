@@ -1,11 +1,11 @@
 # Windows processor-group affinity on Threadripper 3990X
 
-On 2026-10-03, a before/after run compared PolyStrata on Windows 11 Pro (build 10.0.26300) with a Ryzen Threadripper
+On 2026-10-03, a before/after run compared 4gbVramStrata on Windows 11 Pro (build 10.0.26300) with a Ryzen Threadripper
 3990X (64 physical cores, 128 logical processors) and Radeon RX 6900 XT (16 GiB, gfx1030). Windows reported two
 processor groups of 64 logical processors each, but one NUMA node spanning both groups. The original pool code
 encoded each CPU as `group * 64 + processor`, then used `SetThreadAffinityMask` with `cpu & 63`. That discarded the
 group number, so CPUs from both groups aliased to the same group-relative masks. The experimental group-aware build
-at [source commit fba17b6](https://github.com/Yasei-no-otoko/PolyStrata/commit/fba17b6ec6e50104aa194443eaee17728db14135)
+at [source commit fba17b6](https://github.com/Yasei-no-otoko/4gbVramStrata/commit/fba17b6ec6e50104aa194443eaee17728db14135)
 uses group-aware thread affinity and preserves group identity when pinning workers and the session host.
 
 The standard automatic worker count remains 63 on this 3990X. No hardware-specific worker cap or default-selection
@@ -38,7 +38,7 @@ Both paired binaries contained an earlier automatic-worker proposal, bypassed by
 
 At 63 explicit workers, the experimental group-aware build's decode medians were about 3.63 times the prior build's
 in both measured cases. The 4K prompt throughput changed little. The old 31-worker run decoded at 46.97/44.99 tok/s, while
-the experimental 31-worker build measured 34.78/34.60 tok/s. Its starting free VRAM was only 145 MiB and PolyStrata
+the experimental 31-worker build measured 34.78/34.60 tok/s. Its starting free VRAM was only 145 MiB and 4gbVramStrata
 marked it LOW, versus 423 MiB before; background load and VRAM conditions were not controlled, so this regression's cause remains unresolved. The experimental 63-worker results were similar to the prior 31-worker results in this short/4K sample. The
 final PR preserves the original automatic worker selection (63 on this machine); all paired comparison runs
 explicitly passed `--pool-workers`.
@@ -73,7 +73,7 @@ describes the group-relative processor numbers and Windows 11 primary-group beha
 [SetThreadAffinityMask](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-setthreadaffinitymask)
 documents that the legacy mask applies to the thread's current primary group. The
 [Windows Containers issue #409](https://github.com/microsoft/Windows-Containers/issues/409) concerns a different
-container environment and multiple NUMA nodes; this PolyStrata measurement used a native process on one NUMA node and
+container environment and multiple NUMA nodes; this 4gbVramStrata measurement used a native process on one NUMA node and
 does not claim an operating-system or Docker fix.
 
 The full probe, raw inference runs, configs, build metadata, and reproduction script are preserved at

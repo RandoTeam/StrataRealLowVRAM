@@ -10,6 +10,7 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -80,21 +81,21 @@ class Pins(unittest.TestCase):
 class Estimates(unittest.TestCase):
     def test_the_measured_card(self):
         # an RTX 5090 lists 31.8 GiB; its cache held 19.9 GiB of experts at 32K
-        self.assertAlmostEqual(setup.poly_held_gb(setup.MODELS[M], 31.84) / 1.073741824, 19.9, delta=0.2)
-        self.assertAlmostEqual(setup.poly_ram_need(setup.MODELS[M], 31.84), 96, delta=1)
+        self.assertAlmostEqual(setup.fourgbvram_held_gb(setup.MODELS[M], 31.84) / 1.073741824, 19.9, delta=0.2)
+        self.assertAlmostEqual(setup.fourgbvram_ram_need(setup.MODELS[M], 31.84), 96, delta=1)
 
     def test_the_half_expert_size(self):
         # the same card held 20.8 GiB of its experts
-        self.assertAlmostEqual(setup.poly_held_gb(setup.MODELS[HALF], 31.84) / 1.073741824, 20.8, delta=0.2)
-        self.assertAlmostEqual(setup.poly_ram_need(setup.MODELS[HALF], 31.84), 60, delta=1)
+        self.assertAlmostEqual(setup.fourgbvram_held_gb(setup.MODELS[HALF], 31.84) / 1.073741824, 20.8, delta=0.2)
+        self.assertAlmostEqual(setup.fourgbvram_ram_need(setup.MODELS[HALF], 31.84), 60, delta=1)
 
     def test_the_size_taken_when_none_is_named(self):
         sizes = setup.family_models("glm")
         self.assertEqual(list(sizes), [M, SPLIT, HALF])                  # the whole model before the half of it
-        self.assertEqual(setup.poly_default(sizes, 128, 31.84), M)
-        self.assertEqual(setup.poly_default(sizes, 88, 31.84), SPLIT)     # 3.0BIT wants 96 GB there
-        self.assertEqual(setup.poly_default(sizes, 64, 31.84), HALF)
-        self.assertEqual(setup.poly_default(sizes, 32, 31.84), HALF)      # none fits: the one that wants least
+        self.assertEqual(setup.fourgbvram_default(sizes, 128, 31.84), M)
+        self.assertEqual(setup.fourgbvram_default(sizes, 88, 31.84), SPLIT)     # 3.0BIT wants 96 GB there
+        self.assertEqual(setup.fourgbvram_default(sizes, 64, 31.84), HALF)
+        self.assertEqual(setup.fourgbvram_default(sizes, 32, 31.84), HALF)      # none fits: the one that wants least
 
     def test_the_split_size(self):
         fam, d = setup.FAMILIES["glm"], setup.MODELS[SPLIT]
@@ -103,61 +104,64 @@ class Estimates(unittest.TestCase):
         self.assertRegex(d["hf"], r"^https://huggingface.co/unsloth/GLM-5.3-Flash-GGUF/resolve/[0-9a-f]{40}/UD-IQ2_XXS/$")
         self.assertAlmostEqual(sum(fam["sha256"][f][0] for f in SPLIT_FILES) / 1e9, d["download_gb"], delta=0.1)
         # the same card held 19.3 GiB of its experts
-        self.assertAlmostEqual(setup.poly_held_gb(setup.MODELS[SPLIT], 31.84) / 1.073741824, 19.3, delta=0.1)
-        self.assertAlmostEqual(setup.poly_ram_need(setup.MODELS[SPLIT], 31.84), d["ram_gb"], delta=1)
+        self.assertAlmostEqual(setup.fourgbvram_held_gb(setup.MODELS[SPLIT], 31.84) / 1.073741824, 19.3, delta=0.1)
+        self.assertAlmostEqual(setup.fourgbvram_ram_need(setup.MODELS[SPLIT], 31.84), d["ram_gb"], delta=1)
 
     def test_a_card_that_holds_none(self):
-        self.assertEqual(setup.poly_held_gb(setup.MODELS[M], 8.0), 0.0)
-        self.assertAlmostEqual(setup.poly_ram_need(setup.MODELS[M], 8.0), 117.2, delta=0.1)
+        self.assertEqual(setup.fourgbvram_held_gb(setup.MODELS[M], 8.0), 0.0)
+        self.assertAlmostEqual(setup.fourgbvram_ram_need(setup.MODELS[M], 8.0), 117.2, delta=0.1)
 
     def test_check_lines(self):
-        self.assertIn("AMD", setup.poly_verdict(setup.MODELS[M], 256, 24.0, True))
-        self.assertIn("does not fit", setup.poly_verdict(setup.MODELS[M], 256, 12.0, False))
-        self.assertIn("fits by setup's estimate", setup.poly_verdict(setup.MODELS[M], 128, 31.84, False))
-        self.assertIn("read from the SSD", setup.poly_verdict(setup.MODELS[M], 64, 31.84, False))
+        with mock.patch.object(setup, "WIN", False):   # #11: AMD on Linux runs it
+            self.assertNotIn("does not run", setup.fourgbvram_verdict(setup.MODELS[M], 256, 24.0, True))
+        with mock.patch.object(setup, "WIN", True):
+            self.assertIn("AMD", setup.fourgbvram_verdict(setup.MODELS[M], 256, 24.0, True))   # only AMD on Windows is left out
+        self.assertIn("does not fit", setup.fourgbvram_verdict(setup.MODELS[M], 256, 12.0, False))
+        self.assertIn("fits by setup's estimate", setup.fourgbvram_verdict(setup.MODELS[M], 128, 31.84, False))
+        self.assertIn("read from the SSD", setup.fourgbvram_verdict(setup.MODELS[M], 64, 31.84, False))
 
 
 class Config(unittest.TestCase):
     def test_choices_from_config(self):
         with tempfile.TemporaryDirectory() as t:
             p = Path(t) / "strata-glm-3.0bit.json"
-            p.write_text(json.dumps({"exe": "/x/engine-poly/" + setup.POLY_EXE, "args": ["--max-context", "65536"]}))
+            p.write_text(json.dumps({"exe": "/x/engine-fourgbvram/" + setup.FOURGBVRAM_EXE, "args": ["--max-context", "65536"]}))
             ch = setup.choices_from_config(p)
             self.assertEqual((ch["family"], ch["model"], ch["context"], ch["vision"]), ("glm", M, 65536, "none"))
-            self.assertTrue(setup.poly_config(json.loads(p.read_text())))
+            self.assertTrue(setup.fourgbvram_config(json.loads(p.read_text())))
 
     def test_an_install_from_before_the_engine_was_renamed(self):
         # its config has strata-glm in engine-glm/: it is this engine's, and an update moves it to the new one
         with tempfile.TemporaryDirectory() as t:
             root = Path(t)
             p = root / "strata-glm-3.0bit.json"
-            cfg = {"exe": str(root / setup.OLD_ENGINE_POLY_DIR / setup.OLD_POLY_EXE), "args": ["--max-context", "32768"]}
+            cfg = {"exe": str(root / setup.OLD_ENGINE_GLM_DIR / setup.OLD_GLM_EXE), "args": ["--max-context", "32768"]}
             p.write_text(json.dumps(cfg))
-            self.assertTrue(setup.poly_config(cfg))
+            self.assertTrue(setup.fourgbvram_config(cfg))
             self.assertEqual(setup.choices_from_config(p)["family"], "glm")
 
             def build(gpu, yes, llama, vision="none", works=True):
                 if not works:
                     raise RuntimeError("no compiler")
-                (root / setup.ENGINE_POLY_DIR).mkdir(exist_ok=True)
-                (root / setup.ENGINE_POLY_DIR / setup.POLY_EXE).write_text("")
-                (root / setup.ENGINE_POLY_DIR / "BUILD.json").write_text(json.dumps({"cuda_dirs": ["/cuda/bin"]}))
-                return root / setup.ENGINE_POLY_DIR
+                (root / setup.ENGINE_FOURGBVRAM_DIR).mkdir(exist_ok=True)
+                (root / setup.ENGINE_FOURGBVRAM_DIR / setup.FOURGBVRAM_EXE).write_text("")
+                (root / setup.ENGINE_FOURGBVRAM_DIR / "BUILD.json").write_text(json.dumps({"cuda_dirs": ["/cuda/bin"]}))
+                return root / setup.ENGINE_FOURGBVRAM_DIR
 
             with mock.patch.object(setup, "ROOT", root), mock.patch.object(setup, "get_llama_cpp", lambda: root), \
                     mock.patch.object(setup, "gpu_info", lambda i=None: {"arch": "89"}):
                 # a compile that fails leaves the install as it was: the old engine still starts
-                with mock.patch.object(setup, "build_engine_poly", lambda *a: build(*a, works=False)):
-                    _code, out = quiet(setup.update_poly_engine, dict(cfg), False, p)
-                self.assertIn("could not update strata-poly", out)
+                with mock.patch.object(setup, "build_engine_fourgbvram", lambda *a: build(*a, works=False)):
+                    _code, out = quiet(setup.update_fourgbvram_engine, dict(cfg), False, p)
+                self.assertIn("could not update strata-fourgbvram", out)
                 self.assertEqual(json.loads(p.read_text())["exe"], cfg["exe"])
-                with mock.patch.object(setup, "build_engine_poly", build):
-                    _code, out = quiet(setup.update_poly_engine, cfg, False, p)
-            new = root / setup.ENGINE_POLY_DIR / setup.POLY_EXE
+                with mock.patch.object(setup, "build_engine_fourgbvram", build):
+                    _code, out = quiet(setup.update_fourgbvram_engine, cfg, False, p)
+            new = root / setup.ENGINE_FOURGBVRAM_DIR / setup.FOURGBVRAM_EXE
             self.assertEqual((Path(cfg["exe"]), Path(json.loads(p.read_text())["exe"])), (new, new))
             self.assertEqual(json.loads(p.read_text())["lib_dirs"], ["/cuda/bin"])
-            self.assertIn(setup.OLD_ENGINE_POLY_DIR + "/ can be deleted", out)
-        self.assertFalse(setup.poly_config({"exe": "/x/engine/" + setup.EXE}))
+            self.assertIn(setup.OLD_ENGINE_GLM_DIR + "/ can be deleted", out)
+        self.assertFalse(setup.fourgbvram_config({"exe": "/x/engine/" + setup.EXE}))
 
     def test_the_compile_takes_the_cmake_pip_installed(self):
         # a cmake on PATH can be older than CMakeLists.txt takes (Ubuntu 22.04's); the one beside Python is setup's
@@ -166,21 +170,56 @@ class Config(unittest.TestCase):
             mine.mkdir()
             with mock.patch.object(sys, "executable", str(mine / "python")), \
                     mock.patch.object(setup.shutil, "which", lambda n: "/usr/bin/" + n), \
-                    mock.patch.object(setup.Path, "home", lambda: Path(t) / "home"):
+                    mock.patch.object(setup.Path, "home", lambda: Path(t) / "home"), \
+                    mock.patch.object(setup, "out", lambda c: "cmake version 3.31.6\n"), \
+                    mock.patch.object(setup, "run") as run:
                 self.assertEqual(setup.find_tool("cmake"), "/usr/bin/cmake")       # none of its own: PATH's
                 (mine / name).write_text("")
                 self.assertEqual(setup.find_tool("cmake"), str(mine / name))
                 with mock.patch.object(setup.shutil, "which", lambda n: None):
                     self.assertIsNone(setup.find_tool("ninja"))
+                run.assert_not_called()
+
+    def test_a_build_folder_keeps_its_cuda_compiler_spelling(self):
+        # nvcc.exe against nvcc.EXE: CMake would delete the cache and configure without the other -D options
+        with tempfile.TemporaryDirectory() as t:
+            nvcc = Path(t) / "nvcc"
+            nvcc.write_text("")
+            (Path(t) / "CMakeCache.txt").write_text(f"CMAKE_CUDA_COMPILER:FILEPATH={nvcc}\n")
+            other = os.path.join(t, ".", "nvcc")   # the same file, written another way
+            defs = ["-DSTRATA_ENABLE_CUDA=ON", f"-DCMAKE_CUDA_COMPILER={other}"]
+            self.assertEqual(setup.cached_compiler(t, defs), ["-DSTRATA_ENABLE_CUDA=ON", f"-DCMAKE_CUDA_COMPILER={nvcc}"])
+            (Path(t) / "nvcc2").write_text("")
+            another = [f"-DCMAKE_CUDA_COMPILER={Path(t) / 'nvcc2'}"]
+            self.assertEqual(setup.cached_compiler(t, another), another)   # another compiler: as given
+            self.assertEqual(setup.cached_compiler(Path(t) / "none", defs), defs)   # no cache: as given
+
+    def test_a_tool_whose_launcher_names_a_moved_folder_is_installed_again(self):
+        # issue 78: .venv\Scripts\cmake.exe named the Python of the folder before it was moved and did not start
+        with tempfile.TemporaryDirectory() as t:
+            mine, name = Path(t) / "bin", "cmake" + (".exe" if setup.WIN else "")
+            mine.mkdir()
+            (mine / name).write_text("")
+            with mock.patch.object(sys, "executable", str(mine / "python")), \
+                    mock.patch.object(setup, "out", lambda c: ""), \
+                    mock.patch("importlib.metadata.version", lambda n: "3.31.6"), \
+                    mock.patch.object(setup, "run") as run, \
+                    mock.patch.object(setup, "say"):
+                self.assertEqual(setup.find_tool("cmake"), str(mine / name))
+            cmd = run.call_args.args[0]
+            self.assertEqual(cmd[:4], [str(mine / "python"), "-m", "pip", "install"])
+            self.assertEqual(cmd[-3:], ["--force-reinstall", "--no-deps", "cmake==3.31.6"])
 
     def test_saved_conversation_cache(self):
         with tempfile.TemporaryDirectory() as t:
             p = Path(t) / "c.json"
-            self.assertIsNone(setup.poly_saved_conv([p, None]))
+            self.assertIsNone(setup.fourgbvram_saved_conv([p, None]))
             p.write_text(json.dumps({"args": ["--model", "m.gguf"]}))
-            self.assertEqual(setup.poly_saved_conv([None, p]), 0)
+            self.assertEqual(setup.fourgbvram_saved_conv([None, p]), 0)
             p.write_text(json.dumps({"args": ["--conversation-cache-mib", "4096", "--model", "m.gguf"]}))
-            self.assertEqual(setup.poly_saved_conv([p]), 4096)
+            self.assertEqual(setup.fourgbvram_saved_conv([p]), 4096)
+            p.write_text(json.dumps({"args": ["--conversation-cache-mib", "auto", "--model", "m.gguf"]}))
+            self.assertEqual(setup.fourgbvram_saved_conv([p]), "auto")
 
 
 class Main(unittest.TestCase):
@@ -222,7 +261,7 @@ class Main(unittest.TestCase):
         def fake_build(gpu, yes, llama, vision="none", toolkit=13):
             self.built.append(gpu["archs"])
             self.encoder, self.toolkit = vision, toolkit
-            eng = self.t / setup.ENGINE_POLY_DIR
+            eng = self.t / setup.ENGINE_FOURGBVRAM_DIR
             eng.mkdir(exist_ok=True)
             (eng / "BUILD.json").write_text(json.dumps({"source": "local", "cuda_dirs": ["/cuda/lib64"]}))
             return eng
@@ -243,11 +282,12 @@ class Main(unittest.TestCase):
             mock.patch.object(setup, "pip_install", lambda *a, **k: None),
             mock.patch.object(setup, "get_llama_cpp", lambda: self.t / "llama.cpp"),
             mock.patch.object(setup, "get_prebuilt", mock.Mock(side_effect=AssertionError("the Qwen engine"))),
-            mock.patch.object(setup, "build_engine_poly", fake_build),
+            mock.patch.object(setup, "build_engine_fourgbvram", fake_build),
             mock.patch.object(setup, "download", fake_download),
             mock.patch.object(setup, "whole_shard", lambda s: False),
             mock.patch.object(setup, "check_shards", lambda shards: None),
-            mock.patch.object(setup, "verify_sha256", lambda s, size, sha: self.verified.append((s.name, size, sha))),
+            mock.patch.object(setup, "verify_sha256", lambda s, size, sha, own=False: self.verified.append((s.name, size, sha))),
+            mock.patch.object(setup, "verify_fourgbvram_own", lambda s, size, sha, fam: self.verified.append((s.name, size, sha))),
             mock.patch.object(setup, "run", lambda cmd, *a, **k: self.runs.append([str(x) for x in cmd])),
             mock.patch.object(setup, "write_run_script", lambda tag, cfg, port, *_: self.t / f"start-{tag}.sh"),
             mock.patch.object(setup, "start", mock.Mock(side_effect=AssertionError("started"))),
@@ -280,12 +320,12 @@ class Main(unittest.TestCase):
         self.assertEqual(self.runs[1][2:], ["fetch", "--out", str(block)])
         self.assertEqual((pack / "expert-profile.txt").read_text(), "3 0 7\n")
         args = cfg["args"]
-        self.assertEqual(Path(cfg["exe"]), self.t / setup.ENGINE_POLY_DIR / setup.POLY_EXE)
+        self.assertEqual(Path(cfg["exe"]), self.t / setup.ENGINE_FOURGBVRAM_DIR / setup.FOURGBVRAM_EXE)
         self.assertEqual(Path(args[args.index("--model") + 1]), self.t / "models" / "glm-3.0BIT" / FILE)
         self.assertEqual(args[args.index("--max-context") + 1], "32768")
         self.assertEqual(Path(args[args.index("--expert-profile") + 1]), pack / "expert-profile.txt")
         self.assertEqual(Path(args[args.index("--draft-model") + 1]), block)
-        self.assertEqual(args[args.index("--conversation-cache-mib") + 1], "8192")
+        self.assertEqual(args[args.index("--conversation-cache-mib") + 1], "auto")
         for flag in ("--pack", "--native", "--mtp", "--kv", "--vision", "--pool-workers", "--prefill"):
             self.assertNotIn(flag, args)
         self.assertEqual(cfg["model_name"], "glm-5.3-flash-3.0bit")
@@ -364,7 +404,7 @@ class Main(unittest.TestCase):
         self.assertRegex(d["hf"], r"^https://huggingface.co/unsloth/DeepSeek-V4-Flash-0731-GGUF/resolve/[0-9a-f]{40}/"
                                   r"UD-IQ2_XXS/$")
         self.assertAlmostEqual(sum(fam["sha256"][f][0] for f in files) / 1e9, d["download_gb"], delta=0.05)
-        self.assertAlmostEqual(setup.poly_ram_need(d, 31.84), d["ram_gb"], delta=0.5)
+        self.assertAlmostEqual(setup.fourgbvram_ram_need(d, 31.84), d["ram_gb"], delta=0.5)
         code, out, cfg = self.main(family="deepseek")
         self.assertEqual(code, 0, out)
         self.assertEqual(self.downloads, [d["hf"] + f for f in files])
@@ -398,9 +438,10 @@ class Main(unittest.TestCase):
         code, out, cfg = self.main(["--kv", "q4_0", "--vision", "yes", "--parallel", "2"])
         self.assertEqual(code, 0, out)
         line = next(ln for ln in out.splitlines() if "not used with GLM 5.3 Flash" in ln)
-        for flag in ("--kv", "--vision", "--parallel"):
+        for flag in ("--kv", "--vision"):
             self.assertIn(flag, line)
-        self.assertNotIn("parallel", cfg)
+        self.assertNotIn("--parallel", line)   # strata-fourgbvram answers several requests at once too
+        self.assertEqual(cfg["parallel"], 2)
 
     def test_two_cards(self):
         code, out, cfg = self.main(["--gpu", "1"], n_gpus=2)

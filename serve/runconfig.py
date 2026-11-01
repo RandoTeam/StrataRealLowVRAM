@@ -1,11 +1,11 @@
 """serve/runconfig.py - #564: the web page's Settings view of the run config (strata-<model>.json).
 
-A short list of documented keys can be read and changed from PolyStrata's own page (GET / POST /config).  Everything
+A short list of documented keys can be read and changed from 4gbVramStrata's own page (GET / POST /config).  Everything
 else in the file - the keys setup writes, the network and security keys (host, api_key, cors_origins,
 trusted_origins, allowed_hosts), the MCP servers and before_load (which run programs), sampling keys not listed
 here - is kept as it is: a change touches only the keys it names (as setup run again keeps the user's keys, #629).
-The earlier file is kept as strata-<model>.json.bak.  The server reads the config when it starts, so a change is
-used from the next start on.
+The earlier file is kept as strata-<model>.json.bak.  The server reads the config when it starts and when it switches
+to the model (#37), so a change is used from the next start of, or switch to, the model.
 """
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from pathlib import Path
 # of the "sampling" block, ("arg", flag) for an engine option kept in "args".
 EDITABLE = [
     ("sampling.temperature", ("sampling", "num>=0"),
-     "Default temperature for requests that send none (0 = greedy, the default without a sampling block)"),
+     "Default temperature for requests that send none (0 = greedy; without it the model card's: 1.0 thinking, 0.7 not)"),
     ("sampling.top_p", ("sampling", "0<x<=1"), "Default top_p for requests that send none"),
     ("sampling.top_k", ("sampling", "1..64"), "Default top_k for requests that send none (1-64)"),
     ("sampling.min_p", ("sampling", "0<=x<=1"), "Default min_p for requests that send none"),
@@ -26,6 +26,8 @@ EDITABLE = [
     ("fit_max_tokens", "bool", "Shorten a max_tokens that does not fit the context instead of answering 400"),
     ("drop_oldest", "bool", "Leave out a conversation's oldest turns when it no longer fits the context, instead of "
                             "answering 400 (the system prompt and the last turn stay)"),
+    ("preserve_thinking", "bool", "Keep the thinking of earlier turns in the prompt (templates that support it: "
+                                  "Qwen3.6, Ornith, Tiel Coder)"),
     ("anthropic_thinking", ("enum", ["model", "on_request"]),
      "Anthropic requests that do not ask for thinking: think as the model does (model) or not (on_request)"),
     ("effort_position", ("enum", ["start", "end"]),
@@ -35,6 +37,8 @@ EDITABLE = [
     ("lazy_load", "bool", "Start without loading the model; the first request loads it (text only)"),
     ("engine_silence_s", "num>=0", "End a request when the engine says nothing for this long (default 300 s, 0 = wait)"),
     ("api_monitor", "bool", "Keep the last 100 requests' prompts and answers in memory for /api-monitor"),
+    ("switch_on_request", "bool", "List every installed model in /v1/models and load the one a request names, the "
+                                  "loaded one stopped first (#38; read from the config the server starts with)"),
     ("open_browser", "bool", "Open the chat page in the browser when the model is ready"),
     ("vram_reserve_mib", ("arg", "--vram-reserve-mib"),
      "VRAM in MiB the engine leaves free for other programs (engine default 700)"),
@@ -69,7 +73,7 @@ def view(cfg: dict, path: str | Path) -> dict:
                     "kind": "number" if k in ("sampling", "arg", "int>=0", "num>=0") else k,
                     **({"choices": kind[1]} if k == "enum" else {})})
     return {"file": Path(path).name, "keys": out,
-            "note": "Saved to the run config; used from the next start of the model."}
+            "note": "Saved to the run config; used from the next start of, or switch to, the model."}
 
 
 def _number(key, v, whole=False, lo=0.0, hi=None, lo_open=False):

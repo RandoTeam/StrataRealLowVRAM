@@ -1,6 +1,6 @@
-# DeepSeek V4 Flash (`strata-poly`)
+# DeepSeek V4 Flash (`strata-fourgbvram`)
 
-`strata-poly`, the engine that runs GLM 5.3 Flash, also runs DeepSeek V4 Flash: llama.cpp's architecture
+`strata-fourgbvram`, the engine that runs GLM 5.3 Flash, also runs DeepSeek V4 Flash: llama.cpp's architecture
 `deepseek4`, read from Unsloth's GGUF. The server, the web app and the API are the ones the README describes.
 
 It is early. This project has run it on one machine, with Linux and one NVIDIA card; a user runs it on Windows
@@ -17,7 +17,7 @@ with a 24 GB card and 128 GB of RAM ([issue 21](https://github.com/VecSzn/PolySt
 | Model | `DeepSeek-V4-Flash-0731-UD-IQ2_XXS`, three files, 90.9 GB, from [unsloth/DeepSeek-V4-Flash-0731-GGUF](https://huggingface.co/unsloth/DeepSeek-V4-Flash-0731-GGUF) |
 | Context | 32K |
 
-| | `strata-poly` | llama.cpp, 10 layers' experts on the card | llama.cpp, every expert on the CPU |
+| | `strata-fourgbvram` | llama.cpp, 10 layers' experts on the card | llama.cpp, every expert on the CPU |
 | --- | ---: | ---: | ---: |
 | Writes answers | 48 to 53 tokens/s | 25 to 28 tokens/s | 20 to 21 tokens/s |
 | Reads a prompt of 3,384 tokens | 1,003 tokens/s | 96 tokens/s | 56 tokens/s |
@@ -31,7 +31,7 @@ first layers in RAM, as `--n-cpu-moe` keeps them. The experts of ten layers are 
 beside the rest of the model at this context. That column is the faster of two runs; the other wrote 24 to 26
 tokens/s and read the prompt at 72.
 
-The README's row is PolyStrata's own benchmark through the server, the test every model of this engine gets
+The README's row is 4gbVramStrata's own benchmark through the server, the test every model of this engine gets
 ([BACKENDS.md](BACKENDS.md#a-prompt-of-30000-tokens)), as setup installs the model: a short chat written at 56
 tokens/s, and a prompt of 29,750 tokens read whole at 1,038 to 1,040, with the first token after 29 s and the
 answer after it written at 39 to 44: the second and third of three runs, as for the other models. The first, with
@@ -69,7 +69,7 @@ without asking.
 On the test machine, with the files already on the disk, this took about four minutes: two for the compile, one and a
 half for the files' SHA-256.
 
-Setup writes the run config `strata-dsv4-ud-iq2_xxs.json` and `run-dsv4-ud-iq2_xxs.sh` into the PolyStrata folder.
+Setup writes the run config `strata-dsv4-ud-iq2_xxs.json` and `run-dsv4-ud-iq2_xxs.sh` into the 4gbVramStrata folder.
 No expert profile is shipped: the engine starts one at the first start and keeps it up to date.
 
 ## Long contexts
@@ -115,8 +115,14 @@ The engine and its options are GLM's ([GLM.md](GLM.md#how-it-uses-the-card)). Wh
 
 ## What is missing
 
-- The other sizes in Unsloth's repository, from UD-IQ1_S (83 GB) to UD-Q3_K_XL (128 GB). The engine should read
-  them, but only UD-IQ2_XXS has been run, and setup offers no other.
+- Other sizes in setup: of those in Unsloth's repository it offers only UD-IQ2_XXS. A user with 128 GB of RAM ran
+  two more ([issue 21](https://github.com/VecSzn/PolyStrata/issues/21)).
+  UD-IQ3_XXS (104 GB) wrote at 27 to 31 tokens/s and read 512K tokens 4.6% slower than UD-IQ2_XXS.
+  UD-IQ4_XS (137 GB) is larger than that RAM: the rest is read from the disk as it is needed, and it wrote at 2 to
+  3.4 tokens/s with 0.1.44.1-poly.6. llama.cpp b11706 with the experts on the CPU wrote at 8.6 with the same
+  file, and strata-fourgbvram at 1.4 to 2.2 against llama.cpp's 9.5 to 10.6 with UD-Q4_K_XL (155 GB), the same
+  prompt on the same PC. The draft model (dspark) slowed llama.cpp down there, to 2.0 to 4.4 tokens/s.
+- A way of running a file larger than the RAM that comes near llama.cpp's speed there (above).
 - Guessing ahead with a draft model. The repository has one for this model (`dspark`, 11 GB), which the engine does
   not run yet. Guesses still come from text the conversation repeats.
 - Windows, by this project: setup asks before it installs it there. A user ran UD-IQ2_XXS on Windows 10 with an
