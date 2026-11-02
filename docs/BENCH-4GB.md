@@ -149,11 +149,10 @@ measured again.
 ## How many experts swap per answer
 
 `--expert-swaps` is a concurrency cap: while an answer is written, up to N experts are on their way into VRAM in place
-of cached ones the answer uses less. The default is 64 and the engine refuses more (2026-11-02, this laptop, two
-requests in one process — the answer, then the same prompt again so the cache has settled, median of two or three
-runs):
+of cached ones the answer uses less. The default is 64 and the engine refuses more. Two requests in one process — the
+answer, then the same prompt again so the cache has settled — on 2026-11-02:
 
-Clover APEX-I-NANOPLUS with `--tail-skip 6`:
+Clover APEX-I-NANOPLUS with `--tail-skip 6`, median of three runs:
 
 | `--expert-swaps` | First answer | Second answer |
 | ---: | ---: | ---: |
@@ -161,28 +160,20 @@ Clover APEX-I-NANOPLUS with `--tail-skip 6`:
 | 32 | 37.5 | 40.3 |
 | 64 (default) | **41.8** | **45.3** |
 
-Flint UD-Q3_K_XL with `--prompt-batch 512`:
-
-| `--expert-swaps` | First answer | Second answer |
-| ---: | ---: | ---: |
-| 32 | 29.3 | **38.0** |
-| 48 | 27.4 | 35.1 |
-| 64 (default) | **35.6** | 29.0 |
-
-Flint with the engine's defaults (second answer only, two runs each): 0 → 26.6, 8 → 27.6, 16 → 33.0, 32 → 34.2,
-64 → 34.2.
+Flint UD-Q3_K_XL with `--prompt-batch 512`, 64 and 32 interleaved in one session (64, 32, 64, 32, 64, 32), median of
+three each: 64 gives **27.8** first and **37.5** settled, 32 gives 27.5 and 36.1.
 
 What it says:
 
 - **Swapping is what makes the cache useful.** Freezing it at load (`--expert-swaps 0`) costs 22 to 30%: on a 4 GB
   card 421 or 710 slots are 4 to 6% of the experts, and the answer keeps needing others.
-- **On Clover, more is better on both answers**: 64 against 32 is +11% on the first and +12% on the settled one.
-- **On Flint with `--prompt-batch 512` the trade flips**: 64 makes the cold first answer faster (35.6 against 29.3),
-  32 makes every later answer faster (38.0 against 29.0). 64 uploads compete with the answer's own PCIe traffic once
-  the cache is warm; while it is cold, the uploads pay for themselves. Which end to favour is the user's choice: a
-  long chat wants 32, a one-shot question wants 64.
-- **The next experiment is an adaptive budget**: 64 while the cache fills, then 32. Neither fixed value gives both
-  ends, and the engine keeps the whole number for its life today.
+- **The most the engine takes is the best here.** 64 wins on both models, on both answers, so the default stands.
+- **A first batch of Flint runs put 32 ahead of 64 on the settled answer (38.0 against 29.0).** It did not reproduce:
+  those runs compared two engine builds in two sessions, not two settings. Interleaving the two settings in one
+  session reversed it. An `--expert-swaps-after` prototype that ran 64 for the first answer and cooled to 32 measured
+  **32.4** — below both fixed counts — and was dropped.
+- **The lesson for the next measurement:** compare settings interleaved, in one session, on one engine build, with
+  the expert profile fixed; a batch of one setting and then a batch of another is not an A/B.
 
 ## Measuring your own
 
