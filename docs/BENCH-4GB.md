@@ -146,6 +146,44 @@ the same settings, so the CUDA 13 build is faster on all four. How much of that 
 being warm was not separated. The tables above are poly.6 numbers; every setting there other than these four was not
 measured again.
 
+## How many experts swap per answer
+
+`--expert-swaps` is a concurrency cap: while an answer is written, up to N experts are on their way into VRAM in place
+of cached ones the answer uses less. The default is 64 and the engine refuses more (2026-11-02, this laptop, two
+requests in one process — the answer, then the same prompt again so the cache has settled, median of two or three
+runs):
+
+Clover APEX-I-NANOPLUS with `--tail-skip 6`:
+
+| `--expert-swaps` | First answer | Second answer |
+| ---: | ---: | ---: |
+| 0 (cache frozen at load) | 28.4 | 31.5 |
+| 32 | 37.5 | 40.3 |
+| 64 (default) | **41.8** | **45.3** |
+
+Flint UD-Q3_K_XL with `--prompt-batch 512`:
+
+| `--expert-swaps` | First answer | Second answer |
+| ---: | ---: | ---: |
+| 32 | 29.3 | **38.0** |
+| 48 | 27.4 | 35.1 |
+| 64 (default) | **35.6** | 29.0 |
+
+Flint with the engine's defaults (second answer only, two runs each): 0 → 26.6, 8 → 27.6, 16 → 33.0, 32 → 34.2,
+64 → 34.2.
+
+What it says:
+
+- **Swapping is what makes the cache useful.** Freezing it at load (`--expert-swaps 0`) costs 22 to 30%: on a 4 GB
+  card 421 or 710 slots are 4 to 6% of the experts, and the answer keeps needing others.
+- **On Clover, more is better on both answers**: 64 against 32 is +11% on the first and +12% on the settled one.
+- **On Flint with `--prompt-batch 512` the trade flips**: 64 makes the cold first answer faster (35.6 against 29.3),
+  32 makes every later answer faster (38.0 against 29.0). 64 uploads compete with the answer's own PCIe traffic once
+  the cache is warm; while it is cold, the uploads pay for themselves. Which end to favour is the user's choice: a
+  long chat wants 32, a one-shot question wants 64.
+- **The next experiment is an adaptive budget**: 64 while the cache fills, then 32. Neither fixed value gives both
+  ends, and the engine keeps the whole number for its life today.
+
 ## Measuring your own
 
 The server prints the same lines for your requests, so a chat and a long prompt are enough. For a run with numbers
