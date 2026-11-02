@@ -175,6 +175,42 @@ What it says:
 - **The lesson for the next measurement:** compare settings interleaved, in one session, on one engine build, with
   the expert profile fixed; a batch of one setting and then a batch of another is not an A/B.
 
+## Settings that did not help
+
+Clover APEX-I-NANOPLUS, `--tail-skip 6` unless the row says otherwise, three interleaved rounds, 2026-11-02. "First /
+second" are written tokens/s of the first answer and of the same prompt asked again:
+
+| Setting | What it did |
+| --- | --- |
+| `--ram-experts-mib 6144` | 21.4 / 18.7 against 38.4 / 40.9: 25 to 50% slower |
+| `--ram-experts-mib 8192` | 27.9 / 28.2: slower too |
+| `--stage-ahead 2048` | prefill 265 against 514: halved |
+| `--cpu-share 0` | prefill 517 against 514: nothing |
+| `--stage-mib 2048` | 34.2 / 32.7: slower |
+| `--prompt-batch 2048` | prefill 520 against 515, and the cache held 17 experts instead of 421: 30.5 written |
+| `--prompt-batch 4096` | 0 experts at load |
+| `--lookup 0` | 30.5 / 31.4: the repeat-based guesses pay for themselves |
+| `--no-draft` | 36.5 / 37.3, the same as the default |
+| `--window 4` against 8 | no difference: five interleaved pairs, 46.3 against 45.6, `--window 4` ahead in 2 of 5 |
+
+## The machine varies more than the settings
+
+The same configuration (`--tail-skip 6`, nothing else) measured **35 to 38** written tokens/s early in one session and
+**45 to 48** an hour later — same binary, same prompt, same expert profile, the same 421 experts at load. That is a
+±25% swing, wider than every effect in the table above.
+
+What it changes:
+
+- **Only interleaved pairs inside one session are comparable.** Absolute numbers from two sessions are not, and a
+  batch of one setting followed by a batch of another is not an A/B (that mistake cost a reverted feature; see the
+  section on `--expert-swaps`).
+- **The 45 tokens/s line has been crossed here**: 45.3 to 48.0 in the last batch of pairs, with the shipped settings.
+  Whether a given run lands at 35 or 48 is not decided by any flag measured so far.
+- **Unseparated:** the card's clocks and temperature, the laptop's power budget, and Windows moving the process to the
+  efficiency cores. The engine calls `no_power_throttling()` at start and the server starts it through
+  `serve/winjob.py`; this harness starts the engine directly. Which of the three moves the number is the next thing to
+  measure.
+
 ## Measuring your own
 
 The server prints the same lines for your requests, so a chat and a long prompt are enough. For a run with numbers
