@@ -87,3 +87,4 @@ dist-hip/
 /bench/validate_*.json
 /bench/bench_4gb-*.json
 /bench/bench_4gb-*.md
+/.local/
