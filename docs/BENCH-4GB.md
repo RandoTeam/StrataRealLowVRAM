@@ -179,6 +179,30 @@ What it says:
 - **The lesson for the next measurement:** compare settings interleaved, in one session, on the binary that ships,
   with the expert profile fixed; a batch of one setting and then a batch of another is not an A/B.
 
+## Does `--tail-skip` cost quality?
+
+`--tail-skip 6` leaves out an expert outside VRAM that every token of a window ranks at place 7 or later, so the
+answers can move. Measured on 2026-11-02, Clover APEX-I-NANOPLUS, the server's OpenAI endpoint, greedy
+(`temperature 0`), the same eight prompts with `--tail-skip 6` and with it off:
+
+| Prompt | `--tail-skip 6` | Without |
+| --- | --- | --- |
+| 137 × 29 | 3973 | 3973 |
+| five primes between 100 and 200 | 101, 103, 107, 109, 113 | the same |
+| `is_palindrome(s)` in Python | correct, in a code fence | correct, no fence |
+| Kyiv as JSON | `{"city":"Kyiv","country":"Ukraine"}` | the same |
+| three reasons a laptop is slow, in Russian | three correct reasons | the same three, other wording |
+| capital of Australia | Canberra | Canberra |
+| one-sentence summary of MoE | correct sentence | correct sentence, other wording |
+| first 8 Fibonacci numbers | `1,1,2,3,5,8,13,21` | `1, 1, 2, 3, 5, 8, 13, 21` |
+
+**Every answer is correct in both runs.** Four of the eight are byte-identical; the other four differ in formatting or
+wording, not in content. The reasoning block differs every time, which is expected: the expert cache changes where
+each expert is computed, and the last bits of the sums move with it.
+
+What this does **not** say: eight short prompts are not a quality gate. It says the flag does not obviously lobotomise
+the model on these tasks. A wider set — long context, tool calls, code that has to run — is still to come.
+
 ## Settings that did not help
 
 Clover APEX-I-NANOPLUS, `--tail-skip 6` unless the row says otherwise, three interleaved rounds, 2026-11-02. "First /
