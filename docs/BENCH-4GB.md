@@ -218,6 +218,10 @@ Clover with `--tail-skip 6 --no-graphs`, the engine's own counters, 96-token ans
 - **`--tail-skip` 7 and 8 are slower than 6** (41 and 35-40 tokens/s against 47): the elbow is at 6.
 - **What is left — about 20 ms a token — is GPU work per layer:** attention, the output head, the cached experts'
   MMVQ, and the waits around them. A kernel-level profile is the next step; no flag has moved it so far.
+- **The card is not downclocking.** A 512-token answer ran at **50.6 tokens/s** with the GPU steady at 1,749-1,762 MHz,
+  about 55% busy on average (30-93% between samples) and 35 W: half the time the card waits, so the headroom is in
+  overlap and batch size, not in clocks. Longer answers also score higher than the 128-token table (50.6 against
+  45-48): the same warm-up spread over more tokens.
 
 ## Does `--tail-skip` cost quality?
 
