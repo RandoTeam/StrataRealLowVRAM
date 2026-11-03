@@ -127,6 +127,7 @@ A second engine, `strata` (`src/`, `include/`), runs Qwen3.8-Flash-Next and come
 
 - **[docs/BENCH-4GB.md](docs/BENCH-4GB.md)** — what this hardware measured, with the logs.
 - **[docs/MEMORY-4GB.md](docs/MEMORY-4GB.md)** — where the bytes live: the VRAM, RAM and SSD budget per model and per token.
+- **[docs/QUALITY-4GB.md](docs/QUALITY-4GB.md)** — the sixteen-prompt smoke test run after every speed change, and what it found.
 - **[docs/MODELS-4GB.md](docs/MODELS-4GB.md)** — the twelve models, sizes, scores, sources.
 - **[docs/INSTALL.md](docs/INSTALL.md)** — every install question, offline installs, other drives.
 - **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** — what to do when a start fails.

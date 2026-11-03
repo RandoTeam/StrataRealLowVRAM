@@ -1,0 +1,99 @@
+[
+ {
+  "id": "math_mul",
+  "domain": "math",
+  "prompt": "What is 137 * 29? Answer with the number only.",
+  "check": {"kind": "contains", "value": "3973"}
+ },
+ {
+  "id": "math_train",
+  "domain": "math",
+  "prompt": "A train travels 60 km in 45 minutes. What is its average speed in km/h? Answer with the number only.",
+  "check": {"kind": "contains", "value": "80"}
+ },
+ {
+  "id": "math_pencils",
+  "domain": "math",
+  "prompt": "If 3 pencils cost 1.20, how much do 7 pencils cost? Answer with the number only.",
+  "check": {"kind": "contains", "value": "2.8"}
+ },
+ {
+  "id": "logic_roses",
+  "domain": "logic",
+  "prompt": "All roses are flowers. Some flowers fade quickly. Can we conclude that some roses fade quickly? Answer yes or no, then one line why.",
+  "check": {"kind": "contains", "value": "no"}
+ },
+ {
+  "id": "logic_order",
+  "domain": "logic",
+  "prompt": "Anna is taller than Ben. Ben is taller than Carl. Who is the shortest? One name only.",
+  "check": {"kind": "contains", "value": "carl"}
+ },
+ {
+  "id": "code_palindrome",
+  "domain": "code",
+  "prompt": "Write a Python function is_palindrome(s) that ignores case and spaces. Code only.",
+  "check": {"kind": "palindrome_code", "value": null}
+ },
+ {
+  "id": "code_listcomp",
+  "domain": "code",
+  "prompt": "What does this print? print([x*x for x in range(4)]) Answer with the output only.",
+  "check": {"kind": "contains", "value": "[0, 1, 4, 9]"}
+ },
+ {
+  "id": "json_city",
+  "domain": "tools",
+  "prompt": "Return a JSON object with the keys city and country for Kyiv. JSON only.",
+  "check": {"kind": "json_keys", "value": ["city", "country"]}
+ },
+ {
+  "id": "tool_call",
+  "domain": "tools",
+  "prompt": "You have the function get_weather(city). Call it for Paris and answer with a JSON object with the keys name and arguments. JSON only.",
+  "check": {"kind": "json_keys", "value": ["name", "arguments"]}
+ },
+ {
+  "id": "lang_russian",
+  "domain": "language",
+  "prompt": "РћС‚РІРµС‡Р°Р№ РїРѕ-СЂСѓСЃСЃРєРё: РїРµСЂРµС‡РёСЃР»Рё С‚СЂРё РїСЂРёС‡РёРЅС‹, РїРѕС‡РµРјСѓ РЅРѕСѓС‚Р±СѓРє РјРѕР¶РµС‚ СЂР°Р±РѕС‚Р°С‚СЊ РјРµРґР»РµРЅРЅРѕ. РљСЂР°С‚РєРѕ.",
+  "check": {"kind": "russian_list", "value": 3}
+ },
+ {
+  "id": "lang_german",
+  "domain": "language",
+  "prompt": "Translate into German, one sentence only: The cat sits on the mat.",
+  "check": {"kind": "contains", "value": "katze"}
+ },
+ {
+  "id": "instruction_words",
+  "domain": "instruction",
+  "prompt": "Write exactly one sentence of exactly eight words about rain. Nothing else.",
+  "check": {"kind": "word_count", "value": 8}
+ },
+ {
+  "id": "instruction_five",
+  "domain": "instruction",
+  "prompt": "List exactly five prime numbers between 100 and 200, comma-separated, nothing else.",
+  "check": {"kind": "comma_count", "value": 5}
+ },
+ {
+  "id": "summary_moe",
+  "domain": "summary",
+  "prompt": "Summarise in one sentence: a mixture-of-experts model keeps most of its parameters idle for any one token.",
+  "check": {"kind": "max_words", "value": 45}
+ },
+ {
+  "id": "fact_capital",
+  "domain": "facts",
+  "prompt": "What is the capital of Australia? One word.",
+  "check": {"kind": "contains", "value": "canberra"}
+ },
+ {
+  "id": "seq_fib",
+  "domain": "math",
+  "prompt": "Write the first 8 Fibonacci numbers, comma-separated, nothing else.",
+  "check": {"kind": "fib8", "value": null}
+ }
+]
+
