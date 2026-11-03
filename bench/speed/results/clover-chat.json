@@ -1,0 +1,82 @@
+{
+ "model": "clover",
+ "task": "chat",
+ "when": "2026-11-03 11:31",
+ "runs": 8,
+ "prompt": "bench\\speed\\prompt.txt",
+ "prompt_tokens": 1904,
+ "max_new": 128,
+ "engine_sha256": "a37654f5f940047f049ad7e155763f9c25e65e584efa13f5819999d3554074ed",
+ "config": "C:\\VietnAi\\4gbVramStrata\\strata-clover-apex-i-nanoplus.json",
+ "settings": {
+  "--model": "C:\\VietnAi\\4gbVramStrata-data\\models\\clover-APEX-I-NANOPLUS\\Clover-35B-A3B-Preview.APEX-I-NanoPlus-V2.1.gguf",
+  "--max-context": "32768",
+  "--tail-skip": "6",
+  "--no-graphs": true,
+  "--expert-profile": "C:\\VietnAi\\4gbVramStrata-data\\packs\\clover-apex-i-nanoplus\\expert-profile.txt",
+  "--conversation-cache-mib": "auto",
+  "--kv": "q8_0"
+ },
+ "median_decode": 38.1,
+ "min_decode": 32.6,
+ "max_decode": 39.1,
+ "median_prefill": 448.85,
+ "rows": [
+  {
+   "prompt_tokens": 1904,
+   "prefill": 447.2,
+   "generated": 128,
+   "decode": 33.9,
+   "drafts": "22/43"
+  },
+  {
+   "prompt_tokens": 1904,
+   "prefill": 449.6,
+   "generated": 128,
+   "decode": 38.3,
+   "drafts": "42/65"
+  },
+  {
+   "prompt_tokens": 1904,
+   "prefill": 448.8,
+   "generated": 128,
+   "decode": 39.1,
+   "drafts": "51/70"
+  },
+  {
+   "prompt_tokens": 1904,
+   "prefill": 448.9,
+   "generated": 128,
+   "decode": 32.6,
+   "drafts": "1/5"
+  },
+  {
+   "prompt_tokens": 1904,
+   "prefill": 448.5,
+   "generated": 128,
+   "decode": 38.0,
+   "drafts": "50/74"
+  },
+  {
+   "prompt_tokens": 1904,
+   "prefill": 450.0,
+   "generated": 128,
+   "decode": 38.5,
+   "drafts": "47/69"
+  },
+  {
+   "prompt_tokens": 1904,
+   "prefill": 451.4,
+   "generated": 128,
+   "decode": 33.9,
+   "drafts": "22/41"
+  },
+  {
+   "prompt_tokens": 1904,
+   "prefill": 448.5,
+   "generated": 128,
+   "decode": 38.2,
+   "drafts": "42/65"
+  }
+ ]
+}

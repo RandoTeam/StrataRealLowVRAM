@@ -1,0 +1,90 @@
+{
+ "model": "clover",
+ "task": "raw",
+ "when": "2026-11-03 11:32",
+ "runs": 8,
+ "prompt": "bench\\speed\\prompt.txt",
+ "prompt_tokens": 1894,
+ "max_new": 128,
+ "engine_sha256": "a37654f5f940047f049ad7e155763f9c25e65e584efa13f5819999d3554074ed",
+ "config": "C:\\VietnAi\\4gbVramStrata\\strata-clover-apex-i-nanoplus.json",
+ "settings": {
+  "--model": "C:\\VietnAi\\4gbVramStrata-data\\models\\clover-APEX-I-NANOPLUS\\Clover-35B-A3B-Preview.APEX-I-NanoPlus-V2.1.gguf",
+  "--max-context": "32768",
+  "--tail-skip": "6",
+  "--no-graphs": true,
+  "--expert-profile": "C:\\VietnAi\\4gbVramStrata-data\\packs\\clover-apex-i-nanoplus\\expert-profile.txt",
+  "--conversation-cache-mib": "auto",
+  "--kv": "q8_0"
+ },
+ "median_decode": 31.125,
+ "min_decode": 29.48,
+ "max_decode": 34.36,
+ "median_prefill": 495.95000000000005,
+ "rows": [
+  {
+   "prompt_tokens": 1894,
+   "prefill": 488.7,
+   "generated": 128,
+   "decode": 34.36,
+   "vram_experts": 27.1,
+   "drafts": "53/75"
+  },
+  {
+   "prompt_tokens": 1894,
+   "prefill": 497.2,
+   "generated": 128,
+   "decode": 31.49,
+   "vram_experts": 27.6,
+   "drafts": "52/81"
+  },
+  {
+   "prompt_tokens": 1894,
+   "prefill": 499.9,
+   "generated": 128,
+   "decode": 31.15,
+   "vram_experts": 27.1,
+   "drafts": "44/74"
+  },
+  {
+   "prompt_tokens": 1894,
+   "prefill": 496.6,
+   "generated": 128,
+   "decode": 29.98,
+   "vram_experts": 27.8,
+   "drafts": "32/55"
+  },
+  {
+   "prompt_tokens": 1894,
+   "prefill": 491.2,
+   "generated": 128,
+   "decode": 31.41,
+   "vram_experts": 27.2,
+   "drafts": "44/72"
+  },
+  {
+   "prompt_tokens": 1894,
+   "prefill": 491.9,
+   "generated": 128,
+   "decode": 31.1,
+   "vram_experts": 27.4,
+   "drafts": "39/57"
+  },
+  {
+   "prompt_tokens": 1894,
+   "prefill": 498.0,
+   "generated": 128,
+   "decode": 31.0,
+   "vram_experts": 27.5,
+   "drafts": "36/56"
+  },
+  {
+   "prompt_tokens": 1894,
+   "prefill": 495.3,
+   "generated": 128,
+   "decode": 29.48,
+   "vram_experts": 27.2,
+   "drafts": "33/56"
+  }
+ ]
+}
