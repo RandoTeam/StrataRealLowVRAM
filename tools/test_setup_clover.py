@@ -82,7 +82,7 @@ class Main(unittest.TestCase):
                 args = cfg["args"]
                 self.assertEqual(Path(args[args.index("--model") + 1]), self.t / "models" / tag / file)
                 self.assertEqual(Path(args[args.index("--expert-profile") + 1]), pack / "expert-profile.txt")
-                for flag in ("--draft-model", "--tail-skip"):
+                for flag in ("--draft-model",):
                     self.assertNotIn(flag, args)
                 self.assertEqual(cfg["model_name"], f"clover-35b-a3b-preview-{size.lower()}")
                 self.assertEqual(cfg["display_name"], f"Clover-35B-A3B-Preview {size}")
@@ -95,6 +95,9 @@ class Main(unittest.TestCase):
         cfg = json.loads((self.t / "strata-clover-apex-i-nanoplus.json").read_text())
         args = cfg["args"]
         self.assertEqual(args[args.index("--kv") + 1], "q8_0")
+        # the tail skip and the graphs: the family's measured defaults, on every card size
+        self.assertEqual(args[args.index("--tail-skip") + 1], "6")
+        self.assertIn("--no-graphs", args)
         code, out, _ = self.main(family="clover", model="APEX-I-NANOPLUS", ram=32.0, vram=8.0)
         self.assertEqual(code, 0, out)
         cfg = json.loads((self.t / "strata-clover-apex-i-nanoplus.json").read_text())

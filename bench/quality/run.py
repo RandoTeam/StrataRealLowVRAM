@@ -24,6 +24,31 @@ PROMPTS = Path(__file__).resolve().parent / "prompts.json"
 CYRILLIC = re.compile("[\u0400-\u04FF]")
 
 
+def json_objects(text: str) -> list[str]:
+    """Every balanced {...} run in the text, braces inside strings included: a tool call has nested arguments."""
+    out, depth, start, in_str, esc = [], 0, -1, False, False
+    for i, ch in enumerate(text):
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch == "{":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == "}" and depth > 0:
+            depth -= 1
+            if depth == 0:
+                out.append(text[start : i + 1])
+    return out
+
+
 def check(kind: str, value, answer: str) -> bool:
     text = (answer or "").strip()
     low = text.lower()
@@ -66,7 +91,59 @@ def check(kind: str, value, answer: str) -> bool:
     if kind == "comma_count":
         parts = [p for p in text.replace("\n", " ").split(",") if p.strip()]
         return len(parts) == int(value) and all(re.fullmatch(r"\s*\d+\s*", p) for p in parts)
+    if kind == "json_array_len":
+        m = re.search(r"\[.*\]", text, re.S)
+        if not m:
+            return False
+        try:
+            data = json.loads(m.group(0))
+        except ValueError:
+            return False
+        return isinstance(data, list) and len(data) == int(value) and all(
+            isinstance(x, dict) and {"name", "size"} <= set(x) for x in data)
+    if kind == "json_calls":
+        # one JSON object per line, each a {"name": ..., "arguments": {...}} call: the names must appear, in order
+        calls = []
+        for obj in json_objects(text):
+            try:
+                data = json.loads(obj)
+            except ValueError:
+                continue
+            if isinstance(data, dict) and isinstance(data.get("name"), str):
+                calls.append(data["name"].strip().rsplit(".", 1)[-1])
+        want = [str(x) for x in value]
+        i = 0
+        for name in calls:
+            if i < len(want) and name == want[i]:
+                i += 1
+        return i == len(want)
+    if kind == "runs_python":
+        # the code has to run: exec it, call the function, compare the results as JSON so tuples and lists match
+        m = re.search(r"```(?:python)?\s*(.*?)```", text, re.S)
+        code = m.group(1) if m else text
+        space: dict = {}
+        try:
+            exec(code, space)  # noqa: S102 - the point of the check is to run the model's code
+            fn = space[value["function"]]
+            for case in value["cases"]:
+                got = fn(*case["args"])
+                if json.loads(json.dumps(got)) != case["want"]:
+                    return False
+        except Exception:  # noqa: BLE001 - a code check that throws is a fail, and its reason is not needed
+            return False
+        return True
     raise ValueError(f"unknown check {kind!r}")
+
+
+def with_context(p: dict) -> str:
+    """A long-context prompt: the facts placed at 15%, 50% and 85% of the document, the questions at the end."""
+    long_ = p.get("long")
+    if not long_:
+        return p["prompt"]
+    words = max(50, int(long_["fill_words"]))
+    gap = long_["filler"] * max(1, words // max(1, len(long_["filler"].split())))
+    parts = [gap[: len(gap) // 3], long_["facts"][0], gap, long_["facts"][1], gap, long_["facts"][2], gap]
+    return p["prompt"] + "\n\n" + "\n".join(parts) + "\n\n" + long_["questions"]
 
 
 def main() -> int:
@@ -77,6 +154,8 @@ def main() -> int:
     ap.add_argument("--repeat", type=int, default=1, help="asks every prompt N times: a greedy answer can still move "
                                                           "when the expert cache does")
     ap.add_argument("--out", help="where to write the JSON result (default: bench/quality/results/<model>.json)")
+    ap.add_argument("--no-long", action="store_true", help="leave out the long-context prompt (a quick run)")
+    ap.add_argument("--only", help="run only these prompt ids, comma-separated")
     a = ap.parse_args()
 
     base = f"http://127.0.0.1:{a.port}"
@@ -86,14 +165,20 @@ def main() -> int:
         sys.exit(f"no server on {base}: {e}")
 
     prompts = json.loads(PROMPTS.read_text(encoding="utf-8-sig"))
+    if a.no_long:
+        prompts = [p for p in prompts if "long" not in p]
+    if a.only:
+        wanted = {x.strip() for x in a.only.split(",")}
+        prompts = [p for p in prompts if p["id"] in wanted]
     rows, passed, passed_any = [], 0, 0
     for p in prompts:
+        question = with_context(p)
         attempts = []
         for _ in range(max(1, a.repeat)):
             t0 = time.time()
             r = requests.post(base + "/v1/chat/completions", timeout=1800, json={
                 "model": a.model, "temperature": 0, "max_tokens": a.max_tokens,
-                "messages": [{"role": "user", "content": p["prompt"]}]})
+                "messages": [{"role": "user", "content": question}]})
             r.raise_for_status()
             d = r.json()
             msg = d["choices"][0]["message"]

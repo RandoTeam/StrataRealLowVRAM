@@ -1,10 +1,10 @@
 {
  "model": "local",
- "when": "2026-11-03 05:33",
+ "when": "2026-11-03 08:38",
  "engine": "strata-fourgbvram",
- "passed": 16,
- "passed_any": 16,
- "total": 16,
+ "passed": 22,
+ "passed_any": 22,
+ "total": 22,
  "repeat": 2,
  "rows": [
   {
@@ -17,12 +17,12 @@
     {
      "answer": "3973",
      "pass": true,
-     "reasoning_chars": 90,
-     "seconds": 12.5,
+     "reasoning_chars": 241,
+     "seconds": 9.7,
      "usage": {
       "prompt_tokens": 27,
-      "completion_tokens": 54,
-      "total_tokens": 81,
+      "completion_tokens": 153,
+      "total_tokens": 180,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
@@ -32,7 +32,7 @@
      "answer": "3973",
      "pass": true,
      "reasoning_chars": 90,
-     "seconds": 2.2,
+     "seconds": 2.9,
      "usage": {
       "prompt_tokens": 27,
       "completion_tokens": 54,
@@ -54,12 +54,12 @@
     {
      "answer": "80",
      "pass": true,
-     "reasoning_chars": 190,
+     "reasoning_chars": 155,
      "seconds": 4.7,
      "usage": {
       "prompt_tokens": 38,
-      "completion_tokens": 80,
-      "total_tokens": 118,
+      "completion_tokens": 62,
+      "total_tokens": 100,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
@@ -69,7 +69,7 @@
      "answer": "80",
      "pass": true,
      "reasoning_chars": 155,
-     "seconds": 2.2,
+     "seconds": 3.5,
      "usage": {
       "prompt_tokens": 38,
       "completion_tokens": 62,
@@ -91,12 +91,12 @@
     {
      "answer": "2.80",
      "pass": true,
-     "reasoning_chars": 809,
-     "seconds": 10.7,
+     "reasoning_chars": 612,
+     "seconds": 14.0,
      "usage": {
       "prompt_tokens": 35,
-      "completion_tokens": 293,
-      "total_tokens": 328,
+      "completion_tokens": 234,
+      "total_tokens": 269,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
@@ -105,12 +105,12 @@
     {
      "answer": "2.80",
      "pass": true,
-     "reasoning_chars": 141,
-     "seconds": 1.7,
+     "reasoning_chars": 643,
+     "seconds": 17.5,
      "usage": {
       "prompt_tokens": 35,
-      "completion_tokens": 54,
-      "total_tokens": 89,
+      "completion_tokens": 249,
+      "total_tokens": 284,
       "prompt_tokens_details": {
        "cached_tokens": 34
       }
@@ -126,28 +126,28 @@
    "passes": 2,
    "attempts": [
     {
-     "answer": "No. The premise only says some flowers fade quickly, not that any of those are roses.",
+     "answer": "No. \"Some flowers fade quickly\" does not specify roses, so the quick-fading flowers could be entirely outside the rose subset.",
      "pass": true,
-     "reasoning_chars": 582,
-     "seconds": 6.3,
+     "reasoning_chars": 440,
+     "seconds": 13.1,
      "usage": {
       "prompt_tokens": 39,
-      "completion_tokens": 164,
-      "total_tokens": 203,
+      "completion_tokens": 134,
+      "total_tokens": 173,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
      }
     },
     {
-     "answer": "No. The premise only says some flowers fade quickly, not that any of those are roses.",
+     "answer": "No. The premise only says some flowers fade quickly, not necessarily roses; the fading flowers could be entirely outside the rose category.",
      "pass": true,
-     "reasoning_chars": 744,
-     "seconds": 6.2,
+     "reasoning_chars": 825,
+     "seconds": 12.6,
      "usage": {
       "prompt_tokens": 39,
-      "completion_tokens": 197,
-      "total_tokens": 236,
+      "completion_tokens": 222,
+      "total_tokens": 261,
       "prompt_tokens_details": {
        "cached_tokens": 38
       }
@@ -165,12 +165,12 @@
     {
      "answer": "Carl",
      "pass": true,
-     "reasoning_chars": 105,
-     "seconds": 1.6,
+     "reasoning_chars": 155,
+     "seconds": 3.8,
      "usage": {
       "prompt_tokens": 31,
-      "completion_tokens": 29,
-      "total_tokens": 60,
+      "completion_tokens": 45,
+      "total_tokens": 76,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
@@ -179,12 +179,12 @@
     {
      "answer": "Carl",
      "pass": true,
-     "reasoning_chars": 112,
-     "seconds": 1.0,
+     "reasoning_chars": 155,
+     "seconds": 2.6,
      "usage": {
       "prompt_tokens": 31,
-      "completion_tokens": 31,
-      "total_tokens": 62,
+      "completion_tokens": 45,
+      "total_tokens": 76,
       "prompt_tokens_details": {
        "cached_tokens": 30
       }
@@ -203,7 +203,7 @@
      "answer": "```python\ndef is_palindrome(s):\n    s = s.lower().replace(\" \", \"\")\n    return s == s[::-1]\n```",
      "pass": true,
      "reasoning_chars": 697,
-     "seconds": 7.2,
+     "seconds": 13.2,
      "usage": {
       "prompt_tokens": 28,
       "completion_tokens": 191,
@@ -216,12 +216,12 @@
     {
      "answer": "```python\ndef is_palindrome(s):\n    s = s.lower().replace(\" \", \"\")\n    return s == s[::-1]\n```",
      "pass": true,
-     "reasoning_chars": 730,
-     "seconds": 6.6,
+     "reasoning_chars": 741,
+     "seconds": 11.5,
      "usage": {
       "prompt_tokens": 28,
-      "completion_tokens": 192,
-      "total_tokens": 220,
+      "completion_tokens": 212,
+      "total_tokens": 240,
       "prompt_tokens_details": {
        "cached_tokens": 27
       }
@@ -239,12 +239,12 @@
     {
      "answer": "[0, 1, 4, 9]",
      "pass": true,
-     "reasoning_chars": 342,
-     "seconds": 4.7,
+     "reasoning_chars": 330,
+     "seconds": 8.4,
      "usage": {
       "prompt_tokens": 32,
-      "completion_tokens": 127,
-      "total_tokens": 159,
+      "completion_tokens": 121,
+      "total_tokens": 153,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
@@ -253,12 +253,12 @@
     {
      "answer": "[0, 1, 4, 9]",
      "pass": true,
-     "reasoning_chars": 333,
-     "seconds": 3.9,
+     "reasoning_chars": 300,
+     "seconds": 6.2,
      "usage": {
       "prompt_tokens": 32,
-      "completion_tokens": 126,
-      "total_tokens": 158,
+      "completion_tokens": 119,
+      "total_tokens": 151,
       "prompt_tokens_details": {
        "cached_tokens": 31
       }
@@ -276,12 +276,12 @@
     {
      "answer": "{\"city\": \"Kyiv\", \"country\": \"Ukraine\"}",
      "pass": true,
-     "reasoning_chars": 596,
-     "seconds": 8.0,
+     "reasoning_chars": 668,
+     "seconds": 15.1,
      "usage": {
       "prompt_tokens": 27,
-      "completion_tokens": 216,
-      "total_tokens": 243,
+      "completion_tokens": 239,
+      "total_tokens": 266,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
@@ -290,12 +290,12 @@
     {
      "answer": "{\"city\": \"Kyiv\", \"country\": \"Ukraine\"}",
      "pass": true,
-     "reasoning_chars": 596,
-     "seconds": 7.0,
+     "reasoning_chars": 367,
+     "seconds": 10.8,
      "usage": {
       "prompt_tokens": 27,
-      "completion_tokens": 215,
-      "total_tokens": 242,
+      "completion_tokens": 129,
+      "total_tokens": 156,
       "prompt_tokens_details": {
        "cached_tokens": 26
       }
@@ -311,28 +311,28 @@
    "passes": 2,
    "attempts": [
     {
-     "answer": "{\"name\":\"get_weather\",\"arguments\":[\"Paris\"]}",
+     "answer": "{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}",
      "pass": true,
-     "reasoning_chars": 401,
-     "seconds": 3.5,
+     "reasoning_chars": 3154,
+     "seconds": 48.7,
      "usage": {
       "prompt_tokens": 38,
-      "completion_tokens": 101,
-      "total_tokens": 139,
+      "completion_tokens": 723,
+      "total_tokens": 761,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
      }
     },
     {
-     "answer": "{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}",
+     "answer": "{\"name\":\"get_weather\",\"arguments\":[\"Paris\"]}",
      "pass": true,
-     "reasoning_chars": 904,
-     "seconds": 6.3,
+     "reasoning_chars": 379,
+     "seconds": 5.3,
      "usage": {
       "prompt_tokens": 38,
-      "completion_tokens": 227,
-      "total_tokens": 265,
+      "completion_tokens": 97,
+      "total_tokens": 135,
       "prompt_tokens_details": {
        "cached_tokens": 37
       }
@@ -348,28 +348,28 @@
    "passes": 2,
    "attempts": [
     {
-     "answer": "1. **Недостаток ОЗУ** — при нехватке памяти система активно использует медленный файл подкачки на диске.\n2. **Медленный накопитель** — использование HDD вместо SSD или сильная фрагментация данных снижают скорость доступа к данным.\n3. **Перегруз системы** — избыточные программы при загрузке, фоновые процессы или устаревшие драйверы/ОС消耗ляют ресурсы CPU и RAM.",
+     "answer": "1. **Недостаток оперативной памяти (RAM)** — система активно использует медленный диск как виртуальную память.  \n2. **Медленный накопитель (HDD)** или его сильная фрагментация/заполненность.  \n3. **Перегрев CPU/GPU** из-за пыли или неисправности системы охлаждения, вызывающий троттлинг.  \n\n*(Также часто влияют: вирусы, лишние автозапускаемые программы и устаревшие драйверы.)*",
      "pass": true,
-     "reasoning_chars": 928,
-     "seconds": 11.0,
+     "reasoning_chars": 1291,
+     "seconds": 29.6,
      "usage": {
       "prompt_tokens": 176,
-      "completion_tokens": 341,
-      "total_tokens": 517,
+      "completion_tokens": 485,
+      "total_tokens": 661,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
      }
     },
     {
-     "answer": "1. **Недостаток оперативной памяти** — система тратит время на подкачку данных с диска.\n2. **Заполненный жёсткий диск** — замедляется чтение/запись файлов.\n3. **Перегрев или устаревший процессор** — снижается производительность для защиты от перегрева.",
+     "answer": "1. **Недостаток оперативной памяти (RAM)** — при нехватке памяти система активно использует медленный диск как виртуальную память, что снижает скорость.\n2. **Медленный накопитель (HDD) или его фрагментация** — жесткий диск значительно уступает SSD, а фрагментация данных усугубляет задержки при доступе.\n3. **Перегрев CPU/GPU из-за неисправности системы охлаждения** — пыль, высохшая термопаста или сломанный вентилятор вызывают троттлинг (снижение частот процессора для защиты от перегрева).",
      "pass": true,
-     "reasoning_chars": 2522,
-     "seconds": 26.4,
+     "reasoning_chars": 1601,
+     "seconds": 28.1,
      "usage": {
       "prompt_tokens": 176,
-      "completion_tokens": 781,
-      "total_tokens": 957,
+      "completion_tokens": 580,
+      "total_tokens": 756,
       "prompt_tokens_details": {
        "cached_tokens": 175
       }
@@ -387,12 +387,12 @@
     {
      "answer": "Die Katze sitzt auf der Matte.",
      "pass": true,
-     "reasoning_chars": 712,
-     "seconds": 8.0,
+     "reasoning_chars": 631,
+     "seconds": 12.5,
      "usage": {
       "prompt_tokens": 25,
-      "completion_tokens": 199,
-      "total_tokens": 224,
+      "completion_tokens": 185,
+      "total_tokens": 210,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
@@ -401,12 +401,12 @@
     {
      "answer": "Die Katze sitzt auf der Matte.",
      "pass": true,
-     "reasoning_chars": 743,
-     "seconds": 6.6,
+     "reasoning_chars": 444,
+     "seconds": 7.1,
      "usage": {
       "prompt_tokens": 25,
-      "completion_tokens": 200,
-      "total_tokens": 225,
+      "completion_tokens": 117,
+      "total_tokens": 142,
       "prompt_tokens_details": {
        "cached_tokens": 24
       }
@@ -422,14 +422,14 @@
    "passes": 2,
    "attempts": [
     {
-     "answer": "Rain falls gently from the dark clouds above.",
+     "answer": "Rain falls softly upon the quiet earth below.",
      "pass": true,
-     "reasoning_chars": 431,
-     "seconds": 4.7,
+     "reasoning_chars": 419,
+     "seconds": 7.2,
      "usage": {
       "prompt_tokens": 24,
-      "completion_tokens": 114,
-      "total_tokens": 138,
+      "completion_tokens": 113,
+      "total_tokens": 137,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
@@ -438,12 +438,12 @@
     {
      "answer": "Rain falls gently from the gray clouds above.",
      "pass": true,
-     "reasoning_chars": 427,
-     "seconds": 3.7,
+     "reasoning_chars": 431,
+     "seconds": 6.0,
      "usage": {
       "prompt_tokens": 24,
-      "completion_tokens": 112,
-      "total_tokens": 136,
+      "completion_tokens": 114,
+      "total_tokens": 138,
       "prompt_tokens_details": {
        "cached_tokens": 23
       }
@@ -459,28 +459,28 @@
    "passes": 2,
    "attempts": [
     {
-     "answer": "101, 103, 107, 109, 113",
+     "answer": "101,103,107,109,113",
      "pass": true,
-     "reasoning_chars": 480,
-     "seconds": 7.5,
+     "reasoning_chars": 472,
+     "seconds": 12.3,
      "usage": {
       "prompt_tokens": 32,
-      "completion_tokens": 190,
-      "total_tokens": 222,
+      "completion_tokens": 196,
+      "total_tokens": 228,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
      }
     },
     {
-     "answer": "101,103,107,109,113",
+     "answer": "101, 103, 107, 109, 113",
      "pass": true,
-     "reasoning_chars": 823,
-     "seconds": 12.0,
+     "reasoning_chars": 480,
+     "seconds": 9.3,
      "usage": {
       "prompt_tokens": 32,
-      "completion_tokens": 346,
-      "total_tokens": 378,
+      "completion_tokens": 190,
+      "total_tokens": 222,
       "prompt_tokens_details": {
        "cached_tokens": 31
       }
@@ -496,28 +496,28 @@
    "passes": 2,
    "attempts": [
     {
-     "answer": "A mixture-of-experts model activates only a subset of its parameters per token, leaving the majority idle.",
+     "answer": "Mixture-of-experts models activate only a subset of their parameters per token, leaving the majority idle.",
      "pass": true,
-     "reasoning_chars": 543,
-     "seconds": 6.3,
+     "reasoning_chars": 1675,
+     "seconds": 31.2,
      "usage": {
       "prompt_tokens": 34,
-      "completion_tokens": 141,
-      "total_tokens": 175,
+      "completion_tokens": 448,
+      "total_tokens": 482,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
      }
     },
     {
-     "answer": "In a mixture-of-experts model, only a selected subset of expert parameters is activated for each token, leaving the majority of parameters inactive.",
+     "answer": "Mixture-of-experts models activate only a subset of their parameters per token, leaving the majority inactive.",
      "pass": true,
-     "reasoning_chars": 414,
-     "seconds": 4.0,
+     "reasoning_chars": 3005,
+     "seconds": 38.9,
      "usage": {
       "prompt_tokens": 34,
-      "completion_tokens": 120,
-      "total_tokens": 154,
+      "completion_tokens": 728,
+      "total_tokens": 762,
       "prompt_tokens_details": {
        "cached_tokens": 33
       }
@@ -536,7 +536,7 @@
      "answer": "Canberra",
      "pass": true,
      "reasoning_chars": 154,
-     "seconds": 2.0,
+     "seconds": 3.2,
      "usage": {
       "prompt_tokens": 20,
       "completion_tokens": 41,
@@ -549,12 +549,12 @@
     {
      "answer": "Canberra",
      "pass": true,
-     "reasoning_chars": 154,
-     "seconds": 1.5,
+     "reasoning_chars": 139,
+     "seconds": 2.0,
      "usage": {
       "prompt_tokens": 20,
-      "completion_tokens": 41,
-      "total_tokens": 61,
+      "completion_tokens": 36,
+      "total_tokens": 56,
       "prompt_tokens_details": {
        "cached_tokens": 19
       }
@@ -572,12 +572,12 @@
     {
      "answer": "1, 1, 2, 3, 5, 8, 13, 21",
      "pass": true,
-     "reasoning_chars": 565,
-     "seconds": 9.2,
+     "reasoning_chars": 299,
+     "seconds": 10.3,
      "usage": {
       "prompt_tokens": 24,
-      "completion_tokens": 236,
-      "total_tokens": 260,
+      "completion_tokens": 140,
+      "total_tokens": 164,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
@@ -586,14 +586,236 @@
     {
      "answer": "1, 1, 2, 3, 5, 8, 13, 21",
      "pass": true,
-     "reasoning_chars": 583,
-     "seconds": 8.0,
+     "reasoning_chars": 2103,
+     "seconds": 37.7,
      "usage": {
       "prompt_tokens": 24,
-      "completion_tokens": 238,
-      "total_tokens": 262,
+      "completion_tokens": 731,
+      "total_tokens": 755,
       "prompt_tokens_details": {
        "cached_tokens": 23
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "math_change",
+   "domain": "math",
+   "prompt": "A shop sells pens at 1.20 each and notebooks at 2.50 each. I buy 3 pens and 2 notebooks and pay with a 20 note. How much change do I get? Answer with the number only.",
+   "pass": true,
+   "passes": 2,
+   "attempts": [
+    {
+     "answer": "11.40",
+     "pass": true,
+     "reasoning_chars": 700,
+     "seconds": 20.7,
+     "usage": {
+      "prompt_tokens": 62,
+      "completion_tokens": 303,
+      "total_tokens": 365,
+      "prompt_tokens_details": {
+       "cached_tokens": 0
+      }
+     }
+    },
+    {
+     "answer": "11.4",
+     "pass": true,
+     "reasoning_chars": 692,
+     "seconds": 16.9,
+     "usage": {
+      "prompt_tokens": 62,
+      "completion_tokens": 294,
+      "total_tokens": 356,
+      "prompt_tokens_details": {
+       "cached_tokens": 61
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "lang_spanish",
+   "domain": "language",
+   "prompt": "Translate into Spanish, one sentence only: The dog sleeps under the table.",
+   "pass": true,
+   "passes": 2,
+   "attempts": [
+    {
+     "answer": "El perro duerme debajo de la mesa.",
+     "pass": true,
+     "reasoning_chars": 349,
+     "seconds": 8.2,
+     "usage": {
+      "prompt_tokens": 25,
+      "completion_tokens": 112,
+      "total_tokens": 137,
+      "prompt_tokens_details": {
+       "cached_tokens": 0
+      }
+     }
+    },
+    {
+     "answer": "El perro duerme debajo de la mesa.",
+     "pass": true,
+     "reasoning_chars": 625,
+     "seconds": 8.6,
+     "usage": {
+      "prompt_tokens": 25,
+      "completion_tokens": 160,
+      "total_tokens": 185,
+      "prompt_tokens_details": {
+       "cached_tokens": 24
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "json_array",
+   "domain": "tools",
+   "prompt": "Return a JSON array of exactly three objects, each with the keys name and size, for three files. JSON only.",
+   "pass": true,
+   "passes": 2,
+   "attempts": [
+    {
+     "answer": "[{\"name\":\"report.pdf\",\"size\":2048},{\"name\":\"data.csv\",\"size\":1024},{\"name\":\"image.png\",\"size\":4096}]",
+     "pass": true,
+     "reasoning_chars": 308,
+     "seconds": 9.4,
+     "usage": {
+      "prompt_tokens": 34,
+      "completion_tokens": 117,
+      "total_tokens": 151,
+      "prompt_tokens_details": {
+       "cached_tokens": 0
+      }
+     }
+    },
+    {
+     "answer": "[{\"name\":\"report.pdf\",\"size\":2048},{\"name\":\"data.csv\",\"size\":1024},{\"name\":\"image.png\",\"size\":4096}]",
+     "pass": true,
+     "reasoning_chars": 302,
+     "seconds": 7.3,
+     "usage": {
+      "prompt_tokens": 34,
+      "completion_tokens": 116,
+      "total_tokens": 150,
+      "prompt_tokens_details": {
+       "cached_tokens": 33
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "tool_loop",
+   "domain": "tools",
+   "prompt": "You have three functions: read_file(path), grep(pattern, path) and write_file(path, text). Read src/main.c, find the lines that contain TODO in it, then write those lines to notes/todo.md. Answer with one JSON object per line and nothing else, each shaped {\"name\": ..., \"arguments\": {...}}, one call per line, in the order you would call them.",
+   "pass": true,
+   "passes": 2,
+   "attempts": [
+    {
+     "answer": "{\"name\": \"read_file\", \"arguments\": {\"path\": \"src/main.c\"}}\n{\"name\": \"grep\", \"arguments\": {\"pattern\": \"TODO\", \"path\": \"src/main.c\"}}\n{\"name\": \"write_file\", \"arguments\": {\"path\": \"notes/todo.md\", \"text\": \"lines containing TODO\"}}",
+     "pass": true,
+     "reasoning_chars": 3001,
+     "seconds": 55.5,
+     "usage": {
+      "prompt_tokens": 89,
+      "completion_tokens": 776,
+      "total_tokens": 865,
+      "prompt_tokens_details": {
+       "cached_tokens": 0
+      }
+     }
+    },
+    {
+     "answer": "{\"name\": \"read_file\", \"arguments\": {\"path\": \"src/main.c\"}}\n{\"name\": \"grep\", \"arguments\": {\"pattern\": \"TODO\", \"path\": \"src/main.c\"}}\n{\"name\": \"write_file\", \"arguments\": {\"path\": \"notes/todo.md\", \"text\": \"TODO lines from src/main.c\"}}",
+     "pass": true,
+     "reasoning_chars": 3098,
+     "seconds": 46.8,
+     "usage": {
+      "prompt_tokens": 89,
+      "completion_tokens": 779,
+      "total_tokens": 868,
+      "prompt_tokens_details": {
+       "cached_tokens": 88
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "code_runs",
+   "domain": "code",
+   "prompt": "Write a Python function split_even(nums) that returns a tuple of two lists: the even numbers and the odd numbers, each in the order they appear. Code only, in one ```python block.",
+   "pass": true,
+   "passes": 2,
+   "attempts": [
+    {
+     "answer": "```python\ndef split_even(nums):\n    evens = []\n    odds = []\n    for n in nums:\n        if n % 2 == 0:\n            evens.append(n)\n        else:\n            odds.append(n)\n    return (evens, odds)\n```",
+     "pass": true,
+     "reasoning_chars": 368,
+     "seconds": 12.7,
+     "usage": {
+      "prompt_tokens": 50,
+      "completion_tokens": 156,
+      "total_tokens": 206,
+      "prompt_tokens_details": {
+       "cached_tokens": 0
+      }
+     }
+    },
+    {
+     "answer": "```python\ndef split_even(nums):\n    even = []\n    odd = []\n    for n in nums:\n        if n % 2 == 0:\n            even.append(n)\n        else:\n            odd.append(n)\n    return even, odd\n```",
+     "pass": true,
+     "reasoning_chars": 760,
+     "seconds": 15.0,
+     "usage": {
+      "prompt_tokens": 50,
+      "completion_tokens": 257,
+      "total_tokens": 307,
+      "prompt_tokens_details": {
+       "cached_tokens": 49
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "needle_3facts",
+   "domain": "long-context",
+   "prompt": "Read the document, then answer the three questions at the end.",
+   "pass": true,
+   "passes": 2,
+   "attempts": [
+    {
+     "answer": "Based on the document provided, here are the answers to your three questions:\n\n1. **What is the calibration code for bay seven?**\n   ZUBROVKA-7741\n\n2. **When is the delivery slot for the north yard?**\n   Thursday at 07:40\n\n3. **What is the spare part number for the coolant pump?**\n   SP-88213-K",
+     "pass": true,
+     "reasoning_chars": 1044,
+     "seconds": 46.0,
+     "usage": {
+      "prompt_tokens": 13722,
+      "completion_tokens": 356,
+      "total_tokens": 14078,
+      "prompt_tokens_details": {
+       "cached_tokens": 0
+      }
+     }
+    },
+    {
+     "answer": "Here are the answers to the three questions:\n\n1. **What is the calibration code for bay seven?**\n   ZUBROVKA-7741\n\n2. **When is the delivery slot for the north yard?**\n   Thursday at 07:40\n\n3. **What is the spare part number for the coolant pump?**\n   SP-88213-K",
+     "pass": true,
+     "reasoning_chars": 631,
+     "seconds": 16.4,
+     "usage": {
+      "prompt_tokens": 13722,
+      "completion_tokens": 266,
+      "total_tokens": 13988,
+      "prompt_tokens_details": {
+       "cached_tokens": 13721
       }
      }
     }

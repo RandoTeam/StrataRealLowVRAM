@@ -89,11 +89,11 @@ struct Sampling {
 // llama.cpp's sampler chain in its default order: penalties, top-k, top-p, min-p, temperature, then the draw.
 class Sampler {
 public:
-    int pick(const float* logits, int n_vocab, const Sampling& s, const std::vector<int32_t>& history,
+    int pick(const float* logits, int n_vocab, const Sampling& s, const int32_t* hist, size_t hist_n,
              std::mt19937_64& rng) {
         if (penalizes(s)) {
             pen_.assign(logits, logits + n_vocab);
-            penalize(s, history);
+            penalize(s, hist, hist_n);
             logits = pen_.data();
         }
         if (s.temperature <= 0.f) return strata::fourgbvram::most_likely(logits, n_vocab);
@@ -151,10 +151,10 @@ private:
     }
 
     // on pen_, the logits' copy
-    void penalize(const Sampling& s, const std::vector<int32_t>& history) {
-        const size_t n = s.penalty_last_n < 0 ? history.size() : std::min(history.size(), (size_t) s.penalty_last_n);
+    void penalize(const Sampling& s, const int32_t* hist, size_t hist_n) {
+        const size_t n = s.penalty_last_n < 0 ? hist_n : std::min(hist_n, (size_t) s.penalty_last_n);
         seen_.clear();
-        for (size_t i = history.size() - n; i < history.size(); ++i) ++seen_[history[i]];
+        for (size_t i = hist_n - n; i < hist_n; ++i) ++seen_[hist[i]];
         for (const auto& [id, count] : seen_) {
             float& l = pen_[(size_t) id];
             l = l <= 0.f ? l * s.penalty_repeat : l / s.penalty_repeat;
@@ -459,6 +459,15 @@ struct Session {
         t0 = Clock::now();
         std::vector<int32_t> history = kept.seq();
         std::replace_if(history.begin(), history.end(), [](int32_t t) { return t < 0; }, pad);
+        // The penalties count the reply's own tokens, as llama.cpp's do.  Counting the prompt's last tokens instead
+        // makes a new task avoid the words of the old one: on a 4-message conversation the previous JSON came back in
+        // 13 of 32 seeds with the prompt counted and 4 of 32 without (Strata #4590).  STRATA_PENALTY_PROMPT=1 brings
+        // the old window back, to compare against.
+        static const bool prompt_penalties = [] {
+            const char* v = std::getenv("STRATA_PENALTY_PROMPT");
+            return v && std::atoi(v) != 0;
+        }();
+        std::vector<int32_t> reply;
         if (look) {
             repeats.reset();
             repeats.append(history.data(), history.size());
@@ -466,13 +475,16 @@ struct Session {
         const auto pick = [&](const float* logits) {
             picked_from = logits;
             if (follow && r.produced < (int64_t) follow->size()) return (*follow)[(size_t) r.produced];
-            return (int32_t) sampler.pick(logits, engine.n_vocab(), s, history, rng);
+            return prompt_penalties
+                       ? (int32_t) sampler.pick(logits, engine.n_vocab(), s, history.data(), history.size(), rng)
+                       : (int32_t) sampler.pick(logits, engine.n_vocab(), s, reply.data(), reply.size(), rng);
         };
         // Shows a token.  False when the answer ends with it.
         const auto show = [&](int32_t t) {
             on_token(t);
             ++r.produced;
             history.push_back(t);
+            reply.push_back(t);
             if (look) repeats.append(t);
             if (is_eos(t)) r.finish = "stop";
             else if (stop.load()) r.finish = "cancel";
@@ -596,6 +608,7 @@ struct Slot {
     Sampling s;
     std::mt19937_64 rng{std::random_device{}()};
     std::vector<int32_t> held;      // what its sequence has read: the prompt and the tokens fed since
+    size_t reply_at = 0;            // where in held this answer's own tokens start (the prompt's penalties are off)
     Clock::time_point t0;
 };
 
@@ -646,7 +659,9 @@ int serve(Session& ss) {
         for (size_t i = 0; i < which.size(); ++i) {
             Slot& sl = slots[which[i]];
             sl.held.push_back(feed[i]);
-            const int32_t t = (int32_t) slot_sampler.pick(engine.logits_of((int) i), engine.n_vocab(), sl.s, sl.held, sl.rng);
+            const int32_t t = (int32_t) slot_sampler.pick(engine.logits_of((int) i), engine.n_vocab(), sl.s,
+                                                          sl.held.data() + sl.reply_at, sl.held.size() - sl.reply_at,
+                                                          sl.rng);
             ++sl.produced;
             std::printf("BT %zu %d\n", which[i], (int) t);
             const char* fin = ss.is_eos(t) ? "stop" : sl.stop ? "cancel" : sl.produced >= sl.max_new ? "length"
@@ -873,6 +888,7 @@ int serve(Session& ss) {
                 engine.copy_seq(0, gives_to + 1);
                 slots[(size_t) gives_to] = Slot{};
                 slots[(size_t) gives_to].held = ss.kept.seq();
+                slots[(size_t) gives_to].reply_at = slots[(size_t) gives_to].held.size();
                 std::printf("YIELDED %d %lld\n", gives_to, (long long) r.gave_way);
             }
         } catch (const std::exception& e) {
@@ -915,6 +931,7 @@ int serve(Session& ss) {
             try {
                 engine.copy_seq(0, admit + 1);
                 sl.held = ss.kept.seq();
+                sl.reply_at = sl.held.size();   // the penalties count this slot's own tokens, not the conversation's
             } catch (const std::exception& e) {
                 std::fprintf(stderr, "strata-fourgbvram: batch: %s\n", e.what());
                 std::printf("ERR %s\n", e.what());
