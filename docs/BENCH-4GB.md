@@ -215,6 +215,8 @@ second" are written tokens/s of the first answer and of the same prompt asked ag
 | `--stage-ahead 2048` | prefill 265 against 514: halved |
 | `--cpu-share 0` | prefill 517 against 514: nothing |
 | `--stage-mib 2048` | 34.2 / 32.7: slower |
+| `--stage-read-mib 0` | prefill 343 against 514: the read-time staging the default does is worth 50% |
+| `--stage-read-mib 4096` | prefill 515: nothing more (it is capped at a layer's experts) |
 | `--prompt-batch 2048` | prefill 520 against 515, and the cache held 17 experts instead of 421: 30.5 written |
 | `--prompt-batch 4096` | 0 experts at load |
 | `--lookup 0` | 30.5 / 31.4: the repeat-based guesses pay for themselves |
