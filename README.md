@@ -27,16 +27,21 @@ Laptop with 4 GB of VRAM**, a Ryzen 5 5500U and 32 GB of RAM, on Windows 11.
 
 Reference machine: RTX 3050 Laptop (4 GB, `sm_86`), Ryzen 5 5500U (6 cores, 12 threads), 32 GB DDR4-3200, Windows 11.
 The engine is built from this repository with CUDA 13 for `sm_75` to `sm_120`. A 2,000-token prompt, 128 new tokens,
-32K context, the median of three runs:
+32K context, eight runs in one session (median; the first answer and every later one are both given because the first
+pays the engine's warm-up):
 
-| Model | File | Reads the prompt | Writes the answer | Experts in VRAM |
-| --- | ---: | ---: | ---: | ---: |
-| Clover-35B-A3B-Preview APEX-I-NANOPLUS | 11.7 GB | 522 tokens/s | 33.4 tokens/s (38.3 with `--tail-skip 6`) | 421 of 10,240 |
-| Flint 40B-A2.5B UD-Q3_K_XL | 17.2 GB | 420 tokens/s | 38.5 tokens/s (39.9 with `--prompt-batch 512`) | 561 of 12,032 |
+| Model | File | Reads the prompt | First answer | Later answers | Experts in VRAM |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Clover-35B-A3B-Preview APEX-I-NANOPLUS | 11.7 GB | 519 tokens/s | 38.5 tokens/s | **47.5 tokens/s** | 420 of 10,240 |
+| Flint 40B-A2.5B UD-Q3_K_XL | 17.2 GB | 360 tokens/s | 27.8 tokens/s | **40.7 tokens/s** | 518 of 12,032 |
 
-Two files of 12 and 17 GB decode at 33 to 39 tokens per second here, though neither fits in the card at all: the load
-takes about two seconds, and after that the card runs the experts it holds while the CPU runs the rest. That is a
-fresh 2,000-token prompt; a conversation grown to 32K is about half as fast
+"First answer" is the first request after the engine loads, "later answers" the same prompt asked again in the same
+process; the first pays the engine's warm-up. The settings are the ones setup writes: `--tail-skip 6` and
+`--no-graphs` for Clover, `--prompt-batch 512`, `--expert-swaps 32` and `--no-graphs` for Flint.
+
+Two files of 12 and 17 GB answer at 28 to 39 tokens per second on a fresh prompt and at 41 to 48 on later ones, though
+neither fits in the card at all: the load takes about two seconds, and after that the card runs the experts it holds
+while the CPU runs the rest. A conversation grown to 32K is about half as fast
 ([the curve](docs/BENCH-4GB.md#context-and-speed)).
 
 Every number, its log, the settings measured one at a time, what a conversation costs as it grows to 32K, and what
@@ -50,8 +55,8 @@ vendor scores and sources: **[docs/MODELS-4GB.md](docs/MODELS-4GB.md)**.
 
 | Model | Parameters | Smallest file | On a 4 GB card |
 | --- | --- | ---: | --- |
-| **Clover-35B-A3B-Preview** (DiffuSpace) | 35B / 3B active | 13 GB | **measured**, 33.4 tokens/s |
-| **Flint 40B-A2.5B** (Recursive) | 40B / 2.5B active | 18 GB | **measured**, 38.5 tokens/s |
+| **Clover-35B-A3B-Preview** (DiffuSpace) | 35B / 3B active | 13 GB | **measured**, 47.5 tokens/s |
+| **Flint 40B-A2.5B** (Recursive) | 40B / 2.5B active | 18 GB | **measured**, 40.7 tokens/s |
 | **LFM2.5-24B-A2B** (Liquid AI) | 24B / 2B active | 11 GB | should start; not run here |
 | **Qwen3.6-35B-A3B** (Qwen) | 35B / 3B active | 13 GB | no: 4.2 GB before any expert |
 | **Ornith 1.5-35B-A3B** (ornith-ai) | 35B / 3B active | 14 GB | the smallest size should start; not run here |

@@ -179,6 +179,27 @@ What it says:
 - **The lesson for the next measurement:** compare settings interleaved, in one session, on the binary that ships,
   with the expert profile fixed; a batch of one setting and then a batch of another is not an A/B.
 
+## CUDA graphs cost more than they save here
+
+`--no-graphs` launches a token's kernels one by one instead of replaying a CUDA graph recorded per layer. On this card
+the replay is the more expensive of the two. Measured 2026-11-03, both models with their shipped settings (Clover
+`--tail-skip 6`, Flint `--prompt-batch 512 --expert-swaps 32`), eight runs each in one session, written tokens/s:
+
+| Model | With graphs, first / settled | `--no-graphs`, first / settled | Expert slots |
+| --- | ---: | ---: | ---: |
+| Clover | 38.4 / 38.8 | 38.5 / **47.5** (32.7-55.3) | 420 |
+| Flint | 27.8 / 29.6 | 27.8 / **40.7** (38.3-45.1) | 518 |
+
+A three-request check on Flint, two runs each: with graphs 29.8 / 39.1 / 33.9 and 28.9 / 38.6 / 33.7; without,
+29.9 / 44.4 / 44.3 and 27.7 / 39.3 / 42.7. The first answer is unchanged, every later one gains 10 to 25%.
+
+Prefill does not move (Clover 519 against 514 on a 2,000-token prompt). The answers differ in their last bits, as any
+change in cache timing does; the eight-prompt check below gives the same correct answers both ways.
+
+Setup writes `--no-graphs` for the Clover and Flint families from these measurements; every other family keeps the
+default. Why it wins is one hypothesis and not yet verified: a per-layer graph replay costs more than the handful of
+launches it replaces when each layer's kernels are this small. A kernel-level profile is the next step.
+
 ## Does `--tail-skip` cost quality?
 
 `--tail-skip 6` leaves out an expert outside VRAM that every token of a window ranks at place 7 or later, so the
