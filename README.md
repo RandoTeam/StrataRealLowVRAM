@@ -35,10 +35,12 @@ The engine is built from this repository with CUDA 13 for `sm_75` to `sm_120`. A
 | Flint 40B-A2.5B UD-Q3_K_XL | 17.2 GB | 420 tokens/s | 38.5 tokens/s (39.9 with `--prompt-batch 512`) | 561 of 12,032 |
 
 Two files of 12 and 17 GB decode at 33 to 39 tokens per second here, though neither fits in the card at all: the load
-takes about two seconds, and after that the card runs the experts it holds while the CPU runs the rest.
+takes about two seconds, and after that the card runs the experts it holds while the CPU runs the rest. That is a
+fresh 2,000-token prompt; a conversation grown to 32K is about half as fast
+([the curve](docs/BENCH-4GB.md#context-and-speed)).
 
-Every number, its log, the settings measured one at a time, and what was **not** measured:
-**[docs/BENCH-4GB.md](docs/BENCH-4GB.md)**.
+Every number, its log, the settings measured one at a time, what a conversation costs as it grows to 32K, and what
+was **not** measured: **[docs/BENCH-4GB.md](docs/BENCH-4GB.md)**.
 
 ## The models
 
