@@ -58,6 +58,23 @@ Note what the suite does *not* see: on the same run, fp16 Clover answered the Ru
 about a rabbit needing rest — on-topic Cyrillic, wrong content, and the check passed it. The checks are that shallow by
 design; they catch empty, off-topic, wrong-language and refusals, not a plausible wrong answer.
 
+## A penalty that counted the prompt (fixed 2026-11-03)
+
+`--penalty-last-n` (repeat, frequency and presence penalties) counted the **prompt's** last tokens as if they were the
+reply's: the sampler's history was the whole sequence. A client that sets a penalty — coding agents do — could see a
+new task avoid the words of the old one; Strata measured the previous JSON coming back in 13 of 32 seeds with the
+prompt counted and 4 of 32 without (#4590). Ours had the same bug in both the single-request and the batch paths.
+
+It is fixed: the penalties count the reply's own tokens. `STRATA_PENALTY_PROMPT=1` restores the old window for
+comparison. Measured with a prompt that names a colour fourteen times and then asks for it, greedy,
+`penalty_last_n=512 penalty_freq=2`: the old window answered "Answer with a single word or phrase without any
+additional text" — the colour itself was penalised — and the reply-only window answered "Answer: teal." Same weights,
+same settings, one variable. It is a smoke test of the window, not a benchmark: the model does not reliably answer
+with one word in either.
+
+**Nothing changes when no penalty is set** (the engine's default is `penalty_last_n = 0`), so the speed numbers and the
+sixteen-prompt suite are unaffected; the suite is re-run with each engine build anyway.
+
 ## What this does and does not cover
 
 - **Covers:** does the model still answer the question, in the right language, with the asked shape.

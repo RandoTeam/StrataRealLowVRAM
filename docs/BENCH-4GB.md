@@ -118,9 +118,15 @@ What the numbers say:
   caches are still tiny (243 against 247 experts). At depth it is the largest single win in this document: see
   [the section above](#the-attention-caches-8-bit-at-depth-half-the-vram-half-the-wait). The engine takes q8_0 for
   `clover_moe`, `qwen35moe` and `kolibri1`; Flint rejects it.
-- **`--prompt-batch` cuts both ways.** On Clover 2,048 reads a prompt 12% faster and costs the expert cache at load;
-  on Flint 512 writes 28% faster and 2,048 reads 19% faster. Neither is a default this project should pick for every
-  model; both are worth a try on yours.
+- **`--prompt-batch` cuts both ways, and the 8-bit caches killed the smaller batch's case.** With fp16 caches, 512
+  gave Clover +7% written tokens for −13% prompt reading at 8K (and +38% expert slots); with `--kv q8_0` the same
+  comparison at 8K is 55.1 against 56.3 written — no gain, inside the noise — and at 24K only +4% (40.9 against
+  39.2), both for −10 to −12% prompt reading. Once the caches are 8-bit the expert cache is no longer the shortage, so
+  Clover keeps 1,024. Flint is the other way round: 512 writes 28% faster and 2,048 reads 19% faster, so setup writes
+  512 there.
+- **`--tail-skip 6` still pays on the bigger cache:** at 24K with `--kv q8_0`, 37.4 against 35.3 written tokens/s
+  (3 of 3 rounds), prefill unchanged. Setup now writes it for Clover too; before this it did not, so a Clover install
+  from setup was slower than every number in this document.
 - **Six CPU threads are not faster than twelve** on either model, so the old configs' `--threads 6` only cost speed.
 
 ## The engine this release ships

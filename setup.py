@@ -664,6 +664,9 @@ FAMILIES = {
                "hf": hf("maternion/Clover-35B-A3B-Preview-GGUF"), "file": "Diffuspace-Clover-35B-A3B-Preview-{q}.gguf",
                "shards": 1, "tag": "clover-", "name": "clover-35b-a3b-preview", "engine": "fourgbvram", "vision": False,
                "experimental": True, "windows": True, "ran_on_gb": 8, "row_bytes": 20480,
+               "tail_skip": 6,      # 4 GB: +16% written tokens/s at a 2K prompt (47.5 against 37.1 with the graphs
+                                    # off), +6% at 24K with the 8-bit caches; the answers move a little, eight prompts
+                                    # were correct in both (docs/BENCH-4GB.md)
                "no_graphs": True,   # 4 GB: 47.9 against 37.1 written tokens/s without CUDA graphs, 3 of 3 pairs
                "kv": "q8_0",        # 4 GB, Clover's clover_moe: half the attention caches' VRAM, which the expert cache
                                     # takes: at 24K of context 39.0 against 30.9 written tokens/s and a prompt read
