@@ -1,9 +1,9 @@
 # Quality on a 4 GB card
 
 Speed is not worth much if the answers get worse. This page is the smoke test the project runs after a change that
-touches speed: sixteen prompts across seven domains, greedy, scored pass or fail. It is deliberately shallow — it
-catches an answer that is empty, off-topic, in the wrong language, refuses or repeats the question. It is not a
-benchmark and it does not score quality.
+touches speed: **twenty-two prompts across nine domains**, greedy, scored pass or fail. It is deliberately shallow — it
+catches an answer that is empty, off-topic, in the wrong language, refuses, repeats the question, or returns code that
+does not run. It is not a benchmark and it does not score quality.
 
 ## How it runs
 
@@ -12,31 +12,53 @@ benchmark and it does not score quality.
 python bench/quality/run.py --model local --repeat 2 --out bench/quality/results/clover.json
 ```
 
-The prompts are `bench/quality/prompts.json`; the checks are in `bench/quality/run.py` (`contains`, `json_keys`,
-`fib8`, `comma_count`, `word_count`, `russian_list`, `palindrome_code`). `--max-tokens` defaults to 1200 because both
-models write a reasoning block first, and a small budget ends the answer inside it. `--repeat 2` asks every prompt
-twice: greedy answers can still move, because the expert cache moves. A row is `ok` only if every attempt passes;
-`FLAKY` means one attempt failed and one passed.
+The prompts are `bench/quality/prompts.json`; the checks are in `bench/quality/run.py`: `contains`, `contains_all`,
+`json_keys`, `json_array_len`, `json_calls`, `runs_python`, `fib8`, `comma_count`, `word_count`, `max_words`,
+`russian_list`, `palindrome_code`. `--max-tokens` defaults to 1200 because both models write a reasoning block first, and
+a small budget ends the answer inside it. `--repeat 2` asks every prompt twice: greedy answers can still move, because
+the expert cache moves. A row is `ok` only if every attempt passes; `FLAKY` means one attempt failed and one passed.
+`--no-long` leaves the long-context prompt out, `--only id,id` runs a few.
+
+Four checks are worth naming:
+
+- **`runs_python`** takes the answer's Python block, `exec`s it, calls the function it asked for and compares the
+  results as JSON — so a `tuple` and a `list` match, and code that does not run fails. **That executes the model's code
+  in the runner's own process:** run the gate on a machine where that is acceptable, or `--no-long` and skip that
+  prompt.
+- **`json_calls`** scans balanced `{...}` objects (nested `arguments` included), reads each call's `name`, and requires
+  the three expected tool names in order.
+- **`needle_3facts`** builds a long document (about 18,000 tokens of filler) with one fact near the start, one in the
+  middle and one near the end, and asks for all three at the end.
+- **`json_array_len`** wants exactly three objects with two keys each.
 
 ## Result, 2026-11-03
 
-The shipped settings (`--tail-skip 6 --no-graphs` on Clover, `--prompt-batch 512 --expert-swaps 32 --no-graphs` on
-Flint), 32K context, two attempts per prompt:
+The shipped settings (`--tail-skip 6 --no-graphs --kv q8_0` on Clover, `--prompt-batch 512 --expert-swaps 32
+--no-graphs` on Flint), 32K context, two attempts per prompt, on the engine built from this commit:
 
-| Model | Passed every attempt | Domains |
+| Model | Passed every attempt | Notes |
 | --- | ---: | --- |
-| Clover APEX-I-NANOPLUS | **16 of 16** | arithmetic ×3, logic ×2, code ×2, JSON and tool call ×2, Russian, German, instruction ×2, summary, fact, Fibonacci |
-| Flint UD-Q3_K_XL | **15 of 16** | the same, but the Russian instruction |
+| Clover APEX-I-NANOPLUS | **22 of 22** | every domain, including code that runs, the tool loop and the three-fact long context |
+| Flint UD-Q3_K_XL | **21 of 22** | lost the Russian instruction |
 
 **The one failure is real and it is Flint's.** Asked in Russian to list three reasons a laptop can run slowly, Flint
-repeated the instruction back (both attempts this run). Earlier runs of the same prompt, same engine, same settings,
-gave a correct numbered list once and a greeting ("Привет, дорогой, друг!") once. Three runs, three behaviours: **Flint's
-Russian instruction-following is unstable.** Clover answered it correctly in every run.
+repeated the instruction back (both attempts that run). The same request at temperature 0 in other runs gave a correct
+numbered list once, a greeting ("Привет, дорогой, друг!") once, and a short story about an author's pseudonym once —
+four runs, four behaviours: **Flint's Russian instruction-following is unstable in content, not in language.** Clover
+answered it correctly in every run.
+
+One of those Flint runs (the one under a full CUDA build on the same PC) came back as byte-level mojibake — the
+instruction's UTF-8 bytes rendered as if they were CP1251. Re-encoding it and decoding as UTF-8 gave the instruction
+again, with a few characters lost. It did not reproduce: the same request, same settings, later gave proper Cyrillic
+twice and a story twice. The pack's tokenizer round-trips that prompt byte for byte, so the tokenizer is not the
+source; a byte-level BPE model that loses the thread can emit byte tokens, and that is the likeliest explanation. It is
+written down as not reproduced.
 
 Everything else passed for both: arithmetic with exact results, the logic traps (roses, shortest), a palindrome
 function written correctly (two different idioms), a list-comprehension result, JSON with the asked keys, a JSON tool
-call, German translation, an eight-word sentence, exactly five primes, a one-sentence summary, the capital of
-Australia, and the Fibonacci sequence in either convention (0- or 1-based).
+call, a three-call tool loop, a Python function that was executed and checked, German and Spanish, an eight-word
+sentence, exactly five primes, a one-sentence summary, the capital of Australia, the Fibonacci sequence in either
+convention (0- or 1-based), and three facts spread through ~18,000 tokens of context.
 
 ## The 8-bit attention cache: the suite and a needle at 20K (2026-11-03)
 
@@ -77,12 +99,14 @@ sixteen-prompt suite are unaffected; the suite is re-run with each engine build 
 
 ## What this does and does not cover
 
-- **Covers:** does the model still answer the question, in the right language, with the asked shape.
-- **Does not cover:** long context, tool-call loops that have to run, code that has to execute, reasoning depth,
-  multi-turn consistency, and anything where a wrong answer looks plausible. Those are what a fuller gate would add.
+- **Covers:** does the model still answer the question, in the right language, with the asked shape; does code it
+  writes run; does it call the tools in the right order; does it find three facts across ~18K tokens.
+- **Does not cover:** reasoning depth, multi-turn consistency, retrieval over 32K, a tool loop that has to run for
+  real, and anything where a wrong answer looks plausible. Those are what a fuller gate would add.
 - **A failure is a prompt to look, not a verdict:** two of the first runs "failed" only because a correct palindrome
   used `split()` instead of `replace()` and because Fibonacci was 0-based. The checks were widened; the answers were
-  right.
+  right. The v2 gate found two of its own bugs the same way: `math_change` expected 6.40 for a sum that is 11.40 (the
+  model was right, the check was not), and `json_calls` read a nested `arguments` object as a broken JSON object.
 
 ## Next
 

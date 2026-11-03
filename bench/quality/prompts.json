@@ -94,6 +94,53 @@
   "domain": "math",
   "prompt": "Write the first 8 Fibonacci numbers, comma-separated, nothing else.",
   "check": {"kind": "fib8", "value": null}
+ },
+ {
+  "id": "math_change",
+  "domain": "math",
+  "prompt": "A shop sells pens at 1.20 each and notebooks at 2.50 each. I buy 3 pens and 2 notebooks and pay with a 20 note. How much change do I get? Answer with the number only.",
+  "check": {"kind": "contains", "value": "11.4"}
+ },
+ {
+  "id": "lang_spanish",
+  "domain": "language",
+  "prompt": "Translate into Spanish, one sentence only: The dog sleeps under the table.",
+  "check": {"kind": "contains", "value": "perro"}
+ },
+ {
+  "id": "json_array",
+  "domain": "tools",
+  "prompt": "Return a JSON array of exactly three objects, each with the keys name and size, for three files. JSON only.",
+  "check": {"kind": "json_array_len", "value": 3}
+ },
+ {
+  "id": "tool_loop",
+  "domain": "tools",
+  "prompt": "You have three functions: read_file(path), grep(pattern, path) and write_file(path, text). Read src/main.c, find the lines that contain TODO in it, then write those lines to notes/todo.md. Answer with one JSON object per line and nothing else, each shaped {\"name\": ..., \"arguments\": {...}}, one call per line, in the order you would call them.",
+  "check": {"kind": "json_calls", "value": ["read_file", "grep", "write_file"]}
+ },
+ {
+  "id": "code_runs",
+  "domain": "code",
+  "prompt": "Write a Python function split_even(nums) that returns a tuple of two lists: the even numbers and the odd numbers, each in the order they appear. Code only, in one ```python block.",
+  "check": {"kind": "runs_python", "value": {"function": "split_even",
+            "cases": [{"args": [[1, 2, 3, 4]], "want": [[2, 4], [1, 3]]},
+                      {"args": [[]], "want": [[], []]},
+                      {"args": [[7, 7, 2]], "want": [[2], [7, 7]]}]}}
+ },
+ {
+  "id": "needle_3facts",
+  "domain": "long-context",
+  "prompt": "Read the document, then answer the three questions at the end.",
+  "long": {
+   "facts": ["The calibration code for bay seven is ZUBROVKA-7741.",
+             "The delivery slot for the north yard is Thursday at 07:40.",
+             "The spare part number for the coolant pump is SP-88213-K."],
+   "filler": "The maintenance handbook covers bearings, belts, lubrication intervals and the torque values for each assembly. A technician records every inspection in the log before the machine returns to service. ",
+   "fill_words": 3500,
+   "questions": "1. What is the calibration code for bay seven?\n2. When is the delivery slot for the north yard?\n3. What is the spare part number for the coolant pump?"
+  },
+  "check": {"kind": "contains_all", "value": ["ZUBROVKA-7741", "07:40", "SP-88213-K"]}
  }
 ]
 

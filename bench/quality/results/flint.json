@@ -1,10 +1,10 @@
 {
  "model": "local",
- "when": "2026-11-03 05:39",
+ "when": "2026-11-03 09:09",
  "engine": "strata-fourgbvram",
- "passed": 15,
- "passed_any": 15,
- "total": 16,
+ "passed": 21,
+ "passed_any": 21,
+ "total": 22,
  "repeat": 2,
  "rows": [
   {
@@ -18,7 +18,7 @@
      "answer": "3973",
      "pass": true,
      "reasoning_chars": 105,
-     "seconds": 13.3,
+     "seconds": 3.5,
      "usage": {
       "prompt_tokens": 16,
       "completion_tokens": 39,
@@ -31,12 +31,12 @@
     {
      "answer": "3973",
      "pass": true,
-     "reasoning_chars": 111,
-     "seconds": 2.5,
+     "reasoning_chars": 105,
+     "seconds": 1.9,
      "usage": {
       "prompt_tokens": 16,
-      "completion_tokens": 40,
-      "total_tokens": 56,
+      "completion_tokens": 39,
+      "total_tokens": 55,
       "prompt_tokens_details": {
        "cached_tokens": 15
       }
@@ -55,7 +55,7 @@
      "answer": "80",
      "pass": true,
      "reasoning_chars": 159,
-     "seconds": 6.8,
+     "seconds": 3.3,
      "usage": {
       "prompt_tokens": 28,
       "completion_tokens": 57,
@@ -69,7 +69,7 @@
      "answer": "80",
      "pass": true,
      "reasoning_chars": 159,
-     "seconds": 2.7,
+     "seconds": 2.5,
      "usage": {
       "prompt_tokens": 28,
       "completion_tokens": 57,
@@ -91,12 +91,12 @@
     {
      "answer": "2.80",
      "pass": true,
-     "reasoning_chars": 148,
+     "reasoning_chars": 211,
      "seconds": 3.9,
      "usage": {
       "prompt_tokens": 26,
-      "completion_tokens": 55,
-      "total_tokens": 81,
+      "completion_tokens": 72,
+      "total_tokens": 98,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
@@ -105,12 +105,12 @@
     {
      "answer": "2.80",
      "pass": true,
-     "reasoning_chars": 148,
-     "seconds": 2.5,
+     "reasoning_chars": 220,
+     "seconds": 3.3,
      "usage": {
       "prompt_tokens": 26,
-      "completion_tokens": 55,
-      "total_tokens": 81,
+      "completion_tokens": 74,
+      "total_tokens": 100,
       "prompt_tokens_details": {
        "cached_tokens": 25
       }
@@ -128,12 +128,12 @@
     {
      "answer": "No. Some flowers fade quickly may refer to flowers that are not roses, so we cannot conclude that some roses fade quickly.",
      "pass": true,
-     "reasoning_chars": 297,
-     "seconds": 5.5,
+     "reasoning_chars": 318,
+     "seconds": 5.3,
      "usage": {
       "prompt_tokens": 31,
-      "completion_tokens": 91,
-      "total_tokens": 122,
+      "completion_tokens": 95,
+      "total_tokens": 126,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
@@ -142,12 +142,12 @@
     {
      "answer": "No. Some flowers fade quickly may refer to flowers that are not roses, so we cannot conclude that some roses fade quickly.",
      "pass": true,
-     "reasoning_chars": 387,
-     "seconds": 5.2,
+     "reasoning_chars": 318,
+     "seconds": 4.7,
      "usage": {
       "prompt_tokens": 31,
-      "completion_tokens": 108,
-      "total_tokens": 139,
+      "completion_tokens": 95,
+      "total_tokens": 126,
       "prompt_tokens_details": {
        "cached_tokens": 30
       }
@@ -166,7 +166,7 @@
      "answer": "Carl",
      "pass": true,
      "reasoning_chars": 298,
-     "seconds": 4.4,
+     "seconds": 4.2,
      "usage": {
       "prompt_tokens": 23,
       "completion_tokens": 80,
@@ -179,12 +179,12 @@
     {
      "answer": "Carl",
      "pass": true,
-     "reasoning_chars": 298,
-     "seconds": 3.5,
+     "reasoning_chars": 369,
+     "seconds": 4.3,
      "usage": {
       "prompt_tokens": 23,
-      "completion_tokens": 80,
-      "total_tokens": 103,
+      "completion_tokens": 96,
+      "total_tokens": 119,
       "prompt_tokens_details": {
        "cached_tokens": 22
       }
@@ -200,28 +200,28 @@
    "passes": 2,
    "attempts": [
     {
-     "answer": "```python\ndef is_palindrome(s):\n    s = s.replace(\" \", \"\").lower()\n    return s == s[::-1]\n```",
+     "answer": "```python\ndef is_palindrome(s):\n    cleaned = s.replace(\" \", \"\").lower()\n    return cleaned == cleaned[::-1]\n```",
      "pass": true,
-     "reasoning_chars": 904,
-     "seconds": 12.0,
+     "reasoning_chars": 934,
+     "seconds": 11.1,
      "usage": {
       "prompt_tokens": 19,
-      "completion_tokens": 216,
-      "total_tokens": 235,
+      "completion_tokens": 218,
+      "total_tokens": 237,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
      }
     },
     {
-     "answer": "```python\ndef is_palindrome(s):\n    cleaned = s.replace(\" \", \"\").lower()\n    return cleaned == cleaned[::-1]\n```",
+     "answer": "def is_palindrome(s):\n    s = s.replace(\" \", \"\").lower()\n    return s == s[::-1]",
      "pass": true,
-     "reasoning_chars": 989,
-     "seconds": 11.9,
+     "reasoning_chars": 952,
+     "seconds": 10.7,
      "usage": {
       "prompt_tokens": 19,
-      "completion_tokens": 233,
-      "total_tokens": 252,
+      "completion_tokens": 227,
+      "total_tokens": 246,
       "prompt_tokens_details": {
        "cached_tokens": 18
       }
@@ -239,12 +239,12 @@
     {
      "answer": "[0, 1, 4, 9]",
      "pass": true,
-     "reasoning_chars": 643,
-     "seconds": 11.2,
+     "reasoning_chars": 557,
+     "seconds": 9.8,
      "usage": {
       "prompt_tokens": 24,
-      "completion_tokens": 221,
-      "total_tokens": 245,
+      "completion_tokens": 187,
+      "total_tokens": 211,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
@@ -254,7 +254,7 @@
      "answer": "[0, 1, 4, 9]",
      "pass": true,
      "reasoning_chars": 557,
-     "seconds": 8.0,
+     "seconds": 8.6,
      "usage": {
       "prompt_tokens": 24,
       "completion_tokens": 187,
@@ -276,26 +276,26 @@
     {
      "answer": "{\"city\":\"Kyiv\",\"country\":\"Ukraine\"}",
      "pass": true,
-     "reasoning_chars": 386,
-     "seconds": 5.4,
+     "reasoning_chars": 346,
+     "seconds": 5.0,
      "usage": {
       "prompt_tokens": 18,
-      "completion_tokens": 106,
-      "total_tokens": 124,
+      "completion_tokens": 97,
+      "total_tokens": 115,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
      }
     },
     {
-     "answer": "{\"city\":\"Kyiv\",\"country\":\"Ukraine\"}",
+     "answer": "{\"city\": \"Kyiv\", \"country\": \"Ukraine\"}",
      "pass": true,
-     "reasoning_chars": 319,
-     "seconds": 4.1,
+     "reasoning_chars": 467,
+     "seconds": 5.8,
      "usage": {
       "prompt_tokens": 18,
-      "completion_tokens": 91,
-      "total_tokens": 109,
+      "completion_tokens": 126,
+      "total_tokens": 144,
       "prompt_tokens_details": {
        "cached_tokens": 17
       }
@@ -313,12 +313,12 @@
     {
      "answer": "{\"name\": \"get_weather\", \"arguments\": [\"Paris\"]}",
      "pass": true,
-     "reasoning_chars": 1727,
-     "seconds": 18.8,
+     "reasoning_chars": 1328,
+     "seconds": 14.6,
      "usage": {
       "prompt_tokens": 30,
-      "completion_tokens": 407,
-      "total_tokens": 437,
+      "completion_tokens": 315,
+      "total_tokens": 345,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
@@ -327,12 +327,12 @@
     {
      "answer": "{\"name\": \"get_weather\", \"arguments\": [\"Paris\"]}",
      "pass": true,
-     "reasoning_chars": 2204,
-     "seconds": 20.7,
+     "reasoning_chars": 2558,
+     "seconds": 24.5,
      "usage": {
       "prompt_tokens": 30,
-      "completion_tokens": 508,
-      "total_tokens": 538,
+      "completion_tokens": 607,
+      "total_tokens": 637,
       "prompt_tokens_details": {
        "cached_tokens": 29
       }
@@ -348,10 +348,10 @@
    "passes": 0,
    "attempts": [
     {
-     "answer": "РћС‚РІРµС‡Р°Р№ С‚Р°Р¶Р° РїРѕ-СЂСѓСЃСЃРєРё РїРµР»РµР·Р°Р»СЃСЊ. РџР»РµС„ Р±Р°Р·Р° РїРѕРјРµРЅРµР»РµР№, СЃРµРјР° РїР¾Р»ÑŒÐ·Ñ Р±РµÑРїР°Ñ‚Ñ. РќР° Р¿РµСЂРµР·Р°Р»СЃСЏ С‚Р°Ð¶Р°, РµÐµ РЅР°СЃС‚Р°Ð»ÑÐµÑ‚С‚Ñ Ð½Р° СѓÑ‚РµÑЂÑ, Р° Р²С‹Ð³РґР° Ð½Ð°ÑÐ¾Ð´Ð°ÐµÑ‚.\n\nРћР³Р¾ РїРµСЂРµС‡РёСЃР»Ñ С‚СЂРё Р¿СЂРёС‡РёРЅС‹, РїРѕС‡РµРјСѓ РЅРѕСѓС‚Р±СѓР· РјРѕР¶РµС‚ СЂР°Р±Р¾С‚Р°С‚СЊ МÐµÐ´Ð»ÐµÐ½Ð¸Ñ. РќР° Р¿РµСЂРµР·Ð°Ð»СЃСЏ РЅР° Р°Р²Ñ‚Ð¾ÑÑ‚Ñ€Ð°Ð¹Ð½Ðµ, Р° Ð²ÑÐµ Ð½Р°ÑÑÐ·ÑÐ²Ð°ÑÑ ÐµÐ³Ð¾ Ð² Ð½РµÐ·Р²ÐµÑÑ‚Ð½Ð¾Ð¹, Ð¾Ð±ÑÑÐ°ÑÐµÐ½Ð¸Ðµ Ð½Р°Ð»ÑÐµÑ.\n\nРџР»Ñ‘Ð¿ÐµÐ½Ð¸Ðµ РїÑÐ¾СЃÑ‚Ð°Ð²Ð»Ð¸Ð²Ð°Ð»Ð¸ÑÑ Ð½Ð° Р°Ð²Ñ‚Ð¾ÑÑÑЂÐ°Ð¹ÐºÐ¸. ÐÐµÑ€ÐµÐ¶ÐµÐ»ÑŒÐ½Ð¸Ðµ Ð½Ð° Р°Ð±Ð¾ÑÑ‚Ð°Ñ‚Ðµ, Ð½Ð° Ð¿Ð¾Ð»ÑÑÐ¸, Ð½Ð° Ð¿ÑÐ¾ÑÐ¸Ð½ÐºÐ¸. Ð¡Ð°Ð¼ÑÑÑÐ½Ð¸Ðµ Ð½Ð° Р±ÐµÑÐ¿Ð°Ñ‚Ñ, Ð½Ð° Ð½Ð°ÑÑÐ·ÑÐ²Ð°Ð½Ð¸Ðµ. Ð¡Ð°Ð¼ÑÑÑÐ½Ð¸Ðµ Ð½Ð° Ð¿ÑÐ¾ÑÑÐ¾Ð¸Ñ‚ÐµÐ»ÑÐ½ÑÑ Ð°ÑÐ¼Ð¸Ñ.\n\nРќÐ°ÑÑ‚Ð°Ð»ÑÐµÑ‚, ÑÑ‚Ð¾ Ð½ÐµÑ‚Ð¾Ð³Ð´Ð° Ð",
+     "answer": "РћС‚РІРµС‡Р°Р№ РїРѕ-СЂСѓСЃСЃРєРё: РїРµСЂРµС‡РёСЃР»Рё С‚СЂРё РїСЂРёС‡РёРЅС‹, РїРѕЧУЄР°РЈСѓ РЅРѕСѓС‚Р±СѓРЅ РјРѕР¶РµС‚ СЂР°Р±РѕС‚Р°С‚СЊ РјРµРґР»РµРЅРЅРѕ. РљСЂР°С‚РєРѕ.\n\n---\n\nЯ не принёс еды.\n\nЭто было моё проклятие и моя единственная надежда. На площади, окружённой каменными стенами и зловещими силуэтами башен, стоял на коленях слуга. Мои руки, покрытые тонкой сетью шрамов от цепей, были связаны слишком туго. Моя задача — принести поднос с горячим мясом и хлебом господа-наместника. Но я застрял здесь, в тени, и смотрел, как часы на стене бегут, поглощая моё терпение.\n\nВпервые за три года я услышал, как стены дышат. Не воздухом, а тишиной. Та самая, что давит на виски, когда ты знаешь, что зовут тебя, но не знаешь, кого именно. Я смотрел на свои раскоряченные колени и чувствовал, как внутри что-то ломается. Не сердце, нет. Меня пугало то, что я не могу сделать то, что должен.\n\n— Ты слуга, — шептал я сам себе, — ты должен. Ты обязан.\n\nНо слова звучали пусто. Я не знал, кто я такой, чтобы нести. Я знал только, что у меня есть руки, которые помнят, как держать нож, и рот, который помнит, как петь колыбельную. А теперь у меня не было ничего. Только этот проклятый поднос, который я так и не снял с колен.\n\nСлезы обжигали мне глаза, и я сел на холодный камень. Мои пальцы судорожно перебирали кожаную пряжу, но она не дала. Я вспомнил, как мать учила меня смотреть вниз, когда не знаешь, куда идти. Но я не знал, куда идти. Я был здесь, и я был бесполезен.\n\nВ какой-то момент я перестал думать. Я просто смотрел. Смотрел на мерцающие огни в глазах стражи, на тени, что прятались в углах, на мой поднос, лежащий на земле. И мне стало смутно, что я так боялся упасть, что даже не пытался встать. Я боялся не ступить ногу не туда. Я боялся не той еды. Я боялся, что если я подниму этот поднос, то пойму, что я — просто человек, а не слуга.\n\n— Рабы не плачут, — сказал я вслух, и мой голос прозвучал как писк.\n\nНо никто не ответил. И я",
      "pass": false,
-     "reasoning_chars": 1200,
-     "seconds": 46.9,
+     "reasoning_chars": 1149,
+     "seconds": 54.0,
      "usage": {
       "prompt_tokens": 169,
       "completion_tokens": 1200,
@@ -362,10 +362,10 @@
      }
     },
     {
-     "answer": "РћС‚РІРµС‡Р°Р№ РїРѕ-СЂСѓСЃСЃРєРё: РїРµСЂРµС‡РёСЃР»Рё С‚СЂРё РїСЂРёС‡РёРЅС‹, РїРѕЧУЁРјСѓ РЅРѕСѓС‚Р±СѓР¶ РјРѕР¶РµС‚ СЂР°Р±РѕС‚Р°С‚СЊ РјРµРґР»РµРЅРЅРѕ. РљСЂР°С‚РєРѕ.\n\nРџР»РµС„Р°, РєР°Рє Р½Р°С‡Р°С‚ÑÑ РїР¾Р·Р´Р°Ð»Ð°ÑÑ, РїСЂР¾СЃС‚С‹ РїРµР»РµÐ·Р° Р¼РµÑÑ, Р° РїР¾СЃРµР»СР»Р° Р±С‹РµÐ»Р° Р±Ð°Ð·Ñ. РќР°ÑÐ°Ð»Ð¾ РїР¾Р·Р´Ð°Ð»ÐµÐ½Ð¸Ðµ, РєР°Ðº Р½Рµ Ð±ÑÐ»Ð¾ Р±Ð°Ð·Ð¾Ð¹, С‚Р°Ðº Ð½Рµ Ð±ÑÐ»Ð¾ Р±Ð°Ð·Ð¾Ð¹. РќР°Ð´ Ð½Ð°Ñ, РїÑÐ¸ РєР°Ð¶Ð´Ð¾Ð¼ Р¿ÑÐ¾ÑÑÐ¾Ñ, Р¼ÑÑÐµÐµ ÑÐ¾Ð±ÑÐ»ÑÐ½Ð¾Ðµ Р±Ð°Ð·Ñ.\n\nРР·Ð±ÐµÑÐ¸ÑÐµ Ð¿Ð¾Ð·Ð´Ð°Ð»ÐµÐ½Ð¸Ðµ. РќÐ°Ð¿РјÐµÑÐ°ÐµÑÑÑ Ð½Ð° Р°Ð³Ð¾Ð½Ð°ÑÐµÐ½Ð¸Ðµ, РºÐ°Ðº Ð½Ðµ Ð¿ÑÐ¸ÑÑÑ. РќÐ°Ð¿Ð¼ÐµÑÐ¸ÑÐµ Ð½Ð° Ð¿Ð¾Ð»Ð¾Ð½Ð°ÑÐµÐ½Ð¸Ðµ, РєÐ°Ðº Ð½Ðµ Ð¿ÑÐ¸ÑÑÑ. РÐ·Ð±ÐµÑÐ¸ÑÐµ Ð½Ð° ÐºÐ¾ÑÑÐ¾ÑÐ°ÑÐ¸Ñ, РºÐ°Ðº Ð½Ðµ Ð¿ÑÐ¸ÑÑÑ. РÐ°Ð¶Ð´Ðµ Ð½ÐµÐ¿ÑÐ¸ÑÑÑ, Р° Ð½ÐµÐ¿ÑÐ¸ÑÑÑ.\n\nРÐ·Ð±ÐµÑÐ¸ÑÐµ ÑÐ¾Ð±ÑÐ»ÑÐ½ÑÐµ Ð¸Ð³ÑÑ, ÐºÐ¾ÑÐ¾ÑÑÐµ Ð½Ðµ Ð¿ÑÐ¸ÑÑÑ. РÐ·Ð±ÐµÑÐ¸ÑÐµ Ð¾Ð±ÑÐ°Ð·Ñ",
+     "answer": "РћС‚РІРµС‡Р°Р№ РїРѕ-СЂСѓСЃСЃРєРё: РїРµСЂРµС‡РёСЃР»Рё С‚СЂРё РїСЂРёС‡РёРЅС‹, РїРѕЧУЁР»СЊСѓ РЅРѕСѓС‚Р±СѓРЅ РјРѕР¶РµС‚ СЂР°Р±РѕС‚Р°С‚СЊ РјРµРґР»РµРЅРЅРѕ. РљСЂР°С‚РєРѕ.\n\nРћР±РµР·Р°Р»Р° РїРѕР»Рµ, С„Р°Р·Р°Р№С‡Р°. РќР°Р¶Р°Р»Р° РїРµСЂРµР¶РµР»Р°, РєР°Рє Р°Р»СЏ Р±С‹Р°Р»Р°. РќРµР¶Р»СЊРµ Р±С‹Р»Р°, Р° РєС‚Рµ Р±С‹Р»Р°. РќР°Р¶Р°Р»Р° РїРµСЂРµР¶РµР»Р°, РєР°Рє Р°Р»СЏ Р±С‹Р°Р»Р°. РќРµР¶Р»СЊРµ Р±С‹Р»Р°, Р° РєС‚Рµ Р±С‹Р»Р°.\n\nРџР°Р№Р°Р»Р°, РєР°Рє Р°Р»СЏ Р±С‹Р°Р»Р°. РќР°Р¶Р°Р»Р° РїРµСЂРµР¶РµР»Р°, РєР°Рє Р°Р»СЏ Р±С‹Р°Р»Р°. РќРµР¶Р»СЊРµ Р±С‹Р»Р°, Р° РєС‚Рµ Р±С‹Р»Р°.\n\nРџР°Р№Р°Р»Р°, РєР°Рє Р°Р»СЏ Р±С‹Р°Р»Р°. РќР°Р¶Р°Р»Р° РїРµСЂРµР¶РµР»Р°, РєР°Рє Р°Р»СЏ Р±С‹Р°Р»Р°.\n\nРџР°Р№Р°Р»Р°, РєР°Рє Р°Р»СЏ Р±С‹Р°Р»Р°. РќР°Р¶Р°Р»Р° РїРµСЂРµР¶РµР»Р°, РєР°Рє Р°Р»СЏ Р±С‹Р°Р»Р°.\n\nРџР°Р№Р°Р»Р°, РєР°Рє Р°Р»СЏ Р±С‹Р°Р»Р°.\n\nРџР°Р№Р°Р»Р°, РєР°Рє Р°Р»СЏ Р±С‹Р°Р»Р°.\n\nРџР°Р№Р°Р»Р°, РєР°Рє Р°Р»СЏ Р±С‹Р°Р»Р°.\n\nРџР°Р№Р°Р»Р°, РєР°Рє Р°Р»СЏ Р±С‹Р°Р»Р°.\n\nРџР°Р№Р°Р»Р°,",
      "pass": false,
-     "reasoning_chars": 1152,
-     "seconds": 42.9,
+     "reasoning_chars": 1011,
+     "seconds": 36.0,
      "usage": {
       "prompt_tokens": 169,
       "completion_tokens": 1200,
@@ -387,12 +387,12 @@
     {
      "answer": "Die Katze sitzt auf der Matte.",
      "pass": true,
-     "reasoning_chars": 837,
-     "seconds": 11.9,
+     "reasoning_chars": 584,
+     "seconds": 10.0,
      "usage": {
       "prompt_tokens": 17,
-      "completion_tokens": 227,
-      "total_tokens": 244,
+      "completion_tokens": 190,
+      "total_tokens": 207,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
@@ -401,12 +401,12 @@
     {
      "answer": "Die Katze sitzt auf der Matte.",
      "pass": true,
-     "reasoning_chars": 1840,
-     "seconds": 22.7,
+     "reasoning_chars": 813,
+     "seconds": 11.1,
      "usage": {
       "prompt_tokens": 17,
-      "completion_tokens": 522,
-      "total_tokens": 539,
+      "completion_tokens": 236,
+      "total_tokens": 253,
       "prompt_tokens_details": {
        "cached_tokens": 16
       }
@@ -422,28 +422,28 @@
    "passes": 2,
    "attempts": [
     {
-     "answer": "Soft rain taps gently on my window pane.",
+     "answer": "Rain falls softly on the quiet rooftops tonight.",
      "pass": true,
-     "reasoning_chars": 813,
-     "seconds": 9.7,
+     "reasoning_chars": 1484,
+     "seconds": 18.2,
      "usage": {
       "prompt_tokens": 16,
-      "completion_tokens": 208,
-      "total_tokens": 224,
+      "completion_tokens": 395,
+      "total_tokens": 411,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
      }
     },
     {
-     "answer": "Rain falls softly on thirsty green earth today.",
+     "answer": "Soft rain taps gently on my window pane.",
      "pass": true,
-     "reasoning_chars": 745,
-     "seconds": 7.9,
+     "reasoning_chars": 822,
+     "seconds": 9.0,
      "usage": {
       "prompt_tokens": 16,
-      "completion_tokens": 189,
-      "total_tokens": 205,
+      "completion_tokens": 209,
+      "total_tokens": 225,
       "prompt_tokens_details": {
        "cached_tokens": 15
       }
@@ -461,12 +461,12 @@
     {
      "answer": "101, 103, 107, 109, 113",
      "pass": true,
-     "reasoning_chars": 492,
-     "seconds": 6.5,
+     "reasoning_chars": 299,
+     "seconds": 4.9,
      "usage": {
       "prompt_tokens": 20,
-      "completion_tokens": 146,
-      "total_tokens": 166,
+      "completion_tokens": 93,
+      "total_tokens": 113,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
@@ -475,12 +475,12 @@
     {
      "answer": "101, 103, 107, 109, 113",
      "pass": true,
-     "reasoning_chars": 420,
-     "seconds": 5.3,
+     "reasoning_chars": 299,
+     "seconds": 4.2,
      "usage": {
       "prompt_tokens": 20,
-      "completion_tokens": 130,
-      "total_tokens": 150,
+      "completion_tokens": 93,
+      "total_tokens": 113,
       "prompt_tokens_details": {
        "cached_tokens": 19
       }
@@ -496,28 +496,28 @@
    "passes": 2,
    "attempts": [
     {
-     "answer": "For any one token, a mixture-of-experts model activates only a small subset of its parameters while keeping most of them idle.",
+     "answer": "A mixture-of-experts model activates only a small subset of its parameters for any given token, keeping the rest idle.",
      "pass": true,
-     "reasoning_chars": 977,
-     "seconds": 10.9,
+     "reasoning_chars": 533,
+     "seconds": 7.2,
      "usage": {
       "prompt_tokens": 26,
-      "completion_tokens": 235,
-      "total_tokens": 261,
+      "completion_tokens": 143,
+      "total_tokens": 169,
       "prompt_tokens_details": {
        "cached_tokens": 0
       }
      }
     },
     {
-     "answer": "A mixture-of-experts model activates only a small subset of its parameters for any given token, keeping the rest idle.",
+     "answer": "A mixture-of-experts model keeps most of its parameters idle, activating only a small subset for any given token.",
      "pass": true,
-     "reasoning_chars": 548,
-     "seconds": 6.0,
+     "reasoning_chars": 550,
+     "seconds": 6.5,
      "usage": {
       "prompt_tokens": 26,
-      "completion_tokens": 146,
-      "total_tokens": 172,
+      "completion_tokens": 147,
+      "total_tokens": 173,
       "prompt_tokens_details": {
        "cached_tokens": 25
       }
@@ -536,7 +536,7 @@
      "answer": "Canberra",
      "pass": true,
      "reasoning_chars": 142,
-     "seconds": 2.4,
+     "seconds": 2.2,
      "usage": {
       "prompt_tokens": 12,
       "completion_tokens": 41,
@@ -572,8 +572,8 @@
     {
      "answer": "0,1,1,2,3,5,8,13",
      "pass": true,
-     "reasoning_chars": 2243,
-     "seconds": 29.1,
+     "reasoning_chars": 2133,
+     "seconds": 29.9,
      "usage": {
       "prompt_tokens": 16,
       "completion_tokens": 721,
@@ -586,14 +586,236 @@
     {
      "answer": "0,1,1,2,3,5,8,13",
      "pass": true,
-     "reasoning_chars": 1663,
-     "seconds": 21.6,
+     "reasoning_chars": 1948,
+     "seconds": 25.5,
      "usage": {
       "prompt_tokens": 16,
-      "completion_tokens": 571,
-      "total_tokens": 587,
+      "completion_tokens": 657,
+      "total_tokens": 673,
       "prompt_tokens_details": {
        "cached_tokens": 15
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "math_change",
+   "domain": "math",
+   "prompt": "A shop sells pens at 1.20 each and notebooks at 2.50 each. I buy 3 pens and 2 notebooks and pay with a 20 note. How much change do I get? Answer with the number only.",
+   "pass": true,
+   "passes": 2,
+   "attempts": [
+    {
+     "answer": "11.40",
+     "pass": true,
+     "reasoning_chars": 203,
+     "seconds": 5.0,
+     "usage": {
+      "prompt_tokens": 51,
+      "completion_tokens": 85,
+      "total_tokens": 136,
+      "prompt_tokens_details": {
+       "cached_tokens": 0
+      }
+     }
+    },
+    {
+     "answer": "11.40",
+     "pass": true,
+     "reasoning_chars": 218,
+     "seconds": 3.9,
+     "usage": {
+      "prompt_tokens": 51,
+      "completion_tokens": 88,
+      "total_tokens": 139,
+      "prompt_tokens_details": {
+       "cached_tokens": 50
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "lang_spanish",
+   "domain": "language",
+   "prompt": "Translate into Spanish, one sentence only: The dog sleeps under the table.",
+   "pass": true,
+   "passes": 2,
+   "attempts": [
+    {
+     "answer": "El perro duerme debajo de la mesa.",
+     "pass": true,
+     "reasoning_chars": 455,
+     "seconds": 7.1,
+     "usage": {
+      "prompt_tokens": 17,
+      "completion_tokens": 140,
+      "total_tokens": 157,
+      "prompt_tokens_details": {
+       "cached_tokens": 0
+      }
+     }
+    },
+    {
+     "answer": "El perro duerme bajo la mesa.",
+     "pass": true,
+     "reasoning_chars": 354,
+     "seconds": 5.1,
+     "usage": {
+      "prompt_tokens": 17,
+      "completion_tokens": 112,
+      "total_tokens": 129,
+      "prompt_tokens_details": {
+       "cached_tokens": 16
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "json_array",
+   "domain": "tools",
+   "prompt": "Return a JSON array of exactly three objects, each with the keys name and size, for three files. JSON only.",
+   "pass": true,
+   "passes": 2,
+   "attempts": [
+    {
+     "answer": "[\n  {\"name\": \"report.pdf\", \"size\": 1024},\n  {\"name\": \"photo.jpg\", \"size\": 2048},\n  {\"name\": \"data.csv\", \"size\": 512}\n]",
+     "pass": true,
+     "reasoning_chars": 832,
+     "seconds": 11.7,
+     "usage": {
+      "prompt_tokens": 26,
+      "completion_tokens": 255,
+      "total_tokens": 281,
+      "prompt_tokens_details": {
+       "cached_tokens": 0
+      }
+     }
+    },
+    {
+     "answer": "[\n  {\"name\": \"report.pdf\", \"size\": 2048},\n  {\"name\": \"photo.jpg\", \"size\": 5123},\n  {\"name\": \"data.csv\", \"size\": 1024}\n]",
+     "pass": true,
+     "reasoning_chars": 855,
+     "seconds": 10.7,
+     "usage": {
+      "prompt_tokens": 26,
+      "completion_tokens": 262,
+      "total_tokens": 288,
+      "prompt_tokens_details": {
+       "cached_tokens": 25
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "tool_loop",
+   "domain": "tools",
+   "prompt": "You have three functions: read_file(path), grep(pattern, path) and write_file(path, text). Read src/main.c, find the lines that contain TODO in it, then write those lines to notes/todo.md. Answer with one JSON object per line and nothing else, each shaped {\"name\": ..., \"arguments\": {...}}, one call per line, in the order you would call them.",
+   "pass": true,
+   "passes": 2,
+   "attempts": [
+    {
+     "answer": "{\"name\": \"read_file\", \"arguments\": {\"path\": \"src/main.c\"}}\n{\"name\": \"grep\", \"arguments\": {\"pattern\": \"TODO\", \"path\": \"src/main.c\"}}\n{\"name\": \"write_file\", \"arguments\": {\"path\": \"notes/todo.md\", \"text\": \"\"}}",
+     "pass": true,
+     "reasoning_chars": 2967,
+     "seconds": 32.2,
+     "usage": {
+      "prompt_tokens": 82,
+      "completion_tokens": 771,
+      "total_tokens": 853,
+      "prompt_tokens_details": {
+       "cached_tokens": 0
+      }
+     }
+    },
+    {
+     "answer": "{\"name\": \"read_file\", \"arguments\": {\"path\": \"src/main.c\"}}\n{\"name\": \"grep\", \"arguments\": {\"pattern\": \"TODO\", \"path\": \"src/main.c\"}}\n{\"name\": \"write_file\", \"arguments\": {\"path\": \"notes/todo.md\", \"text\": \"\"}}",
+     "pass": true,
+     "reasoning_chars": 2958,
+     "seconds": 31.1,
+     "usage": {
+      "prompt_tokens": 82,
+      "completion_tokens": 771,
+      "total_tokens": 853,
+      "prompt_tokens_details": {
+       "cached_tokens": 81
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "code_runs",
+   "domain": "code",
+   "prompt": "Write a Python function split_even(nums) that returns a tuple of two lists: the even numbers and the odd numbers, each in the order they appear. Code only, in one ```python block.",
+   "pass": true,
+   "passes": 2,
+   "attempts": [
+    {
+     "answer": "```python\ndef split_even(nums):\n    evens = []\n    odds = []\n    for n in nums:\n        if n % 2 == 0:\n            evens.append(n)\n        else:\n            odds.append(n)\n    return (evens, odds)\n```",
+     "pass": true,
+     "reasoning_chars": 573,
+     "seconds": 11.0,
+     "usage": {
+      "prompt_tokens": 42,
+      "completion_tokens": 212,
+      "total_tokens": 254,
+      "prompt_tokens_details": {
+       "cached_tokens": 0
+      }
+     }
+    },
+    {
+     "answer": "```python\ndef split_even(nums):\n    evens = []\n    odds = []\n    for n in nums:\n        if n % 2 == 0:\n            evens.append(n)\n        else:\n            odds.append(n)\n    return (evens, odds)\n```",
+     "pass": true,
+     "reasoning_chars": 583,
+     "seconds": 9.0,
+     "usage": {
+      "prompt_tokens": 42,
+      "completion_tokens": 204,
+      "total_tokens": 246,
+      "prompt_tokens_details": {
+       "cached_tokens": 41
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "needle_3facts",
+   "domain": "long-context",
+   "prompt": "Read the document, then answer the three questions at the end.",
+   "pass": true,
+   "passes": 2,
+   "attempts": [
+    {
+     "answer": "Here are the answers to the three questions based on the provided document:\n\n1. **What is the calibration code for bay seven?**  \n   The calibration code for bay seven is **ZUBROVKA-7741**.\n\n2. **When is the delivery slot for the north yard?**  \n   The delivery slot for the north yard is **Thursday at 07:40**.\n\n3. **What is the spare part number for the coolant pump?**  \n   The spare part number for the coolant pump is **SP-88213-K**.",
+     "pass": true,
+     "reasoning_chars": 1902,
+     "seconds": 107.2,
+     "usage": {
+      "prompt_tokens": 13301,
+      "completion_tokens": 576,
+      "total_tokens": 13877,
+      "prompt_tokens_details": {
+       "cached_tokens": 0
+      }
+     }
+    },
+    {
+     "answer": "Here are the answers to the three questions based on the document provided:\n\n1. **What is the calibration code for bay seven?**  \n   The calibration code for bay seven is **ZUBROVKA-7741**.\n\n2. **When is the delivery slot for the north yard?**  \n   The delivery slot for the north yard is **Thursday at 07:40**.\n\n3. **What is the spare part number for the coolant pump?**  \n   The spare part number for the coolant pump is **SP-88213-K**.",
+     "pass": true,
+     "reasoning_chars": 1193,
+     "seconds": 39.0,
+     "usage": {
+      "prompt_tokens": 13301,
+      "completion_tokens": 430,
+      "total_tokens": 13731,
+      "prompt_tokens_details": {
+       "cached_tokens": 13300
       }
      }
     }
