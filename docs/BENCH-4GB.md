@@ -282,6 +282,32 @@ That is the shape of the next engine change: **lend the prompt batch its VRAM fo
 expert cache before the answer starts**, the way `--stage-read-mib` already lends the staging buffer. Then a long
 prompt reads at 765 with 421 slots for the answer, instead of one or the other.
 
+## Prompt size: the short prompt is the slow one
+
+A fresh prompt, one request per process, Clover with `--tail-skip 6` (2026-11-03):
+
+| Prompt | Time to first token | "Prefill" | After the first batch |
+| ---: | ---: | ---: | ---: |
+| 300 tokens | 2.97 s | 112 tokens/s | — |
+| 600 | 3.34 s | 181 | — |
+| 1,200 | 3.43 s | 351 | — |
+| 2,400 | 4.55 s | 530 | — |
+| 4,800 | 6.92 s | 694 | — |
+| 8,000 | 12.46 s | 649 | ~650 tokens/s for every later piece |
+
+Read the second and fourth columns together: the *first* batch of a prompt costs about 2.5 seconds, whatever its size,
+and every later batch runs at 650 to 1,000 tokens per second. A 600-token message is therefore 2.5 seconds of expert
+staging plus 0.6 seconds of tokens — 181 "tokens/s", though the tokens themselves were read at about 1,000.
+
+The first batch of a fresh prompt routes to nearly every expert in the model (599 tokens × 8 experts × 48 layers), and
+the ones that are not in the card's cache come from RAM over PCIe 3.0 x8: about 11 GB at roughly 6 GB/s. That is the
+floor for a new prompt, and it is why "prefill tokens/s" is a long-prompt figure. For a short prompt the number that
+matters is **time to first token**, about 2.5 to 3 seconds.
+
+What moves it: `--stage-ahead` 512 or 256 helps a short prompt by about 15% (187 to 213 tokens/s cold, 223 to 240
+warm); a smaller file stages less; and a continuation of the same conversation does not pay it again — the conversation
+cache reads almost nothing (a 2,000-token follow-up: 1,999 tokens reused, 1 read, 50 ms).
+
 ## Measuring your own
 
 The server prints the same lines for your requests, so a chat and a long prompt are enough. For a run with numbers
