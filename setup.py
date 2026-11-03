@@ -576,6 +576,7 @@ FAMILIES = {
               "tag": "flint-", "name": "flint-40b-a2.5b", "engine": "fourgbvram", "vision": False, "experimental": True,
               "windows": True, "ran_on_gb": 8, "row_bytes": 28672, "batch_gb": 0.4, "batch_from_gb": 7.5,
               "expert_swaps": 32,   # 4 GB: 38.0 against 30.6 written tokens/s on a settled answer, 4 of 4 pairs
+              "no_graphs": True,    # 4 GB: 40.7 against 34.5 with CUDA graphs, 3 of 3 pairs
               "laptop_tps": {32768: "49", 65536: "37-38", 131072: "23-25"},   # UD-Q3_K_XL's, the 32 GB laptop's size
               "models": {"UD-Q4_K_XL": {"about": "4- and 5-bit experts (Unsloth Dynamic)",
                                         "download_gb": 25.1, "ram_gb": 29, "arena_gb": 23.1, "vram_beside_gb": 4.0,
@@ -660,6 +661,7 @@ FAMILIES = {
                "hf": hf("maternion/Clover-35B-A3B-Preview-GGUF"), "file": "Diffuspace-Clover-35B-A3B-Preview-{q}.gguf",
                "shards": 1, "tag": "clover-", "name": "clover-35b-a3b-preview", "engine": "fourgbvram", "vision": False,
                "experimental": True, "windows": True, "ran_on_gb": 8, "row_bytes": 20480,
+               "no_graphs": True,   # 4 GB: 47.9 against 37.1 written tokens/s without CUDA graphs, 3 of 3 pairs
                "template_hf": hf("Diffuspace/Clover-35B-A3B-Preview"),
                "template": ("chat_template.jinja", 7912,
                             "01094df7cd8905d1220ea8b31e4f1086dc9bedf0305d3c2fa6578b5fa33b6815"),
@@ -7016,6 +7018,8 @@ def fourgbvram_setup(a, family, gpu, hip, cuda_tk, multi, ram, data, elsewhere, 
         args += ["--tail-skip", str(fam["tail_skip"])]
     if fam.get("expert_swaps"):
         args += ["--expert-swaps", str(fam["expert_swaps"])]
+    if fam.get("no_graphs"):
+        args += ["--no-graphs"]
     if not multi and fourgbvram_batch(fam, d, vram, ctx):
         args += ["--prompt-batch", "2048"]
         ok("prompts are read 2,048 tokens at a time (--prompt-batch in the config)")
