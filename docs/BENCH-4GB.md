@@ -263,6 +263,25 @@ One process, Clover with `--tail-skip 6`, one conversation grown in five request
 So the two numbers in the README's table are a 2,000-token prompt at a 32K context *setting*, not a 32K-deep
 conversation; the last row above is what the latter costs.
 
+## Prefill: where the 800 tokens/s is
+
+A 2,000-token prompt is read at 515 tokens/s, an 8,000-token one at 649: the first second of any read is the engine
+warming up (the first 249-token piece runs at 441, the rest at about 650). `--prompt-batch` is the lever that moves it:
+
+| 8,000-token prompt | Prefill | Expert slots at load |
+| --- | ---: | ---: |
+| `--prompt-batch 1024` (default) | 649 tokens/s | 421 |
+| `--prompt-batch 2048` | **765 tokens/s** | **17** |
+| `--prompt-batch 4096` | 522 tokens/s | 0 |
+
+So 2,048-token batches buy 18% of prefill, and cost the expert cache: the batch's buffers take about 2.8 GB of VRAM,
+which on a 4 GB card leaves 17 slots instead of 421, and decode collapses. `--stage-read-mib 0` (the read-time staging
+off) costs 33% of prefill, so the default there is already the good one.
+
+That is the shape of the next engine change: **lend the prompt batch its VRAM for the read and give it back to the
+expert cache before the answer starts**, the way `--stage-read-mib` already lends the staging buffer. Then a long
+prompt reads at 765 with 421 slots for the answer, instead of one or the other.
+
 ## Measuring your own
 
 The server prints the same lines for your requests, so a chat and a long prompt are enough. For a run with numbers
