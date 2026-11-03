@@ -223,6 +223,20 @@ Clover with `--tail-skip 6 --no-graphs`, the engine's own counters, 96-token ans
   overlap and batch size, not in clocks. Longer answers also score higher than the 128-token table (50.6 against
   45-48): the same warm-up spread over more tokens.
 
+## Parallel requests on a 4 GB card: a small gain in total, a loss per answer
+
+A second sequence's attention cache is 0.59 GiB at 32K (0.27 at 8K), and `setup.parallel_recommend` says **0 slots** on
+a 4 GB card at any context. Measured anyway, Clover at 8K with `"parallel": 2`, two 128-token answers (2026-11-03):
+
+| | Wall time for 256 tokens | Total | Each answer |
+| --- | ---: | ---: | ---: |
+| one after the other | 11.6 s | 22.1 tokens/s | 6.4 s and 5.2 s |
+| at the same time | 9.0 s | **28.4 tokens/s** | 9.0 s each |
+
+So two at once is +28% in total and about 40% slower per answer, and it costs the 32K context to afford the second
+slot. For one person at the keyboard that is a loss; for two people sharing a server it is a small gain. Left off: the
+4 GB card is expert-starved, and setup's own rule already says so.
+
 ## Does `--tail-skip` cost quality?
 
 `--tail-skip 6` leaves out an expert outside VRAM that every token of a window ranks at place 7 or later, so the
