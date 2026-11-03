@@ -304,9 +304,18 @@ the ones that are not in the card's cache come from RAM over PCIe 3.0 x8: about 
 floor for a new prompt, and it is why "prefill tokens/s" is a long-prompt figure. For a short prompt the number that
 matters is **time to first token**, about 2.5 to 3 seconds.
 
-What moves it: `--stage-ahead` 512 or 256 helps a short prompt by about 15% (187 to 213 tokens/s cold, 223 to 240
-warm); a smaller file stages less; and a continuation of the same conversation does not pay it again — the conversation
-cache reads almost nothing (a 2,000-token follow-up: 1,999 tokens reused, 1 read, 50 ms).
+What moves it:
+
+- `--stage-ahead` 512 or 256: about 15% (187 to 213 tokens/s cold, 223 to 240 warm).
+- `--cpu-share 0.5`: about 6%.
+- A *smaller* `--prompt-batch` is worse, not better: 512 gives 142 tokens/s, 256 gives 101 — every piece pays the
+  staging again, so one batch is right for a short prompt.
+- A smaller model file stages less; a continuation of the same conversation pays nothing (a 2,000-token follow-up:
+  1,999 tokens reused, 1 read, 50 ms).
+
+So **800 tokens/s is a long-prompt figure**: 600 tokens at 800 would be 0.75 s, while the staging alone is about 2.5 s
+on this link. The target for a short prompt is time to first token near 2 seconds, reached by staging less, not by
+reading faster.
 
 ## Measuring your own
 
