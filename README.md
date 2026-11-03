@@ -37,12 +37,16 @@ pays the engine's warm-up):
 
 "First answer" is the first request after the engine loads, "later answers" the same prompt asked again in the same
 process; the first pays the engine's warm-up. The settings are the ones setup writes: `--tail-skip 6` and
-`--no-graphs` for Clover, `--prompt-batch 512`, `--expert-swaps 32` and `--no-graphs` for Flint.
+`--no-graphs` for Clover (`--kv q8_0` too, on a card of 6 GB or less), `--prompt-batch 512`, `--expert-swaps 32` and
+`--no-graphs` for Flint.
 
 Two files of 12 and 17 GB answer at 28 to 39 tokens per second on a fresh prompt and at 41 to 48 on later ones, though
 neither fits in the card at all: the load takes about two seconds, and after that the card runs the experts it holds
 while the CPU runs the rest. A conversation grown to 32K is about half as fast
-([the curve](docs/BENCH-4GB.md#context-and-speed)).
+([the curve](docs/BENCH-4GB.md#context-and-speed)) — unless the attention caches are 8-bit: at 24,000 tokens of
+context Clover then writes 39.0 tokens/s against 30.9 and reads the prompt at 676 tokens/s against 245, because the
+0.6 GiB the caches give back is expert cache
+([at depth](docs/BENCH-4GB.md#the-attention-caches-8-bit-at-depth-half-the-vram-half-the-wait)).
 
 Every number, its log, the settings measured one at a time, what a conversation costs as it grows to 32K, and what
 was **not** measured: **[docs/BENCH-4GB.md](docs/BENCH-4GB.md)**.

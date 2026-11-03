@@ -5,7 +5,7 @@ is decided by how many bytes of a model each token has to pull through them. Thi
 models measured here, from their own GGUF metadata and from runs on the laptop.
 
 The machine: RTX 3050 Laptop (4 GB, `sm_86`), Ryzen 5 5500U, 32 GB DDR4-3200, Windows 11. Engine: `strata-fourgbvram`
-at PolyStrata v0.1.45-poly.7, CUDA 13.
+at [PolyStrata](https://github.com/VecSzn/PolyStrata) v0.1.45-poly.7, CUDA 13.
 
 ## The tiers
 
@@ -32,6 +32,8 @@ Computed from each file's metadata (`general.architecture` fields) and its tenso
 | attention cache (K and V, fp16) per token | 40 KiB | 47 KiB |
 | the same at 16K of context | 0.62 GiB | 0.73 GiB |
 | the same at 32K of context | **1.25 GiB** | **1.47 GiB** |
+| the same with `--kv q8_0` per token (Clover only) | 21 KiB | — |
+| the same with `--kv q8_0` at 32K | **0.66 GiB** | — |
 
 Two consequences, and they are the whole story of this machine:
 
@@ -58,6 +60,13 @@ what it is at 32K. **The attention cache is what steals VRAM from the experts as
 mechanism behind the decode curve in [BENCH-4GB.md](BENCH-4GB.md#context-and-speed) (38.7 tokens/s at a 2K prompt,
 28.5 at 16K, 19.5 at 32K).
 
+**`--kv q8_0` takes that back, and setup now writes it for Clover on a card of 6 GB or less.** The attention caches
+become 0.66 GiB at 32K instead of 1.25, and the 0.6 GiB goes to the expert cache — measured at 24K of context: 39.0
+against 30.9 written tokens/s, and a 24K prompt read at 676 against 245 tokens/s, because a prefill with almost no
+cached experts re-reads every expert of every layer from RAM
+([BENCH-4GB.md](BENCH-4GB.md#the-attention-caches-8-bit-at-depth-half-the-vram-half-the-wait)). Flint keeps fp16: the
+engine's 8-bit cache is `clover_moe`'s and the qwen3.5/3.6 family's, not Flint's.
+
 ## What each tier actually does in a run
 
 - **VRAM**: the dense weights, the head, the attention caches, and 421 (Clover) or 712 (Flint) experts — the hottest
@@ -72,9 +81,9 @@ mechanism behind the decode curve in [BENCH-4GB.md](BENCH-4GB.md#context-and-spe
 
 ## What this says about speed, and what it does not
 
-- **More VRAM for experts is the highest-leverage change, and the lever is the attention cache.** Halving it (int8
-  instead of fp16) would give about 0.6 GiB back at 32K — roughly 600 more slots, or three tokens' worth of experts.
-  Halving the context does the same thing more bluntly.
+- **More VRAM for experts is the highest-leverage change, and the lever is the attention cache.** It was measured:
+  `--kv q8_0` gives back 0.6 GiB at 32K, and at 24K of context that is 39.0 written tokens/s against 30.9 — a
+  quarter more, from a setting, not from a kernel. Halving the context does the same thing more bluntly.
 - **Pulling the last few percent of experts into VRAM is not where the time goes.** If every expert a token needs were
   in VRAM, 338 MB at 150 GB/s would be 2.2 ms; the token takes 26 ms. The rest is GPU work per layer, of which the
   cached experts are a part — and **how much of the 26 ms is compute, launch overhead and waiting is not separated yet**
@@ -86,7 +95,8 @@ mechanism behind the decode curve in [BENCH-4GB.md](BENCH-4GB.md#context-and-spe
 ## The next numbers to measure
 
 1. Where the ~26 ms per token goes: `--no-gpu-experts` (all experts on the CPU), the default, and a per-layer timing.
-2. What the attention cache costs at 16K and 32K: the same prompt with `--kv q8_0` once it covers `clover_moe`.
-3. What one staging pass serves: tokens/s with `--window 8` against `--window 1`, draft acceptance for each.
+2. What one staging pass serves: tokens/s with `--window 8` against `--window 1`, draft acceptance for each.
+3. The prompt batch's scratch is 429 MiB at `--prompt-batch 1024` and 88 MiB at 64; a layout that shrinks it between
+   requests would be worth about 340 MiB of experts at a short context, and is not built.
 
 Partly measured already; the rest is what the plan in the repository's local notes puts first.

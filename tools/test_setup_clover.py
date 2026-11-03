@@ -88,6 +88,18 @@ class Main(unittest.TestCase):
                 self.assertEqual(cfg["display_name"], f"Clover-35B-A3B-Preview {size}")
                 self.assertNotIn("vision", cfg)
 
+    def test_a_4_gb_card_takes_the_8_bit_attention_caches(self):
+        # "kv": measured on the 4 GB laptop; a larger card keeps the unchanged fp16 path
+        code, out, _ = self.main(family="clover", model="APEX-I-NANOPLUS", ram=32.0, vram=4.0)
+        self.assertEqual(code, 0, out)
+        cfg = json.loads((self.t / "strata-clover-apex-i-nanoplus.json").read_text())
+        args = cfg["args"]
+        self.assertEqual(args[args.index("--kv") + 1], "q8_0")
+        code, out, _ = self.main(family="clover", model="APEX-I-NANOPLUS", ram=32.0, vram=8.0)
+        self.assertEqual(code, 0, out)
+        cfg = json.loads((self.t / "strata-clover-apex-i-nanoplus.json").read_text())
+        self.assertNotIn("--kv", cfg["args"])
+
     def test_a_template_the_file_carries_is_kept(self):
         # what the tokenizer leaves when the GGUF has a template, as IsValorum's has
         tpl = self.t / "data" / "packs" / "clover-apex-i-nanoplus" / "tokenizer" / "chat_template.jinja"

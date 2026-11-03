@@ -38,6 +38,26 @@ function written correctly (two different idioms), a list-comprehension result, 
 call, German translation, an eight-word sentence, exactly five primes, a one-sentence summary, the capital of
 Australia, and the Fibonacci sequence in either convention (0- or 1-based).
 
+## The 8-bit attention cache: the suite and a needle at 20K (2026-11-03)
+
+`--kv q8_0` (`clover_moe`, now setup's default for Clover on a card of 6 GB or less) stores the K and V caches in
+Q8_0 blocks, so their arithmetic is not fp16's. Two checks:
+
+| | fp16 | q8_0 |
+| --- | ---: | ---: |
+| the sixteen prompts, 2 attempts each, Clover | **16 of 16** | **16 of 16** |
+| a code placed at 15% of a 20,033-token prompt, 2 asks | **2 hits** | **2 hits** |
+| time to the first answer of that needle | 79.0 s | **38.5 s** |
+
+The needle is the check that matters for a quantized cache: a long prompt with a unique line at 15% depth ("the
+calibration code for bay seven is ZUBROVKA-7741") and one question. Both formats returned `ZUBROVKA-7741` on both
+asks, which is a retrieval hit, not a paraphrase. It is one needle at one depth, not a retrieval benchmark: the suite
+still lacks a multi-fact needle and a 32K one.
+
+Note what the suite does *not* see: on the same run, fp16 Clover answered the Russian prompt with an irrelevant answer
+about a rabbit needing rest — on-topic Cyrillic, wrong content, and the check passed it. The checks are that shallow by
+design; they catch empty, off-topic, wrong-language and refusals, not a plausible wrong answer.
+
 ## What this does and does not cover
 
 - **Covers:** does the model still answer the question, in the right language, with the asked shape.
@@ -50,5 +70,6 @@ Australia, and the Fibonacci sequence in either convention (0- or 1-based).
 ## Next
 
 - Run this suite after every speed change and compare the pass counts, per model.
-- Add the domains it lacks: a 20K-token needle, a tool loop over three calls, a Python snippet that must run.
+- Add the domains it lacks: a 32K-token needle with several facts, a tool loop over three calls, a Python snippet that
+  must run.
 - Give Flint's Russian prompt a second form to see whether the instability is the language or the instruction shape.

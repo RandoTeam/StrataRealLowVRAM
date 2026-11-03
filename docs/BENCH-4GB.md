@@ -114,8 +114,10 @@ What the numbers say:
   measured here. Setup gives Qwen3.6 6 and leaves the other families at 0.
 - **`--kv-whole` is wrong on a 4 GB card:** the whole 32K of attention caches leaves no room for a single expert.
   The engine's default, growing the caches with the conversation, is what makes 32K work here at all.
-- **`--kv q8_0` changes nothing measurable on Clover** (243 against 247 experts), so its KV format is not the one the
-  flag covers; the engine's help lists `qwen35moe` and `kolibri1`.
+- **`--kv q8_0` used to change nothing measurable on Clover**, and that was measured at load, where the attention
+  caches are still tiny (243 against 247 experts). At depth it is the largest single win in this document: see
+  [the section above](#the-attention-caches-8-bit-at-depth-half-the-vram-half-the-wait). The engine takes q8_0 for
+  `clover_moe`, `qwen35moe` and `kolibri1`; Flint rejects it.
 - **`--prompt-batch` cuts both ways.** On Clover 2,048 reads a prompt 12% faster and costs the expert cache at load;
   on Flint 512 writes 28% faster and 2,048 reads 19% faster. Neither is a default this project should pick for every
   model; both are worth a try on yours.
@@ -199,6 +201,36 @@ change in cache timing does; the eight-prompt check below gives the same correct
 Setup writes `--no-graphs` for the Clover and Flint families from these measurements; every other family keeps the
 default. Why it wins is one hypothesis and not yet verified: a per-layer graph replay costs more than the handful of
 launches it replaces when each layer's kernels are this small. A kernel-level profile is the next step.
+
+## The attention caches 8-bit, at depth: half the VRAM, half the wait
+
+Clover's attention cache is 40 KiB a token in fp16, so at 32K it is 1.25 GiB of a 4 GB card and the expert cache is
+left with ~0.5 GiB. `--kv q8_0` stores K and V in ggml's Q8_0 blocks (34 bytes a 32 values, 0.53 of fp16). Measured
+on Clover APEX-I-NANOPLUS, `--tail-skip 6 --no-graphs`, 32K context, a fresh engine per run, 128 tokens written, one
+prompt per depth, median of 3 rounds alternating the two formats (2026-11-03):
+
+| Prompt | fp16 reads | q8_0 reads | fp16 writes | q8_0 writes |
+| --- | ---: | ---: | ---: | ---: |
+| 2,000 tokens | 524 tokens/s | 526 tokens/s | 45.6 tokens/s | 47.1 tokens/s |
+| 4,000 tokens | 679 | 677 | 61.5 | 61.3 |
+| 8,000 tokens | 650 | **693** | 53.1 | **56.2** |
+| 24,000 tokens | 245 | **676** | 30.9 | **39.0** |
+| 32,000 tokens (one run each) | 180 | **663** | 25.7 | **33.9** |
+
+The shape is the point: **up to ~4K the two are the same, and from 16K the fp16 cache is what starves the expert
+cache.** At 24K the fp16 run reads at 245 tokens/s — a 24K prompt in 98 s — because almost no expert is cached and
+every layer re-reads its experts from RAM; the q8_0 run reads the same prompt in 35 s. On the shipped engine
+(`engine-fourgbvram\strata-fourgbvram.exe`, the zip's binary) the same 24K prompt: 245.6 against 679.4 tokens/s read,
+30.9 against 39.1 written.
+
+Quality: the sixteen-prompt suite passes 16 of 16 every attempt in both formats
+([QUALITY-4GB.md](QUALITY-4GB.md)), and a needle placed at 15% of a 20,033-token prompt ("the calibration code for bay
+seven is ZUBROVKA-7741") came back exactly right twice in both formats — the fp16 run took 79.0 s to its first answer,
+the q8_0 run 38.5 s.
+
+**Setup writes `--kv q8_0` for Clover on a card of 6 GB or less**, the card class it was measured on. A larger card
+keeps fp16: the win there is untested, and the answers of a quantized cache are not byte-identical. `--kv fp16` in the
+config turns it off.
 
 ## What a token costs, after the CUDA graphs came off
 

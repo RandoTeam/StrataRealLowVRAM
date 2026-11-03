@@ -531,6 +531,9 @@ FAMILIES = {
     # flight than the engine's maximum (Flint: 38.0 against 30.6 written tokens/s on the settled answer, 4 of 4 pairs).
     # "laptop_tps": tokens/s written after a prompt that fills each context on the 8 GB laptop, where the family's
     # differ from the others'.
+    # "kv": the engine's --kv, written on a card of 6 GB or less, where the attention caches' VRAM was measured to be
+    # the expert cache's (Clover's 8-bit K and V: 39.0 against 30.9 written tokens/s at 24K of context on a 4 GB
+    # card); a larger card keeps the unchanged fp16 path until someone measures the same win there.
     # "batch_gb": the VRAM the engine's prompt batch takes for a second 1,024 tokens, measured on the RTX 5090; a card
     # that holds every expert beside it reads with 2,048 (fourgbvram_batch()).  "batch_from_gb": the family reads with 2,048
     # on any card from this much VRAM (GiB) on, where the 8 GB laptop read faster that way and wrote no slower.
@@ -662,6 +665,10 @@ FAMILIES = {
                "shards": 1, "tag": "clover-", "name": "clover-35b-a3b-preview", "engine": "fourgbvram", "vision": False,
                "experimental": True, "windows": True, "ran_on_gb": 8, "row_bytes": 20480,
                "no_graphs": True,   # 4 GB: 47.9 against 37.1 written tokens/s without CUDA graphs, 3 of 3 pairs
+               "kv": "q8_0",        # 4 GB, Clover's clover_moe: half the attention caches' VRAM, which the expert cache
+                                    # takes: at 24K of context 39.0 against 30.9 written tokens/s and a prompt read
+                                    # 676 against 245 tokens/s; at 2-8K no measurable change; a 20K needle found both
+                                    # ways (docs/BENCH-4GB.md, docs/QUALITY-4GB.md)
                "template_hf": hf("Diffuspace/Clover-35B-A3B-Preview"),
                "template": ("chat_template.jinja", 7912,
                             "01094df7cd8905d1220ea8b31e4f1086dc9bedf0305d3c2fa6578b5fa33b6815"),
@@ -7020,6 +7027,13 @@ def fourgbvram_setup(a, family, gpu, hip, cuda_tk, multi, ram, data, elsewhere, 
         args += ["--expert-swaps", str(fam["expert_swaps"])]
     if fam.get("no_graphs"):
         args += ["--no-graphs"]
+    # A 4 GB card is where the attention caches' VRAM is the expert cache's: this family's 8-bit K and V were measured
+    # there, and a larger card keeps the unchanged path until someone measures it there too.
+    if fam.get("kv") and vram <= 6:
+        args += ["--kv", fam["kv"]]
+        ok(f"attention caches 8-bit (--kv {fam['kv']}): half the VRAM for them, which the expert cache takes, and at "
+           "24K of context a prompt is read 676 against 245 tokens/s and answers come at 39.0 against 30.9 "
+           "tokens/s on a 4 GB card (docs/BENCH-4GB.md)")
     if not multi and fourgbvram_batch(fam, d, vram, ctx):
         args += ["--prompt-batch", "2048"]
         ok("prompts are read 2,048 tokens at a time (--prompt-batch in the config)")
