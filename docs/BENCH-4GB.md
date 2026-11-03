@@ -239,6 +239,28 @@ What it changes:
   `serve/winjob.py`; this harness starts the engine directly. Which of the three moves the number is the next thing to
   measure.
 
+## Context and speed
+
+One process, Clover with `--tail-skip 6`, one conversation grown in five requests: the same text cut at 2K, 4K, 8K,
+16K and 32K tokens, 128 tokens answered at each depth (2026-11-03):
+
+| Prompt | Reused | Read | Prefill | Decode | Expert cache |
+| ---: | ---: | ---: | ---: | ---: | --- |
+| 2,000 | 0 | 2,000 | 511 | 38.7 | 420 → 314 experts |
+| 4,000 | 1,999 | 2,001 | 457 | 40.3 | 310 → 186 experts |
+| 8,000 | 4,127 | 3,873 | 487 | 39.1 | — |
+| 16,000 | 8,127 | 7,873 | 238 | 28.5 | — |
+| 32,000 | 16,127 | 15,873 | 116 | 19.5 | — |
+
+- **Decode holds to 8K, then falls:** 38.7 to 39.1 up to 8K, −27% at 16K, −50% at 32K.
+- **Prefill of new tokens at depth falls with it:** about 490 up to 8K, 238 at 16K, 116 at 32K. A long prompt arriving
+  in a long conversation is the slowest thing this engine does.
+- **The expert cache shrinks as the attention caches grow:** 420 experts at a 2K prompt, 186 by 4K. That is the
+  mechanism behind both curves, and it is where the work on the 8-16K zone goes.
+
+So the two numbers in the README's table are a 2,000-token prompt at a 32K context *setting*, not a 32K-deep
+conversation; the last row above is what the latter costs.
+
 ## Measuring your own
 
 The server prints the same lines for your requests, so a chat and a long prompt are enough. For a run with numbers
