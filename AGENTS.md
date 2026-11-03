@@ -38,6 +38,34 @@ offers the same steps as tools.
 - Keep the docs' style: plain words, measured numbers with what they were measured on, no claims without a
   measurement.
 
+## Keeping the plan and the documents current
+
+Work here is not finished when the code runs. Three things have to be true as well: the plan says where we are, the
+public pages say what was measured and under what conditions, and the release in `dist/` was rebuilt from the commit
+that did it.
+
+- **Read `.local/ROADMAP.md` before starting, and update it in the same sitting as the work.** It holds the goals, the
+  measured baselines, everything tried, the queue and the calendar. It is git-ignored on purpose: plans are not
+  published, and nothing from it is quoted in a public file.
+- **After every experiment, write down** what was tried, the numbers with their conditions, what it means, and what
+  goes next. A finding that is not in the plan or in a page did not happen.
+- **Public measurements go to the page that owns the topic** (`docs/BENCH-4GB.md` for this hardware), with machine,
+  engine build, prompt, settings and number of runs. A number that did not reproduce is published as not reproduced,
+  with what it was measured against.
+- **A settings comparison is interleaved, in one session, on the binary that ships, with the expert profile fixed.** A
+  batch of one setting and then a batch of another is not an A/B; that mistake cost a reverted feature already.
+- **A speed win ships only with its quality check.** No lossy flag or engine change is called an improvement before a
+  same-prompt comparison says the answers did not get worse.
+- **Documents and the release move together.** A change that alters a documented number rebuilds
+  `tools/package_release_131k.py`, uploads the zip with `gh release upload … --clobber`, and keeps the release notes'
+  table in step.
+- **New knowledge goes where it will be found:** the model's page in `docs/models/`, the topic page in `docs/`, a row in
+  `docs/BENCH-4GB.md`, or a line in the local plan when it is a plan or an untested hunch.
+
+**Before a task is called done:** the plan lists the result; the owning page has the numbers with their conditions (or
+says nothing changed); the build and the tests that fit ran; the release zip was rebuilt if a documented number moved;
+and the next step is written down for whoever picks it up.
+
 ## Contributing a change or report
 
 - Search the open issues and pull requests first, and add to a thread that already covers your point.
