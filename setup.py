@@ -527,6 +527,8 @@ FAMILIES = {
     # less, and the third is by name (fourgbvram_default()).  "windows": installed by setup and run there, on one PC.
     # "ran_on_gb": the smallest card it has run on, 32 GB without the key.  "tail_skip": the engine's --tail-skip,
     # for the family whose answers it moves no more than the Strata project's default moves its own (docs/BACKENDS.md).
+    # "expert_swaps": the engine's --expert-swaps, for a family measured on a 4 GB card to prefer fewer uploads in
+    # flight than the engine's maximum (Flint: 38.0 against 30.6 written tokens/s on the settled answer, 4 of 4 pairs).
     # "laptop_tps": tokens/s written after a prompt that fills each context on the 8 GB laptop, where the family's
     # differ from the others'.
     # "batch_gb": the VRAM the engine's prompt batch takes for a second 1,024 tokens, measured on the RTX 5090; a card
@@ -573,6 +575,7 @@ FAMILIES = {
               "hf": hf("unsloth/flint-GGUF"), "file": "flint-{q}.gguf", "shards": 1,
               "tag": "flint-", "name": "flint-40b-a2.5b", "engine": "fourgbvram", "vision": False, "experimental": True,
               "windows": True, "ran_on_gb": 8, "row_bytes": 28672, "batch_gb": 0.4, "batch_from_gb": 7.5,
+              "expert_swaps": 32,   # 4 GB: 38.0 against 30.6 written tokens/s on a settled answer, 4 of 4 pairs
               "laptop_tps": {32768: "49", 65536: "37-38", 131072: "23-25"},   # UD-Q3_K_XL's, the 32 GB laptop's size
               "models": {"UD-Q4_K_XL": {"about": "4- and 5-bit experts (Unsloth Dynamic)",
                                         "download_gb": 25.1, "ram_gb": 29, "arena_gb": 23.1, "vram_beside_gb": 4.0,
@@ -7011,6 +7014,8 @@ def fourgbvram_setup(a, family, gpu, hip, cuda_tk, multi, ram, data, elsewhere, 
            "that much less)")
     if fam.get("tail_skip"):
         args += ["--tail-skip", str(fam["tail_skip"])]
+    if fam.get("expert_swaps"):
+        args += ["--expert-swaps", str(fam["expert_swaps"])]
     if not multi and fourgbvram_batch(fam, d, vram, ctx):
         args += ["--prompt-batch", "2048"]
         ok("prompts are read 2,048 tokens at a time (--prompt-batch in the config)")
