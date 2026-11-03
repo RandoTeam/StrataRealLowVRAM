@@ -66,6 +66,28 @@ that did it.
 says nothing changed); the build and the tests that fit ran; the release zip was rebuilt if a documented number moved;
 and the next step is written down for whoever picks it up.
 
+## The three upstream repositories
+
+Three projects decide what this one can do. Every session starts by looking at what they changed.
+
+| Repository | What it gives us | What to read |
+| --- | --- | --- |
+| `VecSzn/PolyStrata` (`upstream`) | The line our second engine comes from (`src/fourgbvram/`). Its `0.1.45-poly.N` releases are the primary source of engine speed and cache work. | Every release note; take its engine work promptly. |
+| `Niko1221/Strata` (`strata-upstream`) | The first engine (`src/`, `include/`) and the lab where ideas appear first: DFlash2 (a 0.7 GB drafter), 128K on 8 GB cards, the all-cards split engine, the benchmark and quality discipline. It moves much faster than PolyStrata. | The mechanisms, not only the numbers. |
+| `jesdga95/basalt` (`basalt`) | A fork of Strata specialised for Qwen3.8 on Blackwell: its own model container, two-stage output head, `basalt-probe`, the strictest benchmark method of the three. It cannot build for `sm_86`, and its numbers are not ours. | Ideas and method; never assume its results transfer. |
+
+- **Check them first, every session.** `git fetch upstream strata-upstream basalt` and `gh release list` for each; write
+  what changed in the local plan before starting that session's work.
+- **Read for the mechanism, not the headline.** A release note says *what* got faster; find *which* kernel, buffer or
+  trade did it, and whether it needs Blackwell, Linux, several cards or tens of GB of RAM. A mechanism that fits a 4 GB
+  card is a candidate here even when the numbers came from a 5090.
+- **Never copy a flag or a patch without a measurement on this laptop**, and never present a donor's platform win
+  (Linux, multi-GPU, Blackwell) as ours.
+- **A candidate goes into the local plan** as one line: the mechanism, the expected effect, how it would be measured.
+  It becomes documentation only after it reproduces here.
+- **This is not a port.** The goal is something none of the three has: a 4 GB path that is fast, measured and
+  documented, with its own findings. Copying is a means, never the output.
+
 ## Contributing a change or report
 
 - Search the open issues and pull requests first, and add to a thread that already covers your point.
