@@ -200,6 +200,25 @@ Setup writes `--no-graphs` for the Clover and Flint families from these measurem
 default. Why it wins is one hypothesis and not yet verified: a per-layer graph replay costs more than the handful of
 launches it replaces when each layer's kernels are this small. A kernel-level profile is the next step.
 
+## What a token costs, after the CUDA graphs came off
+
+Clover with `--tail-skip 6 --no-graphs`, the engine's own counters, 96-token answers, 2026-11-03:
+
+| Run | Tokens/s | Experts from VRAM | CPU experts | Router wait | Drafts kept |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| the shipped settings | **45 to 48** | 21.6% | 0.7-0.8 ms | 0.9-1.0 ms | 75-76 of 77-89 (97%) |
+| `--no-gpu-experts` | 32 to 36 | 0 | 21-22 ms | 3.1 ms | 97% |
+| `--window 1` | 32 to 40 | 44-78% | 0.3-0.6 ms | 1.2-1.3 ms | none |
+
+- **The expert cache is not the bottleneck any more.** With it holding a fifth of the experts, the CPU's share of a
+  token is under a millisecond.
+- **The split is still worth it:** all experts on the CPU triples that to 21 ms and costs a third of the speed.
+- **The draft window is what pays.** `--window 1` lifts the VRAM hit rate to 44-78% and is still slower, because every
+  pass then serves one token instead of eight; 97% of the guesses are kept.
+- **`--tail-skip` 7 and 8 are slower than 6** (41 and 35-40 tokens/s against 47): the elbow is at 6.
+- **What is left — about 20 ms a token — is GPU work per layer:** attention, the output head, the cached experts'
+  MMVQ, and the waits around them. A kernel-level profile is the next step; no flag has moved it so far.
+
 ## Does `--tail-skip` cost quality?
 
 `--tail-skip 6` leaves out an expert outside VRAM that every token of a window ranks at place 7 or later, so the
