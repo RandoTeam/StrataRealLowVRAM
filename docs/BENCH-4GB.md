@@ -13,6 +13,36 @@ nothing is estimated.
 strata serve: prompt 495 tokens = 12 reused + 483 read in 2151 ms (224.6 tok/s), 9148 generated in 349079 ms (26.2 tok/s), drafts accepted 1009 of 1492
 ```
 
+## The number that matters now (2026-11-03, evening): a chat request on a saved prompt
+
+Everything below this section was measured before there was a saved prompt, and much of it in the engine's raw token-id
+mode — the model continues the text instead of answering a question. That is a different task, and its speed is not
+what a person sees. Both are now measured side by side, with the same saved prompt (`bench/speed/prompt.txt`, about
+1,900 tokens, a question at the end), the same engine, eight runs each, 128 new tokens, 32K context, on a quiet machine:
+
+| Model | Task | Written tokens/s, median (range) | Prompt read | Draft guesses kept |
+| --- | --- | ---: | ---: | ---: |
+| Clover APEX-I-NANOPLUS | **chat through the server** | **38.1 (32.6-39.1)** | 449 tokens/s | 22-51 of 41-74 |
+| Clover APEX-I-NANOPLUS | raw continuation | 31.1 (29.5-34.4) | 496 tokens/s | 32-53 of 55-81 |
+| Flint UD-Q3_K_XL | **chat through the server** | **21.9 (20.5-22.4)** | 331 tokens/s | 1-8 of 5-19 |
+| Flint UD-Q3_K_XL | raw continuation | 21.6 (21.2-23.3) | 326 tokens/s | 28 of 38-40 |
+
+The engine was `strata-fourgbvram.exe` with SHA-256 `a37654f5f940047f…`, built from the commit this page ships with;
+the settings are the ones setup writes (Clover `--tail-skip 6 --no-graphs --kv q8_0`; Flint `--prompt-batch 512
+--expert-swaps 32 --no-graphs`). The rows are `bench/speed/results/*.json`, the appended log is `bench/speed/runs.log`,
+and the harness is `bench/speed/run.py`.
+
+**The earlier table — 47.5 and 40.7 written tokens/s — is not reproduced.** Its prompt was not saved and its logs were
+lost, so it cannot be re-run; the same request today writes at 38.1 and 21.9. It is kept further down with that mark,
+because a number that did not reproduce is part of the record, not something to erase.
+
+Two things stand out:
+
+- **Flint's draft head keeps almost none of its guesses on a question-answering prompt** (1 to 8 of 5 to 19). That is
+  where its time goes: the earlier 40.7 was written on a task where the guesses were kept.
+- **The raw continuation is not always faster than chat.** With a question at the end of the text, continuing the
+  document is the *harder* task (Clover 31.1 against 38.1), which is the opposite of what a prose prompt shows.
+
 - *prompt N tokens* is what the request carried; *reused* is what the conversation cache already held, *read* is
   what the engine had to take in, and the speed is for the read part.
 - *generated* is the answer, and its speed counts from the first token to the last.
@@ -197,6 +227,11 @@ the replay is the more expensive of the two. Measured 2026-11-03, both models wi
 | --- | ---: | ---: | ---: |
 | Clover | 38.4 / 38.8 | 38.5 / **47.5** (32.7-55.3) | 420 |
 | Flint | 27.8 / 29.6 | 27.8 / **40.7** (38.3-45.1) | 518 |
+
+**These settled figures are not reproduced (2026-11-03, evening).** The comparison itself — graphs against
+`--no-graphs` — held in every later session (the first answer unchanged, later answers 10 to 25% faster without
+graphs), but the absolute numbers came from a prompt that was not saved; on the saved prompt the same settings write
+38.1 and 21.9 tokens/s. The *relative* result is what this section claims.
 
 A three-request check on Flint, two runs each: with graphs 29.8 / 39.1 / 33.9 and 28.9 / 38.6 / 33.7; without,
 29.9 / 44.4 / 44.3 and 27.7 / 39.3 / 42.7. The first answer is unchanged, every later one gains 10 to 25%.

@@ -1,0 +1,82 @@
+{
+ "model": "flint",
+ "task": "chat",
+ "when": "2026-11-03 11:35",
+ "runs": 8,
+ "prompt": "bench\\speed\\prompt.txt",
+ "prompt_tokens": 1859,
+ "max_new": 128,
+ "engine_sha256": "a37654f5f940047f049ad7e155763f9c25e65e584efa13f5819999d3554074ed",
+ "config": "C:\\VietnAi\\4gbVramStrata\\strata-flint-ud-q3_k_xl.json",
+ "settings": {
+  "--model": "C:\\VietnAi\\4gbVramStrata-data\\models\\flint-UD-Q3_K_XL\\flint-UD-Q3_K_XL.gguf",
+  "--max-context": "32768",
+  "--prompt-batch": "512",
+  "--expert-swaps": "32",
+  "--no-graphs": true,
+  "--expert-profile": "C:\\VietnAi\\4gbVramStrata-data\\packs\\flint-ud-q3_k_xl\\expert-profile.txt",
+  "--conversation-cache-mib": "auto"
+ },
+ "median_decode": 21.9,
+ "min_decode": 20.5,
+ "max_decode": 22.4,
+ "median_prefill": 331.15,
+ "rows": [
+  {
+   "prompt_tokens": 1859,
+   "prefill": 102.0,
+   "generated": 128,
+   "decode": 21.7,
+   "drafts": "1/5"
+  },
+  {
+   "prompt_tokens": 1859,
+   "prefill": 192.7,
+   "generated": 128,
+   "decode": 21.9,
+   "drafts": "2/6"
+  },
+  {
+   "prompt_tokens": 1859,
+   "prefill": 331.6,
+   "generated": 128,
+   "decode": 21.9,
+   "drafts": "6/19"
+  },
+  {
+   "prompt_tokens": 1859,
+   "prefill": 329.4,
+   "generated": 128,
+   "decode": 22.0,
+   "drafts": "4/8"
+  },
+  {
+   "prompt_tokens": 1859,
+   "prefill": 331.4,
+   "generated": 128,
+   "decode": 22.4,
+   "drafts": "8/15"
+  },
+  {
+   "prompt_tokens": 1859,
+   "prefill": 333.9,
+   "generated": 128,
+   "decode": 21.3,
+   "drafts": "1/6"
+  },
+  {
+   "prompt_tokens": 1859,
+   "prefill": 333.5,
+   "generated": 128,
+   "decode": 21.9,
+   "drafts": "4/13"
+  },
+  {
+   "prompt_tokens": 1859,
+   "prefill": 330.9,
+   "generated": 128,
+   "decode": 20.5,
+   "drafts": "1/7"
+  }
+ ]
+}

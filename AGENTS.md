@@ -40,6 +40,14 @@ offers the same steps as tools.
 
 ## Keeping the plan and the documents current
 
+**Measurement records are evidence and are never deleted.** A run appends to its log; nothing truncates or unlinks a
+server log, an engine log or a results file. Every published number names, in the same place: the exact prompt file or
+token-id file, the engine binary (release asset or source commit), the settings, the number of runs, and **whether it
+was a chat request through the server or a raw continuation** — those are different tasks and their speeds differ by
+half. A number that does not reproduce is marked "not reproduced" where it stands, beside the number that replaced it,
+never quietly rewritten. A benchmark script that parses a log reads the tail it needs; it does not start from an empty
+file.
+
 Work here is not finished when the code runs. Three things have to be true as well: the plan says where we are, the
 public pages say what was measured and under what conditions, and the release in `dist/` was rebuilt from the commit
 that did it.
@@ -73,7 +81,7 @@ Three projects decide what this one can do. Every session starts by looking at w
 | Repository | What it gives us | What to read |
 | --- | --- | --- |
 | `VecSzn/PolyStrata` (`upstream`) | The line our second engine comes from (`src/fourgbvram/`). Its `0.1.45-poly.N` releases are the primary source of engine speed and cache work. | Every release note; take its engine work promptly. |
-| `Niko1221/Strata` (`strata-upstream`) | The first engine (`src/`, `include/`) and the lab where ideas appear first: DFlash2 (a 0.7 GB drafter), 128K on 8 GB cards, the all-cards split engine, the benchmark and quality discipline. It moves much faster than PolyStrata. | The mechanisms, not only the numbers. |
+| `Niko1221/Strata` (`strata-upstream`) | The first engine (`src/`, `include/`) and the lab where ideas appear first: DFlash2 (a 0.7 GB drafter), 128K on 8 GB cards, the all-cards split engine, the benchmark and quality discipline. It moves much faster than the PolyStrata project. | The mechanisms, not only the numbers. |
 | `jesdga95/basalt` (`basalt`) | A fork of Strata specialised for Qwen3.8 on Blackwell: its own model container, two-stage output head, `basalt-probe`, the strictest benchmark method of the three. It cannot build for `sm_86`, and its numbers are not ours. | Ideas and method; never assume its results transfer. |
 
 - **Check them first, every session.** `git fetch upstream strata-upstream basalt` and `gh release list` for each; write

@@ -1,0 +1,90 @@
+{
+ "model": "flint",
+ "task": "raw",
+ "when": "2026-11-03 11:37",
+ "runs": 8,
+ "prompt": "bench\\speed\\prompt.txt",
+ "prompt_tokens": 1857,
+ "max_new": 128,
+ "engine_sha256": "a37654f5f940047f049ad7e155763f9c25e65e584efa13f5819999d3554074ed",
+ "config": "C:\\VietnAi\\4gbVramStrata\\strata-flint-ud-q3_k_xl.json",
+ "settings": {
+  "--model": "C:\\VietnAi\\4gbVramStrata-data\\models\\flint-UD-Q3_K_XL\\flint-UD-Q3_K_XL.gguf",
+  "--max-context": "32768",
+  "--prompt-batch": "512",
+  "--expert-swaps": "32",
+  "--no-graphs": true,
+  "--expert-profile": "C:\\VietnAi\\4gbVramStrata-data\\packs\\flint-ud-q3_k_xl\\expert-profile.txt",
+  "--conversation-cache-mib": "auto"
+ },
+ "median_decode": 21.615000000000002,
+ "min_decode": 21.18,
+ "max_decode": 23.33,
+ "median_prefill": 326.4,
+ "rows": [
+  {
+   "prompt_tokens": 1857,
+   "prefill": 327.0,
+   "generated": 128,
+   "decode": 21.33,
+   "vram_experts": 19.4,
+   "drafts": "28/39"
+  },
+  {
+   "prompt_tokens": 1857,
+   "prefill": 325.3,
+   "generated": 128,
+   "decode": 21.78,
+   "vram_experts": 19.3,
+   "drafts": "28/39"
+  },
+  {
+   "prompt_tokens": 1857,
+   "prefill": 327.8,
+   "generated": 128,
+   "decode": 21.18,
+   "vram_experts": 19.4,
+   "drafts": "28/38"
+  },
+  {
+   "prompt_tokens": 1857,
+   "prefill": 324.6,
+   "generated": 128,
+   "decode": 21.54,
+   "vram_experts": 19.4,
+   "drafts": "28/38"
+  },
+  {
+   "prompt_tokens": 1857,
+   "prefill": 325.8,
+   "generated": 128,
+   "decode": 21.69,
+   "vram_experts": 19.5,
+   "drafts": "28/40"
+  },
+  {
+   "prompt_tokens": 1857,
+   "prefill": 325.4,
+   "generated": 128,
+   "decode": 21.29,
+   "vram_experts": 19.3,
+   "drafts": "28/39"
+  },
+  {
+   "prompt_tokens": 1857,
+   "prefill": 327.5,
+   "generated": 128,
+   "decode": 23.16,
+   "vram_experts": 19.4,
+   "drafts": "28/38"
+  },
+  {
+   "prompt_tokens": 1857,
+   "prefill": 330.3,
+   "generated": 128,
+   "decode": 23.33,
+   "vram_experts": 19.5,
+   "drafts": "28/40"
+  }
+ ]
+}

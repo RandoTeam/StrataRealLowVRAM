@@ -1,0 +1,102 @@
+You are a senior C++ engineer. Answer the question at the end of this document, and use the document as your source.
+
+How the engine keeps a mixture-of-experts model on a small card
+
+A mixture-of-experts model keeps most of its parameters idle for any one token. Every layer has a router that picks a
+few experts for the token, and only those experts are multiplied by the token's hidden state. The rest of the layer's
+experts are not touched at all. That is why a forty-billion-parameter model can run on a card that holds four
+gigabytes: the dense weights (attention, embeddings, the output head and the router) are small, and the expert weights
+are read only when the router asks for them.
+
+The file on disk holds every expert of every layer. The engine maps the file, counts how often each expert is used,
+and keeps the hottest ones in the graphics card's memory. The rest are read from system RAM through the operating
+system's page cache, computed by the CPU, and their results are added to the token's state. On a four-gigabyte card
+the cache holds a few hundred experts out of ten or twelve thousand, so most tokens find only a small part of what they
+need on the card.
+
+Two numbers decide the speed of an answer. The first is how many experts a token needs: forty layers with eight
+experts each is three hundred and twenty experts, and at about one megabyte each that is a third of a gigabyte of
+weights for every token. The second is how many of those experts are already in the card's memory. When the cache
+covers a third of them, the rest come from RAM at the speed of the memory bus; when it covers almost none, every token
+waits for the card to be fed.
+
+Reading a prompt is different from writing an answer. A prompt is read in batches: many tokens at once, so each expert
+that the batch needs is fetched once and used by every token that routes to it. Writing an answer is one token at a
+time: the draft head guesses a few tokens ahead, the model checks them all in one pass, and the accepted ones are kept.
+That check is what makes a short answer faster than its raw per-token cost, and it is also why the speed of an answer
+depends on how predictable its text is.
+
+The attention caches grow with the conversation. In half precision they cost about forty kilobytes for every token of
+context, which is one and a quarter gigabytes at thirty-two thousand tokens. Whatever the attention caches take, the
+expert cache cannot have, so a long conversation slowly pushes experts out of the card. Storing the caches in eight-bit
+blocks halves that cost and gives the difference back to the experts, at the price of slightly different answers.
+
+The draft head is a small block that guesses the next few tokens. Its guesses are cheap; checking them costs one pass
+of the model. When the guesses are right the answer moves several tokens at a time, and when they are wrong the model
+keeps the first token and throws the rest away. The measured share of accepted guesses is the single best predictor of
+how fast an answer will be written.
+
+Choosing what stays in the card is a caching problem, and the engine treats it as one. Every expert carries a count of
+how often it was used and how recently. When a slot is needed the engine gives away the expert with the least use, the
+same rule a processor's cache uses. The count is saved to a profile file, so the next start begins with the experts
+that were hot in the last session instead of an empty cache. That is why the first answer after a start is slower than
+the ones that follow it: the profile says where to begin, and the answer itself corrects it.
+
+Copying an expert into the card is not free. A layer's experts travel over the PCI Express link in pieces, and the
+engine keeps a staging buffer for them: one piece is copied while the previous one is being computed. Making that
+buffer larger lets a whole layer travel in one piece, which is faster for a long prompt but takes memory away from the
+expert cache. Making it smaller leaves more room for experts and adds a wait to every layer. The default is a
+compromise measured on the cards this project is built for.
+
+The card's memory is not the only tier. The file itself is cached by the operating system in whatever RAM is free, and
+on a machine with thirty-two gigabytes most of a twelve-gigabyte model stays there after the first read. That is why a
+second conversation starts much faster than the first one after a reboot, and why holding a private copy of the experts
+in the process's own memory made things slower rather than faster: it duplicated what the operating system already
+had.
+
+A 4 GB card needs a policy as much as it needs a kernel. The engine divides the card into three regions: the dense
+weights with the output head, the attention caches, and the expert cache with its staging buffer. The first is fixed,
+the second grows with the conversation, and the third takes whatever is left. When a request asks for more context than
+the card can hold beside its experts, something has to give, and the order in which things are given up decides
+whether the machine stays usable. Giving up the expert cache first is what makes a long conversation slow but still
+correct; giving up the context instead would refuse the request outright.
+
+The router is the part of the model that is hardest to predict. It runs on every token, its scores change with the
+text, and no two tokens route to exactly the same set of experts. A cache policy therefore works on statistics rather
+than on a schedule: it learns which experts are used together, which ones come back within a few tokens, and which
+ones are used once and never again. A profile collected from real conversations is worth more than a profile collected
+from a benchmark prompt, because the benchmark prompt is not what people write.
+
+Measurement is where most of the work goes. The engine prints one line per request: how many prompt tokens it read,
+how many it reused, how long the read took, how many tokens it wrote, and how many of the draft head's guesses were
+accepted. Those lines are the primary evidence, and they are kept. A number copied out of a single run is a rumour
+until it has been repeated in a session where nothing else is running, on the binary that ships, with the settings the
+installer writes and the same prompt every time.
+
+Speed is only half of the measurement. Every optimisation in this project ships with a check that the model still
+answers correctly: arithmetic, logic, short programs that have to run, tool calls, two or three languages, and a long
+document with facts hidden in it. A change that makes an answer faster and a little worse is not a win, and a number
+without the conditions it was measured under is not a measurement. That is why the documents state the card, the
+model file, the settings, the prompt and the number of runs beside every figure.
+
+The staging buffer is where the card and the memory bus meet. A layer's experts are not needed all at once: the router
+names a set for a batch of tokens, the engine copies exactly that set, and the compute reads it while the next piece
+travels. The size of each piece is a trade: a larger piece amortises the cost of starting a transfer, and a smaller one
+keeps the compute waiting less. On a four-gigabyte card the buffer is also memory that the expert cache would otherwise
+have, so it is kept small while an answer is written and made larger only while a prompt is read, when the expert cache
+is less useful anyway.
+
+The same reasoning applies to the output head. Writing a token ends with a matrix that turns the hidden state into a
+score for every word in the vocabulary, and on a model with a hundred and fifty thousand words that matrix is hundreds
+of megabytes. Keeping it on the card costs expert slots; keeping it in the host's memory costs a copy for every token.
+This project keeps it where the measurement said it belongs on a four-gigabyte card, and the number is written down
+beside the choice.
+
+An honest number also needs an honest prompt. A prompt that repeats one sentence teaches the draft head to predict the
+next words almost perfectly, and the answer that follows is not the answer a person would get. A prompt taken from real
+documentation, with a question at the end, is a harder and more representative task: the model has to read, keep the
+facts, and answer in its own words. The two tasks differ by half in measured speed, which is why the documents now
+record which one produced each figure.
+
+Question: in your own words, why does the speed of an answer depend on how predictable its text is, and what does the
+draft head have to do with it? Answer in three sentences.
