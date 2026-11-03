@@ -160,20 +160,24 @@ Clover APEX-I-NANOPLUS with `--tail-skip 6`, median of three runs:
 | 32 | 37.5 | 40.3 |
 | 64 (default) | **41.8** | **45.3** |
 
-Flint UD-Q3_K_XL with `--prompt-batch 512`, 64 and 32 interleaved in one session (64, 32, 64, 32, 64, 32), median of
-three each: 64 gives **27.8** first and **37.5** settled, 32 gives 27.5 and 36.1.
+Flint UD-Q3_K_XL with `--prompt-batch 512`, the release engine, 32 and 64 interleaved in one session (four pairs):
+**32 gives 38.0 written tokens/s on the settled answer against 30.6 for 64**, and 32 was ahead in all four pairs
+(by 4.7 to 8.0).
 
 What it says:
 
 - **Swapping is what makes the cache useful.** Freezing it at load (`--expert-swaps 0`) costs 22 to 30%: on a 4 GB
   card 421 or 710 slots are 4 to 6% of the experts, and the answer keeps needing others.
-- **The most the engine takes is the best here.** 64 wins on both models, on both answers, so the default stands.
-- **A first batch of Flint runs put 32 ahead of 64 on the settled answer (38.0 against 29.0).** It did not reproduce:
-  those runs compared two engine builds in two sessions, not two settings. Interleaving the two settings in one
-  session reversed it. An `--expert-swaps-after` prototype that ran 64 for the first answer and cooled to 32 measured
-  **32.4** — below both fixed counts — and was dropped.
-- **The lesson for the next measurement:** compare settings interleaved, in one session, on one engine build, with
-  the expert profile fixed; a batch of one setting and then a batch of another is not an A/B.
+- **The two families want different counts.** Clover does best at the engine's maximum (64); Flint does best at 32.
+  Setup writes the measured value per family: a Flint config now carries `--expert-swaps 32`, Clover's nothing (the
+  default).
+- **The build matters as much as the setting.** The same A/B on the development build (CUDA 12.8, one architecture)
+  put 64 ahead on Flint, 37.5 against 36.1. The release binary is the one users get, so its result is the one setup
+  follows — a settings comparison measured on a dev build is not quoted as a property of the release.
+- **An `--expert-swaps-after` prototype** (64 for the first answer, cooled to 32 after) measured 32.4 on the settled
+  answer in the development build — below both fixed counts — and was dropped rather than shipped.
+- **The lesson for the next measurement:** compare settings interleaved, in one session, on the binary that ships,
+  with the expert profile fixed; a batch of one setting and then a batch of another is not an A/B.
 
 ## Settings that did not help
 
