@@ -30,7 +30,7 @@ FILES = [
     "requirements.txt", "LICENSE", "README.md",
 ]
 # Whole trees, with the filter below applied to every file.
-TREES = ["serve", "tools", "data", "docs"]
+TREES = ["serve", "tools", "data", "docs", "bench/quality", "bench/speed"]
 # The engine's sources, copied verbatim (no filter: setup.source_hash() covers every file, test sources included).
 SOURCES = ["CMakeLists.txt", "cmake", "src", "include", "third_party/ggml", "tools/vision"]
 # Dropped everywhere: test sources, caches, and the paper (it has its own release).
