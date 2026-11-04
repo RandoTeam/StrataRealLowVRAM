@@ -134,14 +134,14 @@ A second engine, `strata` (`src/`, `include/`), runs Qwen3.8-Flash-Next and come
 
 ## Docs
 
-- **[docs/BENCH-4GB.md](docs/BENCH-4GB.md)** — what this hardware measured, with the logs.
-- **[docs/MEMORY-4GB.md](docs/MEMORY-4GB.md)** — where the bytes live: the VRAM, RAM and SSD budget per model and per token.
+- **[docs/INDEX.md](docs/INDEX.md)** - which page answers what, and which numbers are measured on this laptop rather than inherited.
+- **[docs/BENCH-4GB.md](docs/BENCH-4GB.md)** - what this hardware measured, with the logs.
+- **[docs/MEMORY-4GB.md](docs/MEMORY-4GB.md)** - where the bytes live: the VRAM, RAM and SSD budget per model and per token.
 - **[docs/QUALITY-4GB.md](docs/QUALITY-4GB.md)** - the twenty-two-prompt smoke test run after every speed change (code that must run, a tool loop, three facts across 18K tokens), and what it found.
-- **[docs/MODELS-4GB.md](docs/MODELS-4GB.md)** — the twelve models, sizes, scores, sources.
-- **[docs/INSTALL.md](docs/INSTALL.md)** — every install question, offline installs, other drives.
-- **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** — what to do when a start fails.
-- **[docs/AI_SETUP.md](docs/AI_SETUP.md)** — hand the install to an AI assistant.
-- **[docs/BACKENDS.md](docs/BACKENDS.md)** — the engine, its flags, and every model it runs.
+- **[docs/MODELS-4GB.md](docs/MODELS-4GB.md)** - the twelve models, sizes, scores, sources.
+- **[docs/INSTALL.md](docs/INSTALL.md)** - every install question, offline installs, other drives.
+- **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - what to do when a start fails.
+- **[docs/AI_SETUP.md](docs/AI_SETUP.md)** - hand the install to an AI assistant.
 
 ## Status
 

@@ -1,110 +1,96 @@
-# AGENTS.md
+# AGENTS.md — how to work in this repository
 
-> **This branch is RandoTeam/4gbVramStrata `main` (4gbVramStrata line).** Release script: `tools/package_release_131k.py`
-> (`4gbVramStrata-v0.1.45-131k-win-x64`). Origin is canonical (`RandoTeam/4gbVramStrata`: public, a fork of
-> [Strata](https://github.com/Niko1221/Strata); until 2026-11-01 it was called `StrataRealLowVRAM`, which GitHub
-> redirects). `upstream` is the primary donor (`VecSzn/PolyStrata`), `strata-upstream` the secondary
-> (`Niko1221/Strata`). `RandoTeam/4gbVramStrata-private` is an archived copy of this branch, kept for its issue and
-> pull-request history; nothing is pushed there.
-> The experimental 0.2.0-based port lives on `feature/strata-020-fourgbvram-131k` (`tools/package_portable.py` there).
+**`RandoTeam/4gbVramStrata`**, public, a fork of [Strata](https://github.com/Niko1221/Strata). It runs large
+mixture-of-experts models on a 4 GB laptop. The engine is [PolyStrata](https://github.com/VecSzn/PolyStrata)'s
+`v0.1.45-poly.7`, built for CUDA 13 (`sm_75`–`sm_120`). The plan is `.local/ROADMAP.md` (git-ignored, never published);
+this file is the contract.
 
-4gbVramStrata runs the Qwen3.8-Flash-Next mixture-of-experts model (and its Coder, Swift 1.5 and Unsloth variants) on a
-normal PC: one NVIDIA or AMD graphics card plus system RAM, on Windows or Linux. It has a C++/CUDA/HIP engine
-(`src/`, `include/`), a Python server with an OpenAI- and Anthropic-compatible API and a web app (`serve/`), and a
-one-click installer (`setup.py`, started by `START-HERE.bat` / `setup.sh`).
+## The machine, and the two models this fork is about
 
-A second engine, `strata-fourgbvram` (`src/fourgbvram/`), runs GLM 5.3 Flash, Ornith 1.5 (35B and 122B), DeepSeek V4
-Flash and other GGUF models from their GGUF files, on Linux or Windows: [docs/GLM.md](docs/GLM.md),
-[docs/ORNITH.md](docs/ORNITH.md), [docs/DEEPSEEK.md](docs/DEEPSEEK.md), [docs/BACKENDS.md](docs/BACKENDS.md). The Qwen
-engine, the installer, the server and the web app come from [Strata](https://github.com/Niko1221/Strata).
+RTX 3050 Laptop 4 GB (`sm_86`), Ryzen 5 5500U (6 cores, 12 threads), 32 GB DDR4-3200, Windows 11.
 
-## Installing 4gbVramStrata for a user
+| Model | File | Chat, tokens/s | Reads the prompt | What setup writes |
+| --- | ---: | ---: | ---: | --- |
+| Clover-35B-A3B-Preview APEX-I-NANOPLUS | 11.7 GB | **38.1** (32.6–39.1) | 449 tokens/s | `--tail-skip 6 --no-graphs`, `--kv q8_0` on cards of 6 GB or less |
+| Flint 40B-A2.5B UD-Q3_K_XL | 17.2 GB | **21.9** (20.5–22.4) | 331 tokens/s | `--prompt-batch 512 --expert-swaps 32 --no-graphs` |
 
-Follow **[docs/AI_SETUP.md](docs/AI_SETUP.md)**: check the PC, pick the model by RAM, run setup non-interactively,
-start and verify the server, and connect the user's apps. Never expose the server beyond `127.0.0.1` without
-`--api-key`. As an alternative to shell commands, 4gbVramStrata's MCP server ([docs/MCP_SERVER.md](docs/MCP_SERVER.md))
-offers the same steps as tools.
+Measured 2026-11-03 on the saved prompt `bench/speed/prompt.txt` (about 1,900 tokens, a question at the end), 8 runs,
+quiet machine, engine `a37654f5f940047f…`; the rows are in `bench/speed/results/`. The marginal cost of a token is
+32.9 ms (Clover) and 46.2 ms (Flint) — that is what a long answer pays.
 
-## Working on the code
+**`docs/BENCH-4GB.md` is the only page where this fork's speed numbers live.** Numbers on other hardware (RTX 5090, an
+8 GB laptop, AMD, Intel, Mac) are inherited from the donors: useful for how the engine works, not evidence for this
+laptop.
 
-- How the engine works, every measured number, the API and all settings: [docs/DETAILS.md](docs/DETAILS.md) and
-  the [paper](docs/paper/Strata-Paper.pdf).
-- AMD (HIP) build and validation: [docs/AMD_HIP.md](docs/AMD_HIP.md); multi-GPU: [docs/MULTI_GPU.md](docs/MULTI_GPU.md).
-- Text taken from the Strata project names that project. After merging from it,
-  `python tools/brand_names.py` writes 4gbVramStrata again; its first lines say what it leaves alone.
-  (The donor's `tools/polystrata_names.py` is kept for merges.)
-- Setup's own tests run without a GPU or downloads: `python tools/test_setup_<name>.py` (for example
-  `tools/test_setup_amd.py`, `tools/test_setup_choices.py`).
-- Keep the docs' style: plain words, measured numbers with what they were measured on, no claims without a
-  measurement.
+## Run it, the way a user does
 
-## Keeping the plan and the documents current
+    .venv\Scripts\python.exe serve\server.py --engine strata --config strata-clover-apex-i-nanoplus.json --port 8080
+    # then http://127.0.0.1:8080/ ; closing the window stops the engine
 
-**Measurement records are evidence and are never deleted.** A run appends to its log; nothing truncates or unlinks a
-server log, an engine log or a results file. Every published number names, in the same place: the exact prompt file or
-token-id file, the engine binary (release asset or source commit), the settings, the number of runs, and **whether it
-was a chat request through the server or a raw continuation** — those are different tasks and their speeds differ by
-half. A number that does not reproduce is marked "not reproduced" where it stands, beside the number that replaced it,
-never quietly rewritten. A benchmark script that parses a log reads the tail it needs; it does not start from an empty
-file.
+`run-clover.bat` and `run-flint.bat` are local conveniences for the same command and are git-ignored, as are the
+`strata-*.json` run configs: a fresh clone gets its config from setup, not from git. Start one model at a time — both
+use port 8080 and the same card.
 
-Work here is not finished when the code runs. Three things have to be true as well: the plan says where we are, the
-public pages say what was measured and under what conditions, and the release in `dist/` was rebuilt from the commit
-that did it.
+Every reply appends one line to `strata-<model>.log`: prompt tokens read, at what speed, answer tokens written, at what
+speed, and how many draft guesses were kept. Over the API, a small `max_tokens` is spent on the reasoning block before
+the visible answer starts: use 2000 and up.
 
-- **Read `.local/ROADMAP.md` before starting, and update it in the same sitting as the work.** It holds the goals, the
-  measured baselines, everything tried, the queue and the calendar. It is git-ignored on purpose: plans are not
-  published, and nothing from it is quoted in a public file.
-- **After every experiment, write down** what was tried, the numbers with their conditions, what it means, and what
-  goes next. A finding that is not in the plan or in a page did not happen.
-- **Public measurements go to the page that owns the topic** (`docs/BENCH-4GB.md` for this hardware), with machine,
-  engine build, prompt, settings and number of runs. A number that did not reproduce is published as not reproduced,
-  with what it was measured against.
-- **A settings comparison is interleaved, in one session, on the binary that ships, with the expert profile fixed.** A
-  batch of one setting and then a batch of another is not an A/B; that mistake cost a reverted feature already.
-- **A speed win ships only with its quality check.** No lossy flag or engine change is called an improvement before a
-  same-prompt comparison says the answers did not get worse.
-- **Documents and the release move together.** A change that alters a documented number rebuilds
-  `tools/package_release_131k.py`, uploads the zip with `gh release upload … --clobber`, and keeps the release notes'
-  table in step.
-- **New knowledge goes where it will be found:** the model's page in `docs/models/`, the topic page in `docs/`, a row in
-  `docs/BENCH-4GB.md`, or a line in the local plan when it is a plan or an untested hunch.
+## Measure it — the only accepted way
 
-**Before a task is called done:** the plan lists the result; the owning page has the numbers with their conditions (or
-says nothing changed); the build and the tests that fit ran; the release zip was rebuilt if a documented number moved;
-and the next step is written down for whoever picks it up.
+    python bench/speed/run.py --config strata-clover-apex-i-nanoplus.json --model clover --task chat --runs 8
+    python bench/quality/run.py --model local --repeat 2        # the 22-prompt gate; server already running
 
-## The three upstream repositories
+- **`chat` is a request through the server; `raw` is the engine continuing the text.** Different tasks, different
+  speeds. Never mix them into one number, and never publish `raw` as the answer speed.
+- A comparison is **interleaved, in one session, on the binary that ships, with the expert profile fixed**.
+- **Never measure while a build or another heavy job runs.** The same gate read 27.5 tokens/s quiet and 15.9 during a
+  CUDA build; that mistake cost a day and a false regression report.
+- **Never delete or truncate a log.** `bench/speed/runs.log` is append-only; the server logs are evidence.
+- Every number names its prompt, binary, settings, number of runs and task. A number that did not reproduce is marked
+  "not reproduced" beside the number that replaced it, never quietly rewritten.
 
-Three projects decide what this one can do. Every session starts by looking at what they changed.
+## Build, test, release
 
-| Repository | What it gives us | What to read |
-| --- | --- | --- |
-| `VecSzn/PolyStrata` (`upstream`) | The line our second engine comes from (`src/fourgbvram/`). Its `0.1.45-poly.N` releases are the primary source of engine speed and cache work. | Every release note; take its engine work promptly. |
-| `Niko1221/Strata` (`strata-upstream`) | The first engine (`src/`, `include/`) and the lab where ideas appear first: DFlash2 (a 0.7 GB drafter), 128K on 8 GB cards, the all-cards split engine, the benchmark and quality discipline. It moves much faster than the PolyStrata project. | The mechanisms, not only the numbers. |
-| `jesdga95/basalt` (`basalt`) | A fork of Strata specialised for Qwen3.8 on Blackwell: its own model container, two-stage output head, `basalt-probe`, the strictest benchmark method of the three. It cannot build for `sm_86`, and its numbers are not ours. | Ideas and method; never assume its results transfer. |
+    tools\build_131k.bat                     # dev engine: CUDA 12.8, sm_86, into build-131k
+    ninja -C build-131k2 strata-fourgbvram   # incremental, after calling vcvars64.bat
+    python tools\make_fourgbvram_release.py OUT_DIR   # portable engine, CUDA 13.0, sm_75..120; needs a clean tree
+    python -m unittest discover -s tools -p "test_setup_*.py"   # 740 tests, no GPU and no downloads
+    python tools\brand_names.py --check
+    python tools\package_release_131k.py     # the release zip; --check verifies the allowlist
+    gh release upload v0.1.45-131k dist\4gbVramStrata-v0.1.45-131k-win-x64.zip --clobber
 
-- **Check them first, every session.** `git fetch upstream strata-upstream basalt` and `gh release list` for each; write
-  what changed in the local plan before starting that session's work.
-- **Read for the mechanism, not the headline.** A release note says *what* got faster; find *which* kernel, buffer or
-  trade did it, and whether it needs Blackwell, Linux, several cards or tens of GB of RAM. A mechanism that fits a 4 GB
-  card is a candidate here even when the numbers came from a 5090.
-- **Never copy a flag or a patch without a measurement on this laptop**, and never present a donor's platform win
-  (Linux, multi-GPU, Blackwell) as ours.
-- **A candidate goes into the local plan** as one line: the mechanism, the expected effect, how it would be measured.
-  It becomes documentation only after it reproduces here.
-- **This is not a port.** The goal is something none of the three has: a 4 GB path that is fast, measured and
-  documented, with its own findings. Copying is a means, never the output.
+The release notes' table moves with `docs/BENCH-4GB.md`, and the zip is rebuilt from the commit that changed a number.
 
-## Contributing a change or report
+## Speed only ships with quality
 
-- Search the open issues and pull requests first, and add to a thread that already covers your point.
-- Open an issue with the form that fits (bug report, feature request or question).
-- One change per pull request. Say what it changes and what it leaves alone.
-- A new feature is opt-in, and the default path stays byte-identical to the last release. Say how you checked.
-- Build every backend a file touches (CUDA, HIP, SYCL) before asking for review.
-- Change a default only where you measured it faster, and show the numbers with what they were measured on.
-- A report from hardware the maintainers do not have is welcome. Follow
-  [docs/COMMUNITY_BENCHMARKS.md](docs/COMMUNITY_BENCHMARKS.md), compare against a same-day run of the build you are
-  testing, and say what you did not test.
-- Open test requests and the hardware that is wanted are listed in [docs/TEST_REQUESTS.md](docs/TEST_REQUESTS.md).
+A speed change goes out only with the 22-prompt gate (`bench/quality/`): arithmetic, logic, code that must run, a
+three-call tool loop, Russian/German/Spanish, instruction-following, and three facts across about 18K tokens. Current:
+**Clover 22/22, Flint 21/22** — the one failure is the Russian instruction, which is unstable in Flint itself (four
+different behaviours across four runs, recorded in `docs/QUALITY-4GB.md`).
+
+## The work, in order
+
+1. **Lendable prompt scratch.** The batch scratch is 429 MiB at `--prompt-batch 1024` and 88 MiB at 64; lending it to
+   the expert cache between requests is the measured prize: +13% decode at a short context. Engine change, no quality
+   loss, and the biggest single lever left.
+2. **Per-layer overhead.** 32.9 ms for 40 layers is about 0.8 ms a layer, far more than the maths costs. Profile before
+   optimizing; CUDA graphs were tried and were slower here.
+3. **Flint.** No 8-bit KV path and no flash-attention / tensor-core decode kernels (Clover has both), and its expert hit
+   rate is 19% against Clover's 29%. That is where its 46 ms per token goes.
+4. **Qwen3.8-Flash-Next Q2_0** only after these two are where they should be.
+
+## Donors
+
+`VecSzn/PolyStrata` (`upstream`) is the line the engine comes from; `Niko1221/Strata` (`strata-upstream`) moves faster
+and is the lab where ideas appear first; `jesdga95/basalt` is method only (Blackwell NVFP4, cannot build for `sm_86`).
+At the start of a session run `gh release list` for each, take **mechanisms rather than numbers**, and never present a
+donor's platform win (Linux, several cards, Blackwell, 128 GB) as ours. A candidate goes into `.local/ROADMAP.md` as
+one line — mechanism, expected effect, how it would be measured — before any code is written.
+
+## Do not
+
+- Do not port Strata 0.2.x (multi-GPU, Mac) or add DFlash2 on 4 GB: 0.7 GB of drafter is about 660 expert slots.
+- Do not quote inherited pages (`docs/DETAILS.md`, `docs/BACKENDS.md`, `docs/AMD_HIP.md`, `docs/INTEL.md`, …) as
+  evidence for this laptop; their numbers were measured on a 5090, an 8 GB laptop, AMD, Intel or Mac.
+- Do not call a change an improvement without the gate and a saved-prompt measurement.
+- Do not edit a published number in place — mark it as not reproduced and put the new one beside it.
