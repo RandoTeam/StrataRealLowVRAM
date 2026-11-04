@@ -174,6 +174,10 @@ the card's clocks settled.
 | Flint, engine defaults | 420 tokens/s | 38.5 tokens/s | 561 (0.7 GiB) |
 | Flint, `--prompt-batch 512` | 372 tokens/s | 39.9 tokens/s | 710 (0.9 GiB) |
 
+**The absolute figures in this table are not reproduced either** (same cause as the section at the top: the prompt was
+not saved). What the section claims is the *comparison* — poly.6 against poly.7 — and that held: the same relative
+gains were seen again in later sessions.
+
 Against poly.6 (505 / 31.3, 506 / 36.3, 379 / 24.5, 335 / 31.5): the answers are 6% faster on Clover (5% with
 `--tail-skip 6`) and 27 to 57% faster on Flint, and the expert cache at load more than doubled on both (Clover 247 →
 421, Flint 342 → 561), because the engine now gives each layer's experts the slot size they need instead of one size
